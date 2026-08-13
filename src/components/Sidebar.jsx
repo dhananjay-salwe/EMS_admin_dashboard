@@ -1,0 +1,85 @@
+import React from 'react';
+
+const IconBolt = (props) => (
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" {...props}>
+    <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" fill="currentColor" />
+  </svg>
+);
+
+const IconChart = (props) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M4 20V10M12 20V4M20 20v-7" />
+  </svg>
+);
+
+const IconPin = (props) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21Z" />
+    <circle cx="12" cy="9.5" r="2.4" />
+  </svg>
+);
+
+const IconUsers = (props) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <circle cx="9" cy="8" r="3.4" />
+    <path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" />
+    <path d="M16 4.4c1.7.4 3 2 3 3.8s-1.3 3.4-3 3.8" />
+    <path d="M21.5 20c0-3-2-5.3-4.8-5.9" />
+  </svg>
+);
+
+const IconCamera = (props) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z" />
+    <circle cx="12" cy="13.5" r="3.5" />
+  </svg>
+);
+
+const IconLandmark = (props) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M4 21h16" />
+    <path d="M5 21V10M9 21V10M15 21V10M19 21V10" />
+    <path d="M3 10 12 4l9 6" />
+  </svg>
+);
+
+const IconShield = (props) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M12 3 5 6v6c0 4.4 3 7.7 7 9 4-1.3 7-4.6 7-9V6l-7-3Z" />
+    <path d="m9.5 12 2 2 3.5-3.5" />
+  </svg>
+);
+
+const NAV_ITEMS = [
+  { key: 'analytics', label: 'Live Vote Tallies', Icon: IconChart },
+  { key: 'locations', label: 'Location & Booths', Icon: IconPin },
+  { key: 'operators', label: 'Operators', Icon: IconUsers },
+  { key: 'audit', label: 'Audit Images', Icon: IconCamera },
+  { key: 'parties', label: 'Political Parties', Icon: IconLandmark },
+  { key: 'admins', label: 'Admin Management', Icon: IconShield },
+];
+
+export default function Sidebar({ activeTab, setActiveTab }) {
+  return (
+    <aside className="app-sidebar">
+      <div className="sidebar-brand">
+        <div className="sidebar-brand-mark"><IconBolt /></div>
+        <span className="sidebar-brand-text">Election Command</span>
+      </div>
+
+      <div className="sidebar-section-label">Menu</div>
+      <nav className="sidebar-nav">
+        {NAV_ITEMS.map(({ key, label, Icon }) => (
+          <button
+            key={key}
+            className={`nav-link ${activeTab === key ? 'active' : ''}`}
+            onClick={() => setActiveTab(key)}
+          >
+            <Icon />
+            <span>{label}</span>
+          </button>
+        ))}
+      </nav>
+    </aside>
+  );
+}
