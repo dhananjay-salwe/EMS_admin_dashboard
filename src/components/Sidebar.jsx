@@ -72,7 +72,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
     <aside className="app-sidebar">
       <div className="sidebar-brand">
         <div className="sidebar-brand-mark"><IconBolt /></div>
-        <span className="sidebar-brand-text">Election Command</span>
+        <span className="sidebar-brand-text">EMS</span>
       </div>
 
       <div className="sidebar-section-label">Menu</div>

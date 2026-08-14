@@ -33,7 +33,7 @@ export default function Login({ onLoginSuccess }) {
       <div className="auth-card">
         <div className="auth-banner">
           <h2>Welcome back!</h2>
-          <p>Sign in to Election Command to continue</p>
+          <p>Sign in to EMS to continue</p>
         </div>
         <div className="auth-logo"><IconBolt /></div>
 
