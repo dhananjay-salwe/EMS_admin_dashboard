@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = 'https://ems-backend-t6u3.onrender.com/api';
 
 export const apiCall = async (endpoint, options = {}) => {
   try {
