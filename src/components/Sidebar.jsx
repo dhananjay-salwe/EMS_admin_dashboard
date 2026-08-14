@@ -62,7 +62,7 @@ const NAV_ITEMS = [
   { key: 'parties', label: 'Political Parties', Icon: IconLandmark },
   { key: 'candidates', label: 'Candidates', Icon: IconUser },
   { key: 'locations', label: 'Location & Booths', Icon: IconPin },
-  { key: 'operators', label: 'Operators', Icon: IconUsers },
+  { key: 'operators', label: 'Booth Officers', Icon: IconUsers },
   { key: 'audit', label: 'Audit Images', Icon: IconCamera },
   { key: 'admins', label: 'Admin Management', Icon: IconShield },
 ];

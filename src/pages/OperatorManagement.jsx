@@ -45,7 +45,7 @@ export default function OperatorManagement() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Delete this booth operator?')) {
+    if (window.confirm('Delete this booth Officer?')) {
       await apiCall(`/operators/${id}`, { method: 'DELETE' });
       fetchData();
     }
@@ -55,16 +55,16 @@ export default function OperatorManagement() {
     <div>
       <div className="page-title-box">
         <div>
-          <h1>Booth Operators</h1>
+          <h1>Booth Officer</h1>
           <div className="breadcrumb">
-            <span>Dashboard</span> / <span className="current">Operators</span>
+            <span>Dashboard</span> / <span className="current">Booth Officers</span>
           </div>
         </div>
       </div>
 
       <div className="two-col-grid" style={{ gridTemplateColumns: '1fr 2fr' }}>
         <div className="card">
-          <div className="card-header"><h2>{editingId ? 'Edit booth operator' : 'Register booth operator'}</h2></div>
+          <div className="card-header"><h2>{editingId ? 'Edit booth officer' : 'Register booth officer'}</h2></div>
           <div className="card-body">
             <form onSubmit={handleSubmit}>
               <div className="form-group">
@@ -109,7 +109,7 @@ export default function OperatorManagement() {
                 </select>
               </div>
               <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
-                {submitting ? 'Saving…' : editingId ? 'Update Operator' : 'Create Operator'}
+                {submitting ? 'Saving…' : editingId ? 'Update Booth Officer' : 'Create Booth Officer'}
               </button>
               {editingId && (
                 <button type="button" className="btn btn-secondary btn-block" style={{ marginTop: 8 }} onClick={resetForm}>
@@ -122,14 +122,14 @@ export default function OperatorManagement() {
 
         <div className="card">
           <div className="card-header">
-            <h2>Registered operators &amp; booth assignments</h2>
+            <h2>Registered booth officers &amp; booth assignments</h2>
             <span className="muted">{operators.length} total</span>
           </div>
           <div className="table-wrap">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Operator</th>
+                  <th>Booth Officer</th>
                   <th>Username</th>
                   <th>Assigned Booth</th>
                   <th>Actions</th>
@@ -159,7 +159,7 @@ export default function OperatorManagement() {
                   </tr>
                 ))}
                 {operators.length === 0 && (
-                  <tr><td colSpan={4} className="empty-state">No operators registered yet.</td></tr>
+                  <tr><td colSpan={4} className="empty-state">No booth officers registered yet.</td></tr>
                 )}
               </tbody>
             </table>

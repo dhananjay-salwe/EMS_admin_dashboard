@@ -36,7 +36,7 @@ export default function App() {
           {activeTab === 'parties' && <PartyManagement />}
           {activeTab === 'candidates' && <CandidateManagement />}
           {activeTab === 'locations' && <LocationManagement />}
-          {activeTab === 'operators' && <OperatorManagement />}
+          {activeTab === '' && <OperatorManagement />}
           {activeTab === 'audit' && <AuditSubmissions />}
           {activeTab === 'admins' && <AdminManagement currentAdminRole={admin.role} />}
         </div>
