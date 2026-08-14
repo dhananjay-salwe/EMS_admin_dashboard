@@ -2,10 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { apiCall } from '../api/client';
 
 export default function LocationManagement() {
-  const [formData, setFormData] = useState({
-    state_name: '', lga_name: '', ward_name: '', booth_name: '', unique_booth_code: ''
-  });
   const [locations, setLocations] = useState([]);
+  const [formData, setFormData] = useState({
+    state_name: '',
+    lga_name: '',
+    ward_name: '',
+    booth_name: '',
+    unique_booth_code: ''
+  });
   const [submitting, setSubmitting] = useState(false);
 
   const fetchLocations = async () => {
@@ -18,20 +22,25 @@ export default function LocationManagement() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    const res = await apiCall('/locations/hierarchy', {
-      method: 'POST',
-      body: JSON.stringify(formData)
-    });
+    const res = await apiCall('/locations/add', { method: 'POST', body: JSON.stringify(formData) });
     setSubmitting(false);
 
     if (res.success) {
-      alert('Location added successfully!');
       setFormData({ state_name: '', lga_name: '', ward_name: '', booth_name: '', unique_booth_code: '' });
       fetchLocations();
     } else {
       alert(res.message);
     }
   };
+
+  const handleDeleteBooth = async (boothId) => {
+    if (window.confirm('Delete this polling booth?')) {
+      await apiCall(`/locations/booth/${boothId}`, { method: 'DELETE' });
+      fetchLocations();
+    }
+  };
+
+  const booths = locations.filter(l => l.booth_id);
 
   return (
     <div>
@@ -44,31 +53,31 @@ export default function LocationManagement() {
         </div>
       </div>
 
-      <div className="two-col-grid">
+      <div className="two-col-grid" style={{ gridTemplateColumns: '1fr 2fr' }}>
         <div className="card">
-          <div className="card-header"><h2>Add Geographic Polling Unit</h2></div>
+          <div className="card-header"><h2>Add geographic polling unit</h2></div>
           <div className="card-body">
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label className="form-label">State Name</label>
                 <input
-                  type="text" required className="form-control" placeholder="e.g. Lagos"
+                  type="text" required className="form-control"
                   value={formData.state_name}
                   onChange={e => setFormData({ ...formData, state_name: e.target.value })}
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">LGA (Local Government Area)</label>
+                <label className="form-label">LGA (Local Government Area / District)</label>
                 <input
-                  type="text" required className="form-control" placeholder="e.g. Ikeja"
+                  type="text" required className="form-control"
                   value={formData.lga_name}
                   onChange={e => setFormData({ ...formData, lga_name: e.target.value })}
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Ward (Area)</label>
+                <label className="form-label">Ward (Area / Seat)</label>
                 <input
-                  type="text" required className="form-control" placeholder="e.g. Ward 01"
+                  type="text" required className="form-control"
                   value={formData.ward_name}
                   onChange={e => setFormData({ ...formData, ward_name: e.target.value })}
                 />
@@ -76,7 +85,7 @@ export default function LocationManagement() {
               <div className="form-group">
                 <label className="form-label">Polling Unit Name (Booth)</label>
                 <input
-                  type="text" required className="form-control" placeholder="e.g. Central Primary School"
+                  type="text" required className="form-control"
                   value={formData.booth_name}
                   onChange={e => setFormData({ ...formData, booth_name: e.target.value })}
                 />
@@ -84,7 +93,7 @@ export default function LocationManagement() {
               <div className="form-group">
                 <label className="form-label">Unique Booth Code</label>
                 <input
-                  type="text" required className="form-control" placeholder="e.g. BOOTH-LGS-001"
+                  type="text" required className="form-control"
                   value={formData.unique_booth_code}
                   onChange={e => setFormData({ ...formData, unique_booth_code: e.target.value })}
                 />
@@ -98,8 +107,8 @@ export default function LocationManagement() {
 
         <div className="card">
           <div className="card-header">
-            <h2>Registered Polling Units</h2>
-            <span className="muted">{locations.length} total</span>
+            <h2>Registered polling units</h2>
+            <span className="muted">{booths.length} total</span>
           </div>
           <div className="table-wrap">
             <table className="data-table">
@@ -109,19 +118,23 @@ export default function LocationManagement() {
                   <th>LGA</th>
                   <th>Ward</th>
                   <th>Booth Code &amp; Name</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
-                {locations.map((loc, idx) => (
-                  <tr key={idx}>
-                    <td>{loc.state_name}</td>
-                    <td>{loc.lga_name}</td>
-                    <td>{loc.ward_name}</td>
-                    <td><strong>{loc.unique_booth_code}</strong> — {loc.booth_name}</td>
+                {booths.map(l => (
+                  <tr key={l.booth_id}>
+                    <td>{l.state_name}</td>
+                    <td>{l.lga_name}</td>
+                    <td>{l.ward_name}</td>
+                    <td><strong>{l.unique_booth_code}</strong> — {l.booth_name}</td>
+                    <td>
+                      <button className="btn btn-danger btn-sm" onClick={() => handleDeleteBooth(l.booth_id)}>Delete</button>
+                    </td>
                   </tr>
                 ))}
-                {locations.length === 0 && (
-                  <tr><td colSpan={4} className="empty-state">No polling units registered yet.</td></tr>
+                {booths.length === 0 && (
+                  <tr><td colSpan={5} className="empty-state">No polling units registered yet.</td></tr>
                 )}
               </tbody>
             </table>

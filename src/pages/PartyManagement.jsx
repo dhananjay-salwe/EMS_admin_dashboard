@@ -3,7 +3,8 @@ import { apiCall } from '../api/client';
 
 export default function PartyManagement() {
   const [parties, setParties] = useState([]);
-  const [formData, setFormData] = useState({ party_name: '', candidate_name: '', party_icon_url: '' });
+  const [formData, setFormData] = useState({ party_name: '', party_code: '', party_icon_url: '' });
+  const [editingId, setEditingId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   const fetchParties = async () => {
@@ -13,24 +14,33 @@ export default function PartyManagement() {
 
   useEffect(() => { fetchParties(); }, []);
 
+  const resetForm = () => {
+    setEditingId(null);
+    setFormData({ party_name: '', party_code: '', party_icon_url: '' });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    const res = await apiCall('/parties/add', { method: 'POST', body: JSON.stringify(formData) });
-    setSubmitting(false);
-
-    if (res.success) {
-      setFormData({ party_name: '', candidate_name: '', party_icon_url: '' });
-      fetchParties();
+    if (editingId) {
+      await apiCall(`/parties/${editingId}`, { method: 'PUT', body: JSON.stringify(formData) });
     } else {
-      alert(res.message);
+      await apiCall('/parties/add', { method: 'POST', body: JSON.stringify(formData) });
     }
+    setSubmitting(false);
+    resetForm();
+    fetchParties();
+  };
+
+  const handleEdit = (p) => {
+    setEditingId(p.id);
+    setFormData({ party_name: p.party_name, party_code: p.party_code, party_icon_url: p.party_icon_url || '' });
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this party?')) {
-      const res = await apiCall(`/parties/${id}`, { method: 'DELETE' });
-      if (res.success) fetchParties();
+    if (window.confirm('Delete this party? All associated candidates will also be removed.')) {
+      await apiCall(`/parties/${id}`, { method: 'DELETE' });
+      fetchParties();
     }
   };
 
@@ -47,7 +57,7 @@ export default function PartyManagement() {
 
       <div className="two-col-grid" style={{ gridTemplateColumns: '1fr 2fr' }}>
         <div className="card">
-          <div className="card-header"><h2>Add Political Party</h2></div>
+          <div className="card-header"><h2>{editingId ? 'Edit political party' : 'Add political party'}</h2></div>
           <div className="card-body">
             <form onSubmit={handleSubmit}>
               <div className="form-group">
@@ -59,62 +69,66 @@ export default function PartyManagement() {
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Candidate Name</label>
+                <label className="form-label">Party Code / Abbreviation (e.g. APC, PDP, LP)</label>
                 <input
                   type="text" required className="form-control"
-                  value={formData.candidate_name}
-                  onChange={e => setFormData({ ...formData, candidate_name: e.target.value })}
+                  value={formData.party_code}
+                  onChange={e => setFormData({ ...formData, party_code: e.target.value })}
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Party Icon URL (Image Link)</label>
+                <label className="form-label">Party Symbol / Icon URL</label>
                 <input
-                  type="text" required className="form-control"
+                  type="text" className="form-control"
                   value={formData.party_icon_url}
                   onChange={e => setFormData({ ...formData, party_icon_url: e.target.value })}
                 />
               </div>
               <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
-                {submitting ? 'Saving…' : 'Save Party'}
+                {submitting ? 'Saving…' : editingId ? 'Update Party' : 'Create Party'}
               </button>
+              {editingId && (
+                <button type="button" className="btn btn-secondary btn-block" style={{ marginTop: 8 }} onClick={resetForm}>
+                  Cancel
+                </button>
+              )}
             </form>
           </div>
         </div>
 
         <div className="card">
           <div className="card-header">
-            <h2>Registered Parties &amp; Candidates</h2>
+            <h2>Registered political parties</h2>
             <span className="muted">{parties.length} total</span>
           </div>
           <div className="table-wrap">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>ID</th>
                   <th>Icon</th>
                   <th>Party Name</th>
-                  <th>Candidate Name</th>
-                  <th>Action</th>
+                  <th>Code</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {parties.map((party) => (
-                  <tr key={party.id}>
-                    <td>{party.id}</td>
+                {parties.map(p => (
+                  <tr key={p.id}>
                     <td>
-                      {party.party_icon_url
-                        ? <img src={party.party_icon_url} alt="" className="avatar-xs" />
-                        : <span className="avatar-title">{party.party_name?.charAt(0)}</span>}
+                      {p.party_icon_url
+                        ? <img src={p.party_icon_url} alt="" className="avatar-xs" />
+                        : <span className="avatar-title">{p.party_name?.charAt(0)}</span>}
                     </td>
-                    <td><strong>{party.party_name}</strong></td>
-                    <td>{party.candidate_name}</td>
+                    <td><strong>{p.party_name}</strong></td>
+                    <td><span className="badge badge-soft-secondary">{p.party_code}</span></td>
                     <td>
-                      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(party.id)}>Delete</button>
+                      <button className="btn btn-outline btn-sm" style={{ marginRight: 8 }} onClick={() => handleEdit(p)}>Edit</button>
+                      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(p.id)}>Delete</button>
                     </td>
                   </tr>
                 ))}
                 {parties.length === 0 && (
-                  <tr><td colSpan={5} className="empty-state">No parties registered yet.</td></tr>
+                  <tr><td colSpan={4} className="empty-state">No parties registered yet.</td></tr>
                 )}
               </tbody>
             </table>

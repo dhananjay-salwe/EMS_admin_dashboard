@@ -438,6 +438,14 @@ table.data-table { width: 100%; border-collapse: collapse; }
   flex-shrink: 0;
 }
 
+.avatar-sm {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
 .avatar-title {
   width: 28px;
   height: 28px;
@@ -463,6 +471,7 @@ table.data-table { width: 100%; border-collapse: collapse; }
 .badge-soft-primary { background: var(--primary-soft); color: var(--primary); }
 .badge-soft-info { background: var(--info-soft); color: var(--info); }
 .badge-soft-danger { background: var(--danger-soft); color: var(--danger); }
+.badge-soft-warning { background: var(--warning-soft); color: #b8860b; }
 
 .alert {
   padding: 16px 18px;
@@ -527,6 +536,12 @@ table.data-table { width: 100%; border-collapse: collapse; }
 .btn-danger { background: var(--danger); color: #fff; }
 .btn-danger:hover:not(:disabled) { background: #e14747; }
 
+.btn-secondary { background: #eef0f4; color: var(--text-body); }
+.btn-secondary:hover:not(:disabled) { background: #e3e6ec; }
+
+.text-primary { color: var(--primary); }
+.text-success { color: var(--success); }
+
 .btn-block { width: 100%; }
 
 .btn-outline {
@@ -590,6 +605,84 @@ table.data-table { width: 100%; border-collapse: collapse; }
 }
 
 .auth-form { padding: 28px 28px 26px; }
+
+/* ================= MODAL ================= */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 1000;
+}
+
+.modal-box {
+  background: #fff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 88vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+}
+.modal-box.modal-lg { max-width: 720px; }
+.modal-box.modal-xl { max-width: 980px; }
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  background: #fff;
+}
+.modal-header h3 { font-size: 16px; font-weight: 700; }
+
+.modal-close {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+.modal-close:hover { background: #f3f5fa; color: var(--text-dark); }
+
+.modal-body { padding: 22px; }
+
+.modal-footer {
+  padding: 16px 22px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.ward-card {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+.ward-card:last-child { margin-bottom: 0; }
+
+.ward-card-header {
+  background: #fbfbfd;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-dark);
+}
+.ward-card-header span { color: var(--text-muted); font-weight: 500; }
+
+.row-highlight td { background: var(--success-soft) !important; }
 
 /* ================= RESPONSIVE ================= */
 @media (max-width: 960px) {

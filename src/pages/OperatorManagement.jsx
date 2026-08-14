@@ -3,31 +3,51 @@ import { apiCall } from '../api/client';
 
 export default function OperatorManagement() {
   const [operators, setOperators] = useState([]);
-  const [formData, setFormData] = useState({ username: '', password: '', full_name: '' });
+  const [booths, setBooths] = useState([]);
+  const [formData, setFormData] = useState({ full_name: '', username: '', password: '', assigned_booth_id: '' });
+  const [editingId, setEditingId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const fetchOperators = async () => {
-    const data = await apiCall('/operators/all');
-    if (data.success) setOperators(data.operators);
+  const fetchData = async () => {
+    const opRes = await apiCall('/operators/all');
+    if (opRes.success) setOperators(opRes.operators);
+
+    const locRes = await apiCall('/locations/all');
+    if (locRes.success) {
+      const validBooths = locRes.locations.filter(l => l.booth_id);
+      setBooths(validBooths);
+    }
   };
 
-  useEffect(() => { fetchOperators(); }, []);
+  useEffect(() => { fetchData(); }, []);
+
+  const resetForm = () => {
+    setEditingId(null);
+    setFormData({ full_name: '', username: '', password: '', assigned_booth_id: '' });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    const res = await apiCall('/operators/add', {
-      method: 'POST',
-      body: JSON.stringify(formData)
-    });
-    setSubmitting(false);
-
-    if (res.success) {
-      alert('Operator added!');
-      setFormData({ username: '', password: '', full_name: '' });
-      fetchOperators();
+    if (editingId) {
+      await apiCall(`/operators/${editingId}`, { method: 'PUT', body: JSON.stringify(formData) });
     } else {
-      alert(res.message);
+      await apiCall('/operators/add', { method: 'POST', body: JSON.stringify(formData) });
+    }
+    setSubmitting(false);
+    resetForm();
+    fetchData();
+  };
+
+  const handleEdit = (op) => {
+    setEditingId(op.id);
+    setFormData({ full_name: op.full_name, username: op.username, password: '', assigned_booth_id: op.assigned_booth_id || '' });
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Delete this booth operator?')) {
+      await apiCall(`/operators/${id}`, { method: 'DELETE' });
+      fetchData();
     }
   };
 
@@ -44,7 +64,7 @@ export default function OperatorManagement() {
 
       <div className="two-col-grid" style={{ gridTemplateColumns: '1fr 2fr' }}>
         <div className="card">
-          <div className="card-header"><h2>Register New Operator</h2></div>
+          <div className="card-header"><h2>{editingId ? 'Edit booth operator' : 'Register booth operator'}</h2></div>
           <div className="card-body">
             <form onSubmit={handleSubmit}>
               <div className="form-group">
@@ -56,7 +76,7 @@ export default function OperatorManagement() {
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Username (For App Login)</label>
+                <label className="form-label">App Username</label>
                 <input
                   type="text" required className="form-control"
                   value={formData.username}
@@ -64,38 +84,60 @@ export default function OperatorManagement() {
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Password</label>
+                <label className="form-label">
+                  {editingId ? 'Password (leave blank to keep current)' : 'Password'}
+                </label>
                 <input
-                  type="password" required className="form-control"
+                  type="password" required={!editingId} className="form-control"
                   value={formData.password}
                   onChange={e => setFormData({ ...formData, password: e.target.value })}
                 />
               </div>
+              <div className="form-group">
+                <label className="form-label">Assign Polling Unit / Booth</label>
+                <select
+                  className="form-control"
+                  value={formData.assigned_booth_id}
+                  onChange={e => setFormData({ ...formData, assigned_booth_id: e.target.value })}
+                >
+                  <option value="">-- No assigned booth (operator picks dynamic) --</option>
+                  {booths.map(b => (
+                    <option key={b.booth_id} value={b.booth_id}>
+                      {b.unique_booth_code} — {b.booth_name} ({b.ward_name})
+                    </option>
+                  ))}
+                </select>
+              </div>
               <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
-                {submitting ? 'Creating…' : 'Create Operator'}
+                {submitting ? 'Saving…' : editingId ? 'Update Operator' : 'Create Operator'}
               </button>
+              {editingId && (
+                <button type="button" className="btn btn-secondary btn-block" style={{ marginTop: 8 }} onClick={resetForm}>
+                  Cancel
+                </button>
+              )}
             </form>
           </div>
         </div>
 
         <div className="card">
           <div className="card-header">
-            <h2>Registered Operators</h2>
+            <h2>Registered operators &amp; booth assignments</h2>
             <span className="muted">{operators.length} total</span>
           </div>
           <div className="table-wrap">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>Full Name</th>
-                  <th>App Username</th>
+                  <th>Operator</th>
+                  <th>Username</th>
+                  <th>Assigned Booth</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {operators.map((op) => (
+                {operators.map(op => (
                   <tr key={op.id}>
-                    <td>{op.id}</td>
                     <td>
                       <div className="party-cell">
                         <span className="avatar-title">{op.full_name?.charAt(0)}</span>
@@ -103,10 +145,21 @@ export default function OperatorManagement() {
                       </div>
                     </td>
                     <td>{op.username}</td>
+                    <td>
+                      {op.unique_booth_code ? (
+                        <span><strong className="text-primary">{op.unique_booth_code}</strong> ({op.booth_name})</span>
+                      ) : (
+                        <span className="badge badge-soft-warning">Unassigned</span>
+                      )}
+                    </td>
+                    <td>
+                      <button className="btn btn-outline btn-sm" style={{ marginRight: 8 }} onClick={() => handleEdit(op)}>Edit</button>
+                      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(op.id)}>Delete</button>
+                    </td>
                   </tr>
                 ))}
                 {operators.length === 0 && (
-                  <tr><td colSpan={3} className="empty-state">No operators registered yet.</td></tr>
+                  <tr><td colSpan={4} className="empty-state">No operators registered yet.</td></tr>
                 )}
               </tbody>
             </table>
