@@ -63,7 +63,7 @@ const NAV_ITEMS = [
   { key: 'candidates', label: 'Candidates', Icon: IconUser },
   { key: 'locations', label: 'Location & Booths', Icon: IconPin },
   { key: 'operators', label: 'Booth Officers', Icon: IconUsers },
-  { key: 'audit', label: 'Audit Images', Icon: IconCamera },
+  { key: 'audit', label: 'Booth Report', Icon: IconCamera },
   { key: 'admins', label: 'Admin Management', Icon: IconShield },
 ];
 
@@ -75,7 +75,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
         <span className="sidebar-brand-text">EMS</span>
       </div>
 
-      <div className="sidebar-section-label">Menu</div>
+
       <nav className="sidebar-nav">
         {NAV_ITEMS.map(({ key, label, Icon }) => (
           <button

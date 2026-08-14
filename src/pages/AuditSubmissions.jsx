@@ -23,9 +23,9 @@ export default function AuditSubmissions() {
     <div>
       <div className="page-title-box">
         <div>
-          <h1>Audit Images</h1>
+          <h1>Booth Report</h1>
           <div className="breadcrumb">
-            <span>Dashboard</span> / <span className="current">Audit Images</span>
+            <span>Dashboard</span> / <span className="current">Booth Report</span>
           </div>
         </div>
       </div>
