@@ -1,17 +1,14 @@
-// const API_BASE_URL = 'http://localhost:8080/api';
-const API_BASE_URL = 'https://ems-backend-t6u3.onrender.com/api';
+const API_BASE_URL = 'http://localhost:8080/api';
 
 export const apiCall = async (endpoint, options = {}) => {
   try {
-    const headers = { ...options.headers };
-    
-    // Automatically manage Content-Type based on the payload type
-    if (!(options.body instanceof FormData)) {
-      headers['Content-Type'] = 'application/json';
-    } else {
-      // Browser must automatically set Content-Type with boundary for FormData
-      delete headers['Content-Type'];
-    }
+    const isFormData = options.body instanceof FormData;
+
+    // FormData needs the browser to set its own multipart boundary header —
+    // sending a hardcoded 'application/json' here would break file uploads.
+    const headers = isFormData
+      ? { ...options.headers }
+      : { 'Content-Type': 'application/json', ...options.headers };
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,

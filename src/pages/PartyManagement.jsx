@@ -4,8 +4,11 @@ import { apiCall } from '../api/client';
 export default function PartyManagement() {
   const [parties, setParties] = useState([]);
   const [formData, setFormData] = useState({ party_name: '', party_code: '', party_icon_url: '' });
+  const [iconFile, setIconFile] = useState(null); // State for direct file upload
   const [editingId, setEditingId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [imageErrors, setImageErrors] = useState({}); // Track broken image links
+  const [fileInputKey, setFileInputKey] = useState(0); // Bump to force the file input to visually clear
 
   const fetchParties = async () => {
     const data = await apiCall('/parties/all');
@@ -17,15 +20,31 @@ export default function PartyManagement() {
   const resetForm = () => {
     setEditingId(null);
     setFormData({ party_name: '', party_code: '', party_icon_url: '' });
+    setIconFile(null);
+    setFileInputKey(k => k + 1);
+  };
+
+  const handleImageError = (id) => {
+    setImageErrors(prev => ({ ...prev, [id]: true }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
+
+    // Switch to FormData to support file uploads
+    const payload = new FormData();
+    payload.append('party_name', formData.party_name);
+    payload.append('party_code', formData.party_code);
+    payload.append('party_icon_url', formData.party_icon_url);
+    if (iconFile) {
+      payload.append('icon_file', iconFile);
+    }
+
     if (editingId) {
-      await apiCall(`/parties/${editingId}`, { method: 'PUT', body: JSON.stringify(formData) });
+      await apiCall(`/parties/${editingId}`, { method: 'PUT', body: payload });
     } else {
-      await apiCall('/parties/add', { method: 'POST', body: JSON.stringify(formData) });
+      await apiCall('/parties/add', { method: 'POST', body: payload });
     }
     setSubmitting(false);
     resetForm();
@@ -35,6 +54,8 @@ export default function PartyManagement() {
   const handleEdit = (p) => {
     setEditingId(p.id);
     setFormData({ party_name: p.party_name, party_code: p.party_code, party_icon_url: p.party_icon_url || '' });
+    setIconFile(null);
+    setFileInputKey(k => k + 1);
   };
 
   const handleDelete = async (id) => {
@@ -77,14 +98,33 @@ export default function PartyManagement() {
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Party Symbol / Icon URL</label>
+                <label className="form-label">Party Symbol URL (optional)</label>
                 <input
                   type="text" className="form-control"
                   value={formData.party_icon_url}
+                  placeholder="https://..."
                   onChange={e => setFormData({ ...formData, party_icon_url: e.target.value })}
                 />
               </div>
-              <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
+
+              <div className="form-divider">OR</div>
+
+              <div className="form-group">
+                <label className="form-label">Upload image from device</label>
+                <input
+                  key={fileInputKey}
+                  type="file" accept="image/*" className="form-control"
+                  onChange={e => setIconFile(e.target.files[0] || null)}
+                />
+                {iconFile && (
+                  <div className="file-preview">
+                    <img src={URL.createObjectURL(iconFile)} alt="" />
+                    <span>{iconFile.name}</span>
+                  </div>
+                )}
+              </div>
+
+              <button type="submit" className="btn btn-primary btn-block" disabled={submitting} style={{ marginTop: 20 }}>
                 {submitting ? 'Saving…' : editingId ? 'Update Party' : 'Create Party'}
               </button>
               {editingId && (
@@ -115,9 +155,16 @@ export default function PartyManagement() {
                 {parties.map(p => (
                   <tr key={p.id}>
                     <td>
-                      {p.party_icon_url
-                        ? <img src={p.party_icon_url} alt="" className="avatar-xs" />
-                        : <span className="avatar-title">{p.party_name?.charAt(0)}</span>}
+                      {p.party_icon_url && !imageErrors[p.id] ? (
+                        <img
+                          src={p.party_icon_url}
+                          alt=""
+                          className="avatar-xs"
+                          onError={() => handleImageError(p.id)}
+                        />
+                      ) : (
+                        <span className="avatar-title">{p.party_name?.charAt(0)}</span>
+                      )}
                     </td>
                     <td><strong>{p.party_name}</strong></td>
                     <td><span className="badge badge-soft-secondary">{p.party_code}</span></td>
