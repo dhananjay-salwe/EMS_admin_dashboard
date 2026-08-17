@@ -34,6 +34,10 @@ export default function AdminManagement({ currentAdminRole }) {
     }
   };
 
+  // Only one SuperAdmin should exist — once one is present, remove it from
+  // the create-account role options so a second one can't be added here.
+  const hasSuperAdmin = admins.some(a => a.role === 'SuperAdmin');
+
   if (currentAdminRole !== 'SuperAdmin') {
     return (
       <div>
@@ -62,7 +66,7 @@ export default function AdminManagement({ currentAdminRole }) {
         </div>
       </div>
 
-      <div className="two-col-grid" style={{ gridTemplateColumns: '1fr 2fr' }}>
+      <div className="two-col-grid two-col-grid--form-table">
         <div className="card">
           <div className="card-header"><h2>Create Admin Account</h2></div>
           <div className="card-body">
@@ -91,8 +95,13 @@ export default function AdminManagement({ currentAdminRole }) {
                   onChange={e => setFormData({ ...formData, role: e.target.value })}
                 >
                   <option value="SubAdmin">SubAdmin</option>
-                  <option value="SuperAdmin">SuperAdmin</option>
+                  {!hasSuperAdmin && <option value="SuperAdmin">SuperAdmin</option>}
                 </select>
+                {hasSuperAdmin && (
+                  <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+                    A SuperAdmin account already exists — only one is allowed.
+                  </div>
+                )}
               </div>
               <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
                 {submitting ? 'Creating…' : 'Create Admin'}
@@ -129,7 +138,11 @@ export default function AdminManagement({ currentAdminRole }) {
                     </td>
                     <td>{new Date(adm.created_at).toLocaleDateString()}</td>
                     <td>
-                      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(adm.id)}>Delete</button>
+                      {adm.role === 'SuperAdmin' ? (
+                        <span className="muted" style={{ fontSize: 12 }}>Protected</span>
+                      ) : (
+                        <button className="btn btn-danger btn-sm" onClick={() => handleDelete(adm.id)}>Delete</button>
+                      )}
                     </td>
                   </tr>
                 ))}
