@@ -69,7 +69,7 @@ export default function PartyManagement() {
     <div>
       <div className="page-title-box">
         <div>
-          <h1>Political Parties</h1>
+
           <div className="breadcrumb">
             <span>Dashboard</span> / <span className="current">Political Parties</span>
           </div>

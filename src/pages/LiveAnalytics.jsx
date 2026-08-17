@@ -41,7 +41,6 @@ export default function LiveAnalytics() {
     <div>
       <div className="page-title-box">
         <div>
-          <h1>Live Vote Tallies</h1>
           <div className="breadcrumb">
             <span>Dashboard</span> / <span className="current">Live Tallies</span>
           </div>
