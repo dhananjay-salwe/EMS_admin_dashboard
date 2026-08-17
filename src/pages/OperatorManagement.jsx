@@ -3,6 +3,49 @@ import { apiCall } from '../api/client';
 
 const PAGE_SIZE = 6;
 
+const SearchIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="7" />
+    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+  </svg>
+);
+
+const FilterIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+  </svg>
+);
+
+const iconBtnStyle = (active) => ({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: 36,
+  height: 36,
+  borderRadius: '50%',
+  border: '1px solid ' + (active ? 'var(--bs-primary, #556ee6)' : '#e2e5f1'),
+  background: active ? 'var(--bs-primary, #556ee6)' : '#fff',
+  color: active ? '#fff' : '#556ee6',
+  cursor: 'pointer',
+});
+
+const Chip = ({ label, onRemove }) => (
+  <span style={{
+    display: 'inline-flex', alignItems: 'center', gap: 6,
+    background: '#eef1fb', color: '#556ee6', borderRadius: 16,
+    padding: '4px 10px', fontSize: 13, fontWeight: 500,
+  }}>
+    {label}
+    <button
+      type="button" onClick={onRemove}
+      style={{ border: 'none', background: 'transparent', color: '#556ee6', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: 0 }}
+      aria-label={`Remove ${label} filter`}
+    >
+      ×
+    </button>
+  </span>
+);
+
 export default function OperatorManagement() {
   const [operators, setOperators] = useState([]);
   const [booths, setBooths] = useState([]);
@@ -10,7 +53,9 @@ export default function OperatorManagement() {
   const [editingId, setEditingId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Filter & search state
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+
   const [filterState, setFilterState] = useState('');
   const [filterLga, setFilterLga] = useState('');
   const [filterWard, setFilterWard] = useState('');
@@ -30,7 +75,6 @@ export default function OperatorManagement() {
 
   useEffect(() => { fetchData(); }, []);
 
-  // Reset to page 1 whenever a filter/search value changes
   useEffect(() => {
     setCurrentPage(1);
   }, [filterState, filterLga, filterWard, searchTerm]);
@@ -65,49 +109,31 @@ export default function OperatorManagement() {
     }
   };
 
-  // Booth officers don't carry ward/lga/state directly — join them to their
+  // Booth officers don't carry ward/lga/state directly — join to their
   // assigned booth (which does) so we can filter by location.
   const boothById = booths.reduce((acc, b) => {
     acc[b.booth_id] = b;
     return acc;
   }, {});
 
-  // ---- Filter option lists (cascading State -> LGA -> Ward), derived from booths ----
+  // ---- Cascading location option lists, derived from booths ----
   const stateOptions = [...new Set(booths.map(b => b.state_name).filter(Boolean))].sort();
 
   const lgaOptions = [...new Set(
-    booths
-      .filter(b => !filterState || b.state_name === filterState)
-      .map(b => b.lga_name)
-      .filter(Boolean)
+    booths.filter(b => b.state_name === filterState).map(b => b.lga_name).filter(Boolean)
   )].sort();
 
   const wardOptions = [...new Set(
-    booths
-      .filter(b => (!filterState || b.state_name === filterState) && (!filterLga || b.lga_name === filterLga))
-      .map(b => b.ward_name)
-      .filter(Boolean)
+    booths.filter(b => b.state_name === filterState && b.lga_name === filterLga).map(b => b.ward_name).filter(Boolean)
   )].sort();
-
-  const handleFilterStateChange = (value) => {
-    setFilterState(value);
-    setFilterLga('');
-    setFilterWard('');
-  };
-
-  const handleFilterLgaChange = (value) => {
-    setFilterLga(value);
-    setFilterWard('');
-  };
 
   const clearFilters = () => {
     setFilterState('');
     setFilterLga('');
     setFilterWard('');
-    setSearchTerm('');
   };
 
-  const hasActiveFilters = filterState || filterLga || filterWard || searchTerm;
+  const hasActiveFilters = filterState || filterLga || filterWard;
 
   // ---- Apply filters + search ----
   const filteredOperators = operators.filter(op => {
@@ -147,7 +173,7 @@ export default function OperatorManagement() {
         </div>
       </div>
 
-      <div className="two-col-grid" style={{ gridTemplateColumns: '1fr 1.8fr 1fr', alignItems: 'start' }}>
+      <div className="two-col-grid" style={{ gridTemplateColumns: '1fr 2fr', alignItems: 'start' }}>
         <div className="card">
           <div className="card-header"><h2>{editingId ? 'Edit booth officer' : 'Register booth officer'}</h2></div>
           <div className="card-body">
@@ -206,10 +232,68 @@ export default function OperatorManagement() {
         </div>
 
         <div className="card">
-          <div className="card-header">
-            <h2>Registered booth officers &amp; booth assignments</h2>
-            <span className="muted">{filteredOperators.length} of {operators.length} total</span>
+          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+            <div>
+              <h2>Registered booth officers &amp; booth assignments</h2>
+              <span className="muted">{filteredOperators.length} of {operators.length} total</span>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button" title="Search" aria-label="Toggle search"
+                style={iconBtnStyle(searchOpen)}
+                onClick={() => { setSearchOpen(o => !o); if (filterOpen) setFilterOpen(false); }}
+              >
+                <SearchIcon />
+              </button>
+              <button
+                type="button" title="Filter" aria-label="Toggle filter"
+                style={iconBtnStyle(filterOpen || hasActiveFilters)}
+                onClick={() => { setFilterOpen(o => !o); if (searchOpen) setSearchOpen(false); }}
+              >
+                <FilterIcon />
+              </button>
+            </div>
           </div>
+
+          {searchOpen && (
+            <div style={{ padding: '12px 20px 0' }}>
+              <input
+                type="text" className="form-control" placeholder="Search name or username…"
+                value={searchTerm} onChange={e => setSearchTerm(e.target.value)} autoFocus
+              />
+            </div>
+          )}
+
+          {filterOpen && (
+            <div style={{ padding: '12px 20px 0', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+              {filterState && <Chip label={filterState} onRemove={() => { setFilterState(''); setFilterLga(''); setFilterWard(''); }} />}
+              {filterLga && <Chip label={filterLga} onRemove={() => { setFilterLga(''); setFilterWard(''); }} />}
+              {filterWard && <Chip label={filterWard} onRemove={() => setFilterWard('')} />}
+
+              {!filterState && (
+                <select className="form-control" style={{ maxWidth: 220 }} value="" onChange={e => setFilterState(e.target.value)}>
+                  <option value="">Select State…</option>
+                  {stateOptions.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              )}
+              {filterState && !filterLga && (
+                <select className="form-control" style={{ maxWidth: 220 }} value="" onChange={e => setFilterLga(e.target.value)}>
+                  <option value="">Select LGA…</option>
+                  {lgaOptions.map(l => <option key={l} value={l}>{l}</option>)}
+                </select>
+              )}
+              {filterState && filterLga && !filterWard && (
+                <select className="form-control" style={{ maxWidth: 220 }} value="" onChange={e => setFilterWard(e.target.value)}>
+                  <option value="">Select Ward…</option>
+                  {wardOptions.map(w => <option key={w} value={w}>{w}</option>)}
+                </select>
+              )}
+              {hasActiveFilters && (
+                <button type="button" className="btn btn-secondary btn-sm" onClick={clearFilters}>Clear</button>
+              )}
+            </div>
+          )}
+
           <div className="table-wrap">
             <table className="data-table">
               <thead>
@@ -272,60 +356,6 @@ export default function OperatorManagement() {
               </button>
             </div>
           )}
-        </div>
-
-        <div className="card">
-          <div className="card-header"><h2>Filter &amp; Search</h2></div>
-          <div className="card-body">
-            <div className="form-group">
-              <label className="form-label">Search Officer</label>
-              <input
-                type="text" className="form-control" placeholder="Search name or username…"
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">State</label>
-              <select
-                className="form-control"
-                value={filterState}
-                onChange={e => handleFilterStateChange(e.target.value)}
-              >
-                <option value="">-- All states --</option>
-                {stateOptions.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
-            <div className="form-group">
-              <label className="form-label">LGA</label>
-              <select
-                className="form-control"
-                value={filterLga}
-                onChange={e => handleFilterLgaChange(e.target.value)}
-                disabled={!filterState}
-              >
-                <option value="">-- All LGAs --</option>
-                {lgaOptions.map(l => <option key={l} value={l}>{l}</option>)}
-              </select>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Ward</label>
-              <select
-                className="form-control"
-                value={filterWard}
-                onChange={e => setFilterWard(e.target.value)}
-                disabled={!filterLga}
-              >
-                <option value="">-- All wards --</option>
-                {wardOptions.map(w => <option key={w} value={w}>{w}</option>)}
-              </select>
-            </div>
-            {hasActiveFilters && (
-              <button type="button" className="btn btn-secondary btn-block" onClick={clearFilters}>
-                Clear Filters
-              </button>
-            )}
-          </div>
         </div>
       </div>
     </div>
