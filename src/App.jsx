@@ -23,12 +23,12 @@ export default function App() {
   return (
     <div className={`app-wrapper ${collapsed ? 'collapsed' : ''}`}>
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-      <Topbar
+      {/* <Topbar
         admin={admin}
         collapsed={collapsed}
         onToggleSidebar={() => setCollapsed(c => !c)}
         onLogout={() => setAdmin(null)}
-      />
+      /> */}
 
       <div className="app-main">
         <div className="page-content">
