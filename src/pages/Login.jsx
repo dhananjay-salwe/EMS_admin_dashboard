@@ -8,8 +8,9 @@ const IconBolt = (props) => (
 );
 
 export default function Login({ onLoginSuccess }) {
-  const [username, setUsername] = useState('admin_master');
-  const [password, setPassword] = useState('admin123');
+  // Empty default states
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -24,7 +25,7 @@ export default function Login({ onLoginSuccess }) {
     if (data.success) {
       onLoginSuccess(data.admin);
     } else {
-      alert(data.message);
+      alert(data.message || 'Invalid credentials');
     }
   };
 
@@ -37,12 +38,13 @@ export default function Login({ onLoginSuccess }) {
         </div>
         <div className="auth-logo"><IconBolt /></div>
 
-        <form onSubmit={handleSubmit} className="auth-form">
+        <form onSubmit={handleSubmit} className="auth-form" autoComplete="off">
           <div className="form-group">
             <label className="form-label">Username</label>
             <input
               type="text"
               className="form-control"
+              placeholder="Enter your username"
               value={username}
               onChange={e => setUsername(e.target.value)}
               required
@@ -53,6 +55,7 @@ export default function Login({ onLoginSuccess }) {
             <input
               type="password"
               className="form-control"
+              placeholder="Enter your password"
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
