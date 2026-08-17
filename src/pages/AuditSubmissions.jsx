@@ -23,15 +23,32 @@ export default function BoothReport() {
   const [submissions, setSubmissions] = useState([]);
   const [selectedReport, setSelectedReport] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalSubmissions, setTotalSubmissions] = useState(0);
 
-  const fetchSubmissions = async () => {
-    const data = await apiCall('/audit/submissions');
-    if (data.success) setSubmissions(data.submissions);
+  const fetchSubmissions = async (page = 1) => {
+    const data = await apiCall(`/audit/submissions?page=${page}&limit=10`);
+    if (data.success) {
+      setSubmissions(data.submissions || []);
+      if (data.pagination) {
+        setTotalPages(data.pagination.totalPages || 1);
+        setCurrentPage(data.pagination.currentPage || 1);
+        setTotalSubmissions(data.pagination.totalRecords || 0);
+      } else {
+        setTotalSubmissions((data.submissions || []).length);
+      }
+    }
   };
 
   useEffect(() => {
-    fetchSubmissions();
-  }, []);
+    fetchSubmissions(currentPage);
+  }, [currentPage]);
+
+  const isPdf = (url) => {
+    if (!url) return false;
+    return url.toLowerCase().endsWith('.pdf') || url.includes('application/pdf');
+  };
 
   return (
     <div>
@@ -46,7 +63,7 @@ export default function BoothReport() {
       <div className="card">
         <div className="card-header">
           <h2>Vote Submissions &amp; Tally Sheet Audit</h2>
-          <span className="muted">{submissions.length} submissions</span>
+          <span className="muted">{totalSubmissions} submissions</span>
         </div>
         <div className="table-wrap">
           <table className="data-table">
@@ -56,7 +73,7 @@ export default function BoothReport() {
                 <th>Booth Code &amp; Name</th>
                 <th>Time Submitted</th>
                 <th>Vote Report</th>
-                <th>Tally Sheet / Image</th>
+                <th>Tally Sheet / Document</th>
               </tr>
             </thead>
             <tbody>
@@ -70,6 +87,7 @@ export default function BoothReport() {
                   <td>{new Date(sub.created_at).toLocaleString()}</td>
                   <td>
                     <button
+                      type="button"
                       className="btn btn-outline btn-sm"
                       onClick={() => setSelectedReport(sub)}
                     >
@@ -78,6 +96,7 @@ export default function BoothReport() {
                   </td>
                   <td>
                     <button
+                      type="button"
                       className="btn btn-outline btn-sm"
                       onClick={() => setSelectedImage({
                         url: sub.tally_sheet_url,
@@ -96,6 +115,31 @@ export default function BoothReport() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Bar */}
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 14, padding: '16px 0' }}>
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            >
+              &larr; Prev
+            </button>
+            <span className="muted" style={{ fontSize: 13, fontWeight: 500 }}>
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            >
+              Next &rarr;
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 1. VIEW VOTE REPORT MODAL */}
@@ -149,26 +193,94 @@ export default function BoothReport() {
         </div>
       )}
 
-      {/* 2. VIEW IMAGE / TALLY SHEET MODAL */}
+      {/* 2. IN-APP TALLY SHEET & DOCUMENT PREVIEW MODAL */}
       {selectedImage && (
         <div className="modal-overlay" onClick={() => setSelectedImage(null)}>
-          <div className="modal-box modal-lg" onClick={e => e.stopPropagation()}>
+          <div 
+            className="modal-box" 
+            style={{ 
+              maxWidth: '800px', 
+              width: '92%', 
+              maxHeight: '90vh', 
+              display: 'flex', 
+              flexDirection: 'column',
+              overflow: 'hidden' 
+            }} 
+            onClick={e => e.stopPropagation()}
+          >
             <div className="modal-header">
-              <h3>Tally Sheet Photo — {selectedImage.booth}</h3>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 16 }}>Tally Document — {selectedImage.booth}</h3>
+                <span className="muted" style={{ fontSize: 12 }}>Operator: {selectedImage.operator}</span>
+              </div>
               <button className="modal-close" onClick={() => setSelectedImage(null)}>&times;</button>
             </div>
-            <div className="modal-body modal-image-frame">
-              {selectedImage.url && !selectedImage.url.includes('via.placeholder.com') ? (
-                <img src={selectedImage.url} alt="Uploaded Tally Sheet" />
+
+            <div 
+              className="modal-body" 
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                backgroundColor: '#0f172a',
+                padding: 16,
+                minHeight: '320px',
+                maxHeight: '68vh',
+                overflow: 'auto'
+              }}
+            >
+              {selectedImage.url && 
+               !selectedImage.url.includes('via.placeholder.com') && 
+               selectedImage.url !== 'https://via.placeholder.com/600x800.png?text=No+Image' ? (
+                isPdf(selectedImage.url) ? (
+                  <iframe
+                    src={selectedImage.url}
+                    title="Tally Sheet PDF Preview"
+                    style={{
+                      width: '100%',
+                      height: '62vh',
+                      border: 'none',
+                      borderRadius: 6,
+                      backgroundColor: '#ffffff'
+                    }}
+                  />
+                ) : (
+                  <img
+                    src={selectedImage.url}
+                    alt="Uploaded Tally Sheet"
+                    style={{
+                      maxWidth: '100%',
+                      maxHeight: '62vh',
+                      objectFit: 'contain',
+                      borderRadius: 6,
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.3)'
+                    }}
+                  />
+                )
               ) : (
-                <div className="modal-image-empty">
-                  <p className="title">No physical photo captured</p>
-                  <p className="subtitle">This submission was created with placeholder mock data or without an image attachment.</p>
+                <div style={{ padding: '40px 20px', color: '#94a3b8', textAlign: 'center' }}>
+                  <p style={{ fontSize: 15, fontWeight: 600, margin: '0 0 6px' }}>No physical document captured</p>
+                  <p style={{ fontSize: 13, margin: 0 }}>This submission was created without an attachment or using mock data.</p>
                 </div>
               )}
             </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setSelectedImage(null)}>Close</button>
+
+            <div className="modal-footer" style={{ justifyContent: 'space-between', padding: '10px 16px' }}>
+              <div>
+                {selectedImage.url && 
+                 !selectedImage.url.includes('via.placeholder.com') && (
+                  <a
+                    href={selectedImage.url}
+                    download={`TallySheet_${selectedImage.booth}`}
+                    className="btn btn-outline btn-sm"
+                  >
+                    Download File
+                  </a>
+                )}
+              </div>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => setSelectedImage(null)}>
+                Close
+              </button>
             </div>
           </div>
         </div>
