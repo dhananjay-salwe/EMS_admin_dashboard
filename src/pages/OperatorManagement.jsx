@@ -16,6 +16,37 @@ const FilterIcon = () => (
   </svg>
 );
 
+const EditIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+  </svg>
+);
+
+const DeleteIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6" />
+    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+    <path d="M10 11v6" />
+    <path d="M14 11v6" />
+    <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+  </svg>
+);
+
+const actionIconStyle = (variant) => ({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: 32,
+  height: 32,
+  borderRadius: 6,
+  border: '1px solid ' + (variant === 'danger' ? '#f46a6a' : '#556ee6'),
+  background: '#fff',
+  color: variant === 'danger' ? '#f46a6a' : '#556ee6',
+  cursor: 'pointer',
+});
+
+
 const iconBtnStyle = (active) => ({
   display: 'inline-flex',
   alignItems: 'center',
@@ -166,7 +197,6 @@ export default function OperatorManagement() {
     <div>
       <div className="page-title-box">
         <div>
-          <h1>Booth Officer</h1>
           <div className="breadcrumb">
             <span>Dashboard</span> / <span className="current">Booth Officers</span>
           </div>
@@ -322,8 +352,12 @@ export default function OperatorManagement() {
                       )}
                     </td>
                     <td>
-                      <button className="btn btn-outline btn-sm" style={{ marginRight: 8 }} onClick={() => handleEdit(op)}>Edit</button>
-                      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(op.id)}>Delete</button>
+                      <button className="btn-icon" style={{ ...actionIconStyle('primary'), marginRight: 8 }} title="Edit" aria-label="Edit officer" onClick={() => handleEdit(op)}>
+                        <EditIcon />
+                      </button>
+                      <button className="btn-icon" style={actionIconStyle('danger')} title="Delete" aria-label="Delete officer" onClick={() => handleDelete(op.id)}>
+                        <DeleteIcon />
+                      </button>
                     </td>
                   </tr>
                 ))}
