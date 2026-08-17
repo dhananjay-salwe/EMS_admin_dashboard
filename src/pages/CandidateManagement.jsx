@@ -335,8 +335,12 @@ export default function CandidateManagement() {
                     <td><span className="badge badge-soft-info">{c.ward_name}</span></td>
                     <td>{c.lga_name}, {c.state_name}</td>
                     <td>
-                      <button className="btn btn-outline btn-sm" style={{ marginRight: 8 }} onClick={() => handleEdit(c)}>Edit</button>
-                      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(c.id)}>Delete</button>
+                      <button className="btn-icon" style={{ ...actionIconStyle('primary'), marginRight: 8 }} title="Edit" aria-label="Edit candidate" onClick={() => handleEdit(c)}>
+                        <EditIcon />
+                      </button>
+                      <button className="btn-icon" style={actionIconStyle('danger')} title="Delete" aria-label="Delete candidate" onClick={() => handleDelete(c.id)}>
+                        <DeleteIcon />
+                      </button>
                     </td>
                   </tr>
                 ))}
