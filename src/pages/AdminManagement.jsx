@@ -59,7 +59,7 @@ export default function AdminManagement({ currentAdminRole }) {
     <div>
       <div className="page-title-box">
         <div>
-          <h1>Admin Management</h1>
+
           <div className="breadcrumb">
             <span>Dashboard</span> / <span className="current">Admin Management</span>
           </div>
