@@ -37,7 +37,6 @@ export default function BoothReport() {
     <div>
       <div className="page-title-box">
         <div>
-          <h1>Booth Reports &amp; Tally Audit</h1>
           <div className="breadcrumb">
             <span>Dashboard</span> / <span className="current">Booth Report</span>
           </div>
