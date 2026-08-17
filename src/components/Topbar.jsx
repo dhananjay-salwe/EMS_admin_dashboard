@@ -30,9 +30,10 @@ const IconLogout = (props) => (
   </svg>
 );
 
-export default function Topbar({ admin, collapsed, onToggleSidebar, onLogout }) {
+export default function Topbar({ admin, collapsed, mobileOpen, onToggleSidebar, onLogout }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  const sidebarIsOpen = mobileOpen || !collapsed;
 
   useEffect(() => {
     const handleClick = (e) => {
@@ -47,7 +48,7 @@ export default function Topbar({ admin, collapsed, onToggleSidebar, onLogout }) 
   return (
     <header className="app-topbar">
       <div className="topbar-left">
-        <button className="topbar-toggle" onClick={onToggleSidebar} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+        <button className="topbar-toggle" onClick={onToggleSidebar} aria-label={sidebarIsOpen ? 'Collapse sidebar' : 'Expand sidebar'}>
           <IconMenu />
         </button>
         {/* <div className="topbar-search">

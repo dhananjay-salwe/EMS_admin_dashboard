@@ -68,7 +68,8 @@ h1, h2, h3, h4, h5 { color: var(--text-dark); font-weight: 600; }
   overflow-y: auto;
 }
 
-.app-wrapper.collapsed .app-sidebar { width: var(--sidebar-width-collapsed); }
+/* Desktop icon-only rail behaviour lives in the min-width:781px block below,
+   so it never fights with the mobile off-canvas drawer at small widths. */
 
 .sidebar-brand {
   height: var(--topbar-height);
@@ -98,8 +99,7 @@ h1, h2, h3, h4, h5 { color: var(--text-dark); font-weight: 600; }
   overflow: hidden;
 }
 
-.app-wrapper.collapsed .sidebar-brand-text { display: none; }
-.app-wrapper.collapsed .sidebar-brand { justify-content: center; padding: 0; }
+
 
 .sidebar-section-label {
   padding: 18px 22px 8px;
@@ -109,7 +109,7 @@ h1, h2, h3, h4, h5 { color: var(--text-dark); font-weight: 600; }
   text-transform: uppercase;
   color: var(--text-muted);
 }
-.app-wrapper.collapsed .sidebar-section-label { display: none; }
+
 
 .sidebar-nav {
   display: flex;
@@ -144,8 +144,7 @@ h1, h2, h3, h4, h5 { color: var(--text-dark); font-weight: 600; }
 .nav-link.active { color: var(--primary); font-weight: 600; }
 .nav-link.active svg { color: var(--primary); }
 
-.app-wrapper.collapsed .nav-link { justify-content: center; padding: 10px; }
-.app-wrapper.collapsed .nav-link span { display: none; }
+
 
 /* ================= TOPBAR ================= */
 .app-topbar {
@@ -165,7 +164,7 @@ h1, h2, h3, h4, h5 { color: var(--text-dark); font-weight: 600; }
   transition: left 0.2s ease;
 }
 
-.app-wrapper.collapsed .app-topbar { left: var(--sidebar-width-collapsed); }
+
 
 .topbar-left { display: flex; align-items: center; gap: 18px; flex: 1; min-width: 0; }
 
@@ -304,7 +303,7 @@ h1, h2, h3, h4, h5 { color: var(--text-dark); font-weight: 600; }
   min-height: 100vh;
   transition: margin-left 0.2s ease;
 }
-.app-wrapper.collapsed .app-main { margin-left: var(--sidebar-width-collapsed); }
+
 
 .page-content { padding: 26px 28px 50px; max-width: 1400px; }
 
@@ -597,6 +596,10 @@ table.data-table { width: 100%; border-collapse: collapse; }
   gap: 22px;
   align-items: start;
 }
+/* Use this modifier instead of an inline style={{gridTemplateColumns}} —
+   inline styles beat the @media rule below and stop cards from stacking
+   on narrow screens. */
+.two-col-grid--form-table { grid-template-columns: 1fr 2fr; }
 
 /* ================= AUTH PAGE ================= */
 .auth-wrapper {
@@ -718,21 +721,74 @@ table.data-table { width: 100%; border-collapse: collapse; }
 
 .row-highlight td { background: var(--success-soft) !important; }
 
+/* ================= SIDEBAR BACKDROP (mobile only) ================= */
+.sidebar-backdrop { display: none; }
+
 /* ================= RESPONSIVE ================= */
-@media (max-width: 960px) {
-  .two-col-grid { grid-template-columns: 1fr; }
+
+/* Desktop / tablet-landscape: icon-only collapsed rail.
+   Scoped to min-width so it can never collide with the mobile drawer rules
+   below — previously these were unscoped and silently overrode the mobile
+   breakpoint's --sidebar-width, which is why the toggle looked "disabled"
+   on small screens. */
+@media (min-width: 781px) {
+  .app-wrapper.collapsed .app-sidebar { width: var(--sidebar-width-collapsed); }
+  .app-wrapper.collapsed .sidebar-brand-text { display: none; }
+  .app-wrapper.collapsed .sidebar-brand { justify-content: center; padding: 0; }
+  .app-wrapper.collapsed .sidebar-section-label { display: none; }
+  .app-wrapper.collapsed .nav-link { justify-content: center; padding: 10px; }
+  .app-wrapper.collapsed .nav-link span { display: none; }
+  .app-wrapper.collapsed .app-topbar { left: var(--sidebar-width-collapsed); }
+  .app-wrapper.collapsed .app-main { margin-left: var(--sidebar-width-collapsed); }
 }
 
+@media (max-width: 960px) {
+  .two-col-grid,
+  .two-col-grid--form-table { grid-template-columns: 1fr; }
+}
+
+/* Tablet portrait / phone: sidebar becomes a true off-canvas drawer
+   (slides in over the content with a backdrop) instead of a permanently
+   shrunk 72px rail. This is what App.jsx's `mobileOpen` state and the
+   `.app-wrapper.mobile-open` class below drive. */
 @media (max-width: 780px) {
-  :root { --sidebar-width: 72px; }
-  .sidebar-brand-text, .nav-link span, .sidebar-section-label { display: none; }
-  .sidebar-brand { justify-content: center; padding: 0; }
-  .nav-link { justify-content: center; padding: 10px; }
-  .topbar-search { display: none; }
-  .page-content { padding: 20px 16px 40px; overflow-x: hidden; }
-  .app-main {
-    margin-left: var(--sidebar-width);
-    width: calc(100% - var(--sidebar-width));
-    overflow-y: auto;
+  .app-sidebar {
+    width: min(82vw, 280px);
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: 0 0 24px rgba(15, 23, 42, 0.18);
   }
+  .app-wrapper.mobile-open .app-sidebar { transform: translateX(0); }
+
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    z-index: 89; /* below .app-sidebar (90), above page content */
+  }
+  .app-wrapper.mobile-open .sidebar-backdrop { display: block; }
+
+  /* Content is full-width underneath the drawer, not pushed by it. */
+  .app-topbar { left: 0; }
+  .app-main { margin-left: 0; width: 100%; overflow-y: auto; }
+
+  .topbar-search { display: none; }
+  .page-content { padding: 18px 16px 40px; overflow-x: hidden; }
+
+  .modal-overlay { padding: 14px; }
+  .modal-header, .modal-footer, .modal-body { padding: 16px 18px; }
+}
+
+/* Small phones */
+@media (max-width: 480px) {
+  .page-content { padding: 14px 12px 34px; }
+  .stat-grid { grid-template-columns: 1fr; gap: 14px; }
+  .stat-card { padding: 18px; }
+  .card-header { padding: 14px 16px; flex-wrap: wrap; gap: 10px; }
+  .card-body { padding: 16px; }
+  .data-table thead th, .data-table tbody td { padding: 11px 14px; }
+  .page-title-box h1 { font-size: 18px; }
+  .modal-overlay { padding: 8px; }
+  .modal-box { max-height: 94vh; }
+  .auth-card { width: 100%; }
 }

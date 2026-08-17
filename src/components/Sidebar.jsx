@@ -67,27 +67,37 @@ const NAV_ITEMS = [
   { key: 'admins', label: 'Admin Management', Icon: IconShield },
 ];
 
-export default function Sidebar({ activeTab, setActiveTab }) {
+export default function Sidebar({ activeTab, setActiveTab, mobileOpen, onCloseMobile }) {
   return (
-    <aside className="app-sidebar">
-      <div className="sidebar-brand">
-        <div className="sidebar-brand-mark"><IconBolt /></div>
-        <span className="sidebar-brand-text">EMS</span>
-      </div>
+    <>
+      {/* Only visible/interactive below the 780px breakpoint (see App.css);
+          tapping it closes the off-canvas drawer. */}
+      <div
+        className="sidebar-backdrop"
+        onClick={onCloseMobile}
+        aria-hidden={!mobileOpen}
+      />
+
+      <aside className="app-sidebar">
+        <div className="sidebar-brand">
+          <div className="sidebar-brand-mark"><IconBolt /></div>
+          <span className="sidebar-brand-text">EMS</span>
+        </div>
 
 
-      <nav className="sidebar-nav">
-        {NAV_ITEMS.map(({ key, label, Icon }) => (
-          <button
-            key={key}
-            className={`nav-link ${activeTab === key ? 'active' : ''}`}
-            onClick={() => setActiveTab(key)}
-          >
-            <Icon />
-            <span>{label}</span>
-          </button>
-        ))}
-      </nav>
-    </aside>
+        <nav className="sidebar-nav">
+          {NAV_ITEMS.map(({ key, label, Icon }) => (
+            <button
+              key={key}
+              className={`nav-link ${activeTab === key ? 'active' : ''}`}
+              onClick={() => setActiveTab(key)}
+            >
+              <Icon />
+              <span>{label}</span>
+            </button>
+          ))}
+        </nav>
+      </aside>
+    </>
   );
 }

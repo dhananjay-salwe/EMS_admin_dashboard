@@ -197,7 +197,7 @@ export default function CandidateManagement() {
         </div>
       </div>
 
-      <div className="two-col-grid" style={{ gridTemplateColumns: '1fr 2fr', alignItems: 'start' }}>
+      <div className="two-col-grid two-col-grid--form-table">
         <div className="card">
           <div className="card-header"><h2>{editingId ? 'Edit candidate' : 'Register candidate'}</h2></div>
           <div className="card-body">
