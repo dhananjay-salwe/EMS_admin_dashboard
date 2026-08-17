@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { apiCall } from '../api/client';
 
+const PAGE_SIZE = 6;
+
 export default function CandidateManagement() {
   const [candidates, setCandidates] = useState([]);
   const [parties, setParties] = useState([]);
@@ -9,6 +11,13 @@ export default function CandidateManagement() {
   const [formData, setFormData] = useState({ candidate_name: '', party_id: '', ward_id: '' });
   const [editingId, setEditingId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Filter & search state
+  const [filterState, setFilterState] = useState('');
+  const [filterLga, setFilterLga] = useState('');
+  const [filterWard, setFilterWard] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
 
   const fetchData = async () => {
     const candRes = await apiCall('/candidates/all');
@@ -33,6 +42,11 @@ export default function CandidateManagement() {
   };
 
   useEffect(() => { fetchData(); }, []);
+
+  // Reset to page 1 whenever a filter/search value changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterState, filterLga, filterWard, searchTerm]);
 
   const resetForm = () => {
     setEditingId(null);
@@ -64,6 +78,53 @@ export default function CandidateManagement() {
     }
   };
 
+  // ---- Filter option lists (cascading State -> LGA -> Ward), derived from ward-level locations ----
+  const stateOptions = [...new Set(locations.map(l => l.state_name).filter(Boolean))].sort();
+
+  const lgaOptions = [...new Set(
+    locations
+      .filter(l => !filterState || l.state_name === filterState)
+      .map(l => l.lga_name)
+      .filter(Boolean)
+  )].sort();
+
+  const wardOptions = locations
+    .filter(l => (!filterState || l.state_name === filterState) && (!filterLga || l.lga_name === filterLga))
+    .sort((a, b) => a.ward_name.localeCompare(b.ward_name));
+
+  const handleFilterStateChange = (value) => {
+    setFilterState(value);
+    setFilterLga('');
+    setFilterWard('');
+  };
+
+  const handleFilterLgaChange = (value) => {
+    setFilterLga(value);
+    setFilterWard('');
+  };
+
+  const clearFilters = () => {
+    setFilterState('');
+    setFilterLga('');
+    setFilterWard('');
+    setSearchTerm('');
+  };
+
+  const hasActiveFilters = filterState || filterLga || filterWard || searchTerm;
+
+  // ---- Apply filters + search ----
+  const filteredCandidates = candidates.filter(c => {
+    if (filterState && c.state_name !== filterState) return false;
+    if (filterLga && c.lga_name !== filterLga) return false;
+    if (filterWard && c.ward_name !== filterWard) return false;
+    if (searchTerm && !c.candidate_name?.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+    return true;
+  });
+
+  // ---- Pagination ----
+  const totalPages = Math.max(1, Math.ceil(filteredCandidates.length / PAGE_SIZE));
+  const pageCandidates = filteredCandidates.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
   return (
     <div>
       <div className="page-title-box">
@@ -75,7 +136,7 @@ export default function CandidateManagement() {
         </div>
       </div>
 
-      <div className="two-col-grid" style={{ gridTemplateColumns: '1fr 2fr' }}>
+      <div className="two-col-grid" style={{ gridTemplateColumns: '1fr 1.8fr 1fr', alignItems: 'start' }}>
         <div className="card">
           <div className="card-header"><h2>{editingId ? 'Edit candidate' : 'Register candidate'}</h2></div>
           <div className="card-body">
@@ -129,7 +190,7 @@ export default function CandidateManagement() {
         <div className="card">
           <div className="card-header">
             <h2>Contesting candidates by ward</h2>
-            <span className="muted">{candidates.length} total</span>
+            <span className="muted">{filteredCandidates.length} of {candidates.length} total</span>
           </div>
           <div className="table-wrap">
             <table className="data-table">
@@ -143,7 +204,7 @@ export default function CandidateManagement() {
                 </tr>
               </thead>
               <tbody>
-                {candidates.map(c => (
+                {pageCandidates.map(c => (
                   <tr key={c.id}>
                     <td><strong>{c.candidate_name}</strong></td>
                     <td>
@@ -160,11 +221,90 @@ export default function CandidateManagement() {
                     </td>
                   </tr>
                 ))}
+                {filteredCandidates.length === 0 && candidates.length > 0 && (
+                  <tr><td colSpan={5} className="empty-state">No candidates match the selected filters.</td></tr>
+                )}
                 {candidates.length === 0 && (
                   <tr><td colSpan={5} className="empty-state">No candidates registered yet.</td></tr>
                 )}
               </tbody>
             </table>
+          </div>
+
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, padding: '14px 0 4px' }}>
+              <button
+                type="button" className="btn btn-outline btn-sm"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              >
+                Prev
+              </button>
+              <span className="muted">Page {currentPage} of {totalPages}</span>
+              <button
+                type="button" className="btn btn-outline btn-sm"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="card">
+          <div className="card-header"><h2>Filter &amp; Search</h2></div>
+          <div className="card-body">
+            <div className="form-group">
+              <label className="form-label">Search Candidate</label>
+              <input
+                type="text" className="form-control" placeholder="Search by name…"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">State</label>
+              <select
+                className="form-control"
+                value={filterState}
+                onChange={e => handleFilterStateChange(e.target.value)}
+              >
+                <option value="">-- All states --</option>
+                {stateOptions.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">LGA</label>
+              <select
+                className="form-control"
+                value={filterLga}
+                onChange={e => handleFilterLgaChange(e.target.value)}
+                disabled={!filterState}
+              >
+                <option value="">-- All LGAs --</option>
+                {lgaOptions.map(l => <option key={l} value={l}>{l}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Ward</label>
+              <select
+                className="form-control"
+                value={filterWard}
+                onChange={e => setFilterWard(e.target.value)}
+                disabled={!filterLga}
+              >
+                <option value="">-- All wards --</option>
+                {wardOptions.map(w => (
+                  <option key={w.ward_id} value={w.ward_name}>{w.ward_name}</option>
+                ))}
+              </select>
+            </div>
+            {hasActiveFilters && (
+              <button type="button" className="btn btn-secondary btn-block" onClick={clearFilters}>
+                Clear Filters
+              </button>
+            )}
           </div>
         </div>
       </div>
