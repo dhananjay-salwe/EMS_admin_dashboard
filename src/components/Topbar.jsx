@@ -50,17 +50,17 @@ export default function Topbar({ admin, collapsed, onToggleSidebar, onLogout }) 
         <button className="topbar-toggle" onClick={onToggleSidebar} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
           <IconMenu />
         </button>
-        <div className="topbar-search">
+        {/* <div className="topbar-search">
           <IconSearch />
           <input type="text" placeholder="Search booth, ward, candidate…" />
-        </div>
+        </div> */}
       </div>
 
       <div className="topbar-right">
-        <button className="icon-btn" aria-label="Notifications">
+        {/* <button className="icon-btn" aria-label="Notifications">
           <IconBell />
           <span className="dot" />
-        </button>
+        </button> */}
 
         <div className="profile-menu" ref={menuRef}>
           <button className="profile-trigger" onClick={() => setMenuOpen(o => !o)}>
