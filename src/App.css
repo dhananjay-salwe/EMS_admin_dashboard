@@ -721,6 +721,9 @@ table.data-table { width: 100%; border-collapse: collapse; }
 
 .row-highlight td { background: var(--success-soft) !important; }
 
+
+
+
 /* ================= SIDEBAR BACKDROP (mobile only) ================= */
 .sidebar-backdrop { display: none; }
 

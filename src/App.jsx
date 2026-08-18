@@ -11,6 +11,8 @@ import AuditSubmissions from './pages/AuditSubmissions';
 import AdminManagement from './pages/AdminManagement';
 import Login from './pages/Login';
 
+import WardManagement from './pages/WardManagement';
+
 const MOBILE_BREAKPOINT = 780; // keep in sync with the @media max-width in App.css
 
 export default function App() {
@@ -98,6 +100,7 @@ export default function App() {
           {activeTab === 'analytics' && <LiveAnalytics />}
           {activeTab === 'parties' && <PartyManagement />}
           {activeTab === 'candidates' && <CandidateManagement />}
+          {activeTab === 'wards' && <WardManagement />}
           {activeTab === 'locations' && <LocationManagement />}
           {activeTab === 'operators' && <OperatorManagement />}
           {activeTab === 'audit' && <AuditSubmissions />}

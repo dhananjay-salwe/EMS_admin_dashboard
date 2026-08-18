@@ -183,51 +183,103 @@ export default function LocationManagement() {
         <div className="card">
           <div className="card-header"><h2>Add geographic polling unit</h2></div>
           <div className="card-body">
-            <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label className="form-label">State Name</label>
-                <input
-                  type="text" required className="form-control"
-                  value={formData.state_name}
-                  onChange={e => setFormData({ ...formData, state_name: e.target.value })}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">LGA (Local Government Area)</label>
-                <input
-                  type="text" required className="form-control"
-                  value={formData.lga_name}
-                  onChange={e => setFormData({ ...formData, lga_name: e.target.value })}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Electoral Ward</label>
-                <input
-                  type="text" required className="form-control"
-                  value={formData.ward_name}
-                  onChange={e => setFormData({ ...formData, ward_name: e.target.value })}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Polling Unit Name (Booth)</label>
-                <input
-                  type="text" required className="form-control"
-                  value={formData.booth_name}
-                  onChange={e => setFormData({ ...formData, booth_name: e.target.value })}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Unique Booth Code</label>
-                <input
-                  type="text" required className="form-control"
-                  value={formData.unique_booth_code}
-                  onChange={e => setFormData({ ...formData, unique_booth_code: e.target.value })}
-                />
-              </div>
-              <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
-                {submitting ? 'Saving…' : 'Save Hierarchy'}
-              </button>
-            </form>
+<form onSubmit={handleSubmit}>
+  {/* 1. SELECT STATE */}
+  <div className="form-group">
+    <label className="form-label">1. Select State</label>
+    <select
+      className="form-control"
+      required
+      value={formData.state_name}
+      onChange={e => setFormData({
+        ...formData,
+        state_name: e.target.value,
+        lga_name: '',
+        ward_name: ''
+      })}
+    >
+      <option value="">-- Choose State --</option>
+      {stateOptions.map(s => <option key={s} value={s}>{s}</option>)}
+    </select>
+  </div>
+
+  {/* 2. SELECT LGA (Filtered by selected State) */}
+  <div className="form-group">
+    <label className="form-label">2. Select LGA</label>
+    <select
+      className="form-control"
+      required
+      disabled={!formData.state_name}
+      value={formData.lga_name}
+      onChange={e => setFormData({
+        ...formData,
+        lga_name: e.target.value,
+        ward_name: ''
+      })}
+    >
+      <option value="">{formData.state_name ? '-- Choose LGA --' : '-- First Select State --'}</option>
+      {[...new Set(
+        locations
+          .filter(l => l.state_name === formData.state_name)
+          .map(l => l.lga_name)
+          .filter(Boolean)
+      )].sort().map(l => <option key={l} value={l}>{l}</option>)}
+    </select>
+  </div>
+
+  {/* 3. SELECT WARD (Filtered by selected LGA) */}
+  <div className="form-group">
+    <label className="form-label">3. Select Electoral Ward</label>
+    <select
+      className="form-control"
+      required
+      disabled={!formData.lga_name}
+      value={formData.ward_name}
+      onChange={e => setFormData({
+        ...formData,
+        ward_name: e.target.value
+      })}
+    >
+      <option value="">{formData.lga_name ? '-- Choose Ward --' : '-- First Select LGA --'}</option>
+      {[...new Set(
+        locations
+          .filter(l => l.state_name === formData.state_name && l.lga_name === formData.lga_name)
+          .map(l => l.ward_name)
+          .filter(Boolean)
+      )].sort().map(w => <option key={w} value={w}>{w}</option>)}
+    </select>
+  </div>
+
+  {/* 4. ENTER POLLING UNIT NAME */}
+  <div className="form-group">
+    <label className="form-label">4. Polling Unit Name (Booth)</label>
+    <input
+      type="text"
+      required
+      className="form-control"
+      placeholder="e.g. National Stadium Unit"
+      value={formData.booth_name}
+      onChange={e => setFormData({ ...formData, booth_name: e.target.value })}
+    />
+  </div>
+
+  {/* 5. ENTER BOOTH CODE */}
+  <div className="form-group">
+    <label className="form-label">5. Unique Booth Code</label>
+    <input
+      type="text"
+      required
+      className="form-control"
+      placeholder="e.g. BOOTH-SUR-05"
+      value={formData.unique_booth_code}
+      onChange={e => setFormData({ ...formData, unique_booth_code: e.target.value })}
+    />
+  </div>
+
+  <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
+    {submitting ? 'Registering Booth…' : 'Register Polling Booth'}
+  </button>
+</form>
           </div>
         </div>
 

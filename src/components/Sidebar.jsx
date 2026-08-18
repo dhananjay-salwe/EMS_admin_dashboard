@@ -63,6 +63,9 @@ const NAV_ITEMS = [
   { key: 'operators', label: 'Booth Officers', Icon: IconUsers },
 
   { key: 'candidates', label: 'Ballot List', Icon: IconUser },
+
+  { key: 'wards', label: 'Ward Management', Icon: IconLandmark },
+  
   { key: 'locations', label: 'Area & Booths', Icon: IconPin },
   
   { key: 'parties', label: 'Political Parties', Icon: IconLandmark },
