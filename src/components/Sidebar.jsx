@@ -58,13 +58,13 @@ const IconShield = (props) => (
 );
 
 const NAV_ITEMS = [
-  { key: 'analytics', label: 'Live Vote Tallies', Icon: IconChart },
+  { key: 'analytics', label: 'Dashboard', Icon: IconChart },
   { key: 'parties', label: 'Political Parties', Icon: IconLandmark },
-  { key: 'candidates', label: 'Candidates', Icon: IconUser },
-  { key: 'locations', label: 'Location & Booths', Icon: IconPin },
+  { key: 'candidates', label: 'Ballot List', Icon: IconUser },
+  { key: 'locations', label: 'Area & Booths', Icon: IconPin },
   { key: 'operators', label: 'Booth Officers', Icon: IconUsers },
   { key: 'audit', label: 'Booth Report', Icon: IconCamera },
-  { key: 'admins', label: 'Admin Management', Icon: IconShield },
+  { key: 'admins', label: 'Admin Users', Icon: IconShield },
 ];
 
 export default function Sidebar({ activeTab, setActiveTab, mobileOpen, onCloseMobile }) {

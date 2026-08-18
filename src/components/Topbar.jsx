@@ -67,7 +67,7 @@ export default function Topbar({ admin, collapsed, mobileOpen, onToggleSidebar, 
           <button className="profile-trigger" onClick={() => setMenuOpen(o => !o)}>
             <span className="profile-avatar">{initial}</span>
             <span className="profile-info">
-              <span className="profile-name">{admin?.username}</span>
+              {/* <span className="profile-name">{admin?.username}</span> */}
               <span className="profile-role">{admin?.role || 'Admin'}</span>
             </span>
             <IconChevron />

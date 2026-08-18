@@ -39,13 +39,13 @@ export default function LiveAnalytics() {
 
   return (
     <div>
-      <div className="page-title-box">
+      {/* <div className="page-title-box">
         <div>
           <div className="breadcrumb">
             <span>Dashboard</span> / <span className="current">Live Tallies</span>
           </div>
         </div>
-      </div>
+      </div> */}
 
       <div className="stat-grid">
         <div className="stat-card">

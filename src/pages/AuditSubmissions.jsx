@@ -52,17 +52,17 @@ export default function BoothReport() {
 
   return (
     <div>
-      <div className="page-title-box">
+      {/* <div className="page-title-box">
         <div>
           <div className="breadcrumb">
             <span>Dashboard</span> / <span className="current">Booth Report</span>
           </div>
         </div>
-      </div>
+      </div> */}
 
       <div className="card">
         <div className="card-header">
-          <h2>Vote Submissions &amp; Tally Sheet Audit</h2>
+          <h2>Booth Reports</h2>
           <span className="muted">{totalSubmissions} submissions</span>
         </div>
         <div className="table-wrap">
@@ -72,8 +72,8 @@ export default function BoothReport() {
                 <th>Booth Officer</th>
                 <th>Booth Code &amp; Name</th>
                 <th>Time Submitted</th>
-                <th>Vote Report</th>
-                <th>Tally Sheet / Document</th>
+                <th>Reports</th>
+                <th>Photos</th>
               </tr>
             </thead>
             <tbody>
@@ -104,7 +104,7 @@ export default function BoothReport() {
                         operator: sub.operator_name
                       })}
                     >
-                      <IconImage style={{ marginRight: 5 }} /> View sheet
+                      <IconImage style={{ marginRight: 5 }} /> View Photo
                     </button>
                   </td>
                 </tr>

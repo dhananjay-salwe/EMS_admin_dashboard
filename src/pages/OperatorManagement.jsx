@@ -195,13 +195,13 @@ export default function OperatorManagement() {
 
   return (
     <div>
-      <div className="page-title-box">
+      {/* <div className="page-title-box">
         <div>
           <div className="breadcrumb">
             <span>Dashboard</span> / <span className="current">Booth Officers</span>
           </div>
         </div>
-      </div>
+      </div> */}
 
       <div className="two-col-grid" style={{ gridTemplateColumns: '1fr 2fr', alignItems: 'start' }}>
         <div className="card">

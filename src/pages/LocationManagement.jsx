@@ -171,13 +171,13 @@ export default function LocationManagement() {
 
   return (
     <div>
-      <div className="page-title-box">
+      {/* <div className="page-title-box">
         <div>
           <div className="breadcrumb">
             <span>Dashboard</span> / <span className="current">Location & Booths</span>
           </div>
         </div>
-      </div>
+      </div> */}
 
       <div className="two-col-grid" style={{ gridTemplateColumns: '1fr 2fr', alignItems: 'start' }}>
         <div className="card">
@@ -193,7 +193,7 @@ export default function LocationManagement() {
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">LGA (Local Government Area / District)</label>
+                <label className="form-label">LGA (Local Government Area)</label>
                 <input
                   type="text" required className="form-control"
                   value={formData.lga_name}
@@ -201,7 +201,7 @@ export default function LocationManagement() {
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Ward (Area / Seat)</label>
+                <label className="form-label">Electoral Ward</label>
                 <input
                   type="text" required className="form-control"
                   value={formData.ward_name}

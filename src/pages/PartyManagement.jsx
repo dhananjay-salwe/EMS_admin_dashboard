@@ -67,14 +67,14 @@ export default function PartyManagement() {
 
   return (
     <div>
-      <div className="page-title-box">
+      {/* <div className="page-title-box">
         <div>
 
           <div className="breadcrumb">
             <span>Dashboard</span> / <span className="current">Political Parties</span>
           </div>
         </div>
-      </div>
+      </div> */}
 
       <div className="two-col-grid" style={{ gridTemplateColumns: '1fr 2fr' }}>
         <div className="card">
