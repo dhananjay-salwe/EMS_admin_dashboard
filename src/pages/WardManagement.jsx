@@ -62,7 +62,7 @@ export default function WardManagement() {
   };
 
   return (
-    <div className="two-col-grid" style={{ gridTemplateColumns: '1fr 2fr', alignItems: 'start' }}>
+    <div className="two-col-grid two-col-grid--form-table">
       <div className="card">
         <div className="card-header"><h2>Create Electoral Ward</h2></div>
         <div className="card-body">
