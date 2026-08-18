@@ -59,11 +59,13 @@ const IconShield = (props) => (
 
 const NAV_ITEMS = [
   { key: 'analytics', label: 'Dashboard', Icon: IconChart },
-  { key: 'parties', label: 'Political Parties', Icon: IconLandmark },
+  { key: 'audit', label: 'Booth Report', Icon: IconCamera },
+  { key: 'operators', label: 'Booth Officers', Icon: IconUsers },
+
   { key: 'candidates', label: 'Ballot List', Icon: IconUser },
   { key: 'locations', label: 'Area & Booths', Icon: IconPin },
-  { key: 'operators', label: 'Booth Officers', Icon: IconUsers },
-  { key: 'audit', label: 'Booth Report', Icon: IconCamera },
+  
+  { key: 'parties', label: 'Political Parties', Icon: IconLandmark },
   { key: 'admins', label: 'Admin Users', Icon: IconShield },
 ];
 
