@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { apiCall } from '../api/client';
+import logoIcon from '../assets/icon.png';
 
 const IconBolt = (props) => (
   <svg width="26" height="26" viewBox="0 0 24 24" fill="none" {...props}>
@@ -36,7 +37,11 @@ export default function Login({ onLoginSuccess }) {
           <h2>Welcome back!</h2>
           <p>Sign in to EMS to continue</p>
         </div>
-        <div className="auth-logo"><IconBolt /></div>
+        <div className="auth-logo"><img 
+            src={logoIcon} 
+            alt="EMS Logo" 
+            style={{ width: 50, height: 50, objectFit: 'contain' }} 
+          /></div>
 
         <form onSubmit={handleSubmit} className="auth-form" autoComplete="off">
           <div className="form-group">
