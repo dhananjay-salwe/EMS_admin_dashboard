@@ -19,31 +19,126 @@ const IconImage = (props) => (
   </svg>
 );
 
+const FilterIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+  </svg>
+);
+
+const iconBtnStyle = (active) => ({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: 36,
+  height: 36,
+  borderRadius: '50%',
+  border: '1px solid ' + (active ? 'var(--bs-primary, #556ee6)' : '#e2e5f1'),
+  background: active ? 'var(--bs-primary, #556ee6)' : '#fff',
+  color: active ? '#fff' : '#556ee6',
+  cursor: 'pointer',
+  flexShrink: 0,
+});
+
+const Chip = ({ label, onRemove }) => (
+  <span style={{
+    display: 'inline-flex', alignItems: 'center', gap: 6,
+    background: '#eef1fb', color: '#556ee6', borderRadius: 16,
+    padding: '4px 10px', fontSize: 13, fontWeight: 500,
+  }}>
+    {label}
+    <button
+      type="button" onClick={onRemove}
+      style={{ border: 'none', background: 'transparent', color: '#556ee6', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: 0 }}
+      aria-label={`Remove ${label} filter`}
+    >
+      ×
+    </button>
+  </span>
+);
+
+const PAGE_SIZE = 8;
+
+const SORT_OPTIONS = [
+  { value: 'asc', label: 'A–Z' },
+  { value: 'desc', label: 'Z–A' },
+];
+
 export default function BoothReport() {
   const [submissions, setSubmissions] = useState([]);
   const [selectedReport, setSelectedReport] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalSubmissions, setTotalSubmissions] = useState(0);
 
-  const fetchSubmissions = async (page = 1) => {
-    const data = await apiCall(`/audit/submissions?page=${page}&limit=10`);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortDir, setSortDir] = useState('asc');
+
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [filterState, setFilterState] = useState('');
+  const [filterLga, setFilterLga] = useState('');
+  const [filterWard, setFilterWard] = useState('');
+
+  const fetchSubmissions = async () => {
+    const data = await apiCall('/audit/submissions');
     if (data.success) {
       setSubmissions(data.submissions || []);
-      if (data.pagination) {
-        setTotalPages(data.pagination.totalPages || 1);
-        setCurrentPage(data.pagination.currentPage || 1);
-        setTotalSubmissions(data.pagination.totalRecords || 0);
-      } else {
-        setTotalSubmissions((data.submissions || []).length);
-      }
     }
   };
 
   useEffect(() => {
-    fetchSubmissions(currentPage);
-  }, [currentPage]);
+    fetchSubmissions();
+  }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, sortDir, filterState, filterLga, filterWard]);
+
+  // ---- Cascading location option lists, derived from submissions ----
+  const stateOptions = [...new Set(submissions.map(s => s.state_name).filter(Boolean))].sort();
+
+  const lgaOptions = [...new Set(
+    submissions.filter(s => s.state_name === filterState).map(s => s.lga_name).filter(Boolean)
+  )].sort();
+
+  const wardOptions = [...new Set(
+    submissions.filter(s => s.state_name === filterState && s.lga_name === filterLga).map(s => s.ward_name).filter(Boolean)
+  )].sort();
+
+  const clearFilters = () => {
+    setFilterState('');
+    setFilterLga('');
+    setFilterWard('');
+  };
+
+  const hasActiveFilters = filterState || filterLga || filterWard;
+
+  // ---- Apply filters + search ----
+  const filteredSubmissions = submissions.filter(sub => {
+    if (filterState && sub.state_name !== filterState) return false;
+    if (filterLga && sub.lga_name !== filterLga) return false;
+    if (filterWard && sub.ward_name !== filterWard) return false;
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      const matches =
+        sub.operator_name?.toLowerCase().includes(term) ||
+        sub.unique_booth_code?.toLowerCase().includes(term) ||
+        sub.booth_name?.toLowerCase().includes(term);
+      if (!matches) return false;
+    }
+
+    return true;
+  });
+
+  // ---- Sort A-Z / Z-A by operator name ----
+  const sortedSubmissions = [...filteredSubmissions].sort((a, b) => {
+    const cmp = (a.operator_name || '').localeCompare(b.operator_name || '');
+    return sortDir === 'desc' ? -cmp : cmp;
+  });
+
+  // ---- Pagination ----
+  const totalPages = Math.max(1, Math.ceil(sortedSubmissions.length / PAGE_SIZE));
+  const pageSubmissions = sortedSubmissions.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const totalSubmissions = submissions.length;
 
   const isPdf = (url) => {
     if (!url) return false;
@@ -61,10 +156,72 @@ export default function BoothReport() {
       </div> */}
 
       <div className="card">
-        <div className="card-header">
-          <h2>Booth Reports</h2>
-          <span className="muted">{totalSubmissions} submissions</span>
+        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'nowrap', gap: 12 }}>
+          <div style={{ minWidth: 0 }}>
+            <h2>Booth Reports</h2>
+            <span className="muted">{filteredSubmissions.length} of {totalSubmissions} submissions</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'nowrap', flexShrink: 0 }}>
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Search operator, booth code, or booth name…"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              style={{ minWidth: 240 }}
+            />
+            <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+              Sort by
+            </span>
+            <select
+              className="form-control ward-sort-select"
+              value={sortDir}
+              onChange={e => setSortDir(e.target.value)}
+            >
+              {SORT_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            <button
+              type="button" title="Filter" aria-label="Toggle filter"
+              style={iconBtnStyle(filterOpen || hasActiveFilters)}
+              onClick={() => setFilterOpen(o => !o)}
+            >
+              <FilterIcon />
+            </button>
+          </div>
         </div>
+
+        {filterOpen && (
+          <div style={{ padding: '12px 20px 0', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+            {filterState && <Chip label={filterState} onRemove={() => { setFilterState(''); setFilterLga(''); setFilterWard(''); }} />}
+            {filterLga && <Chip label={filterLga} onRemove={() => { setFilterLga(''); setFilterWard(''); }} />}
+            {filterWard && <Chip label={filterWard} onRemove={() => setFilterWard('')} />}
+
+            {!filterState && (
+              <select className="form-control" style={{ maxWidth: 220 }} value="" onChange={e => setFilterState(e.target.value)}>
+                <option value="">Select State…</option>
+                {stateOptions.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            )}
+            {filterState && !filterLga && (
+              <select className="form-control" style={{ maxWidth: 220 }} value="" onChange={e => setFilterLga(e.target.value)}>
+                <option value="">Select LGA…</option>
+                {lgaOptions.map(l => <option key={l} value={l}>{l}</option>)}
+              </select>
+            )}
+            {filterState && filterLga && !filterWard && (
+              <select className="form-control" style={{ maxWidth: 220 }} value="" onChange={e => setFilterWard(e.target.value)}>
+                <option value="">Select Ward…</option>
+                {wardOptions.map(w => <option key={w} value={w}>{w}</option>)}
+              </select>
+            )}
+            {hasActiveFilters && (
+              <button type="button" className="btn btn-secondary btn-sm" onClick={clearFilters}>Clear</button>
+            )}
+          </div>
+        )}
+
         <div className="table-wrap">
           <table className="data-table">
             <thead>
@@ -77,7 +234,7 @@ export default function BoothReport() {
               </tr>
             </thead>
             <tbody>
-              {submissions.map((sub) => (
+              {pageSubmissions.map((sub) => (
                 <tr key={sub.id}>
                   <td><strong>{sub.operator_name || 'Booth Officer'}</strong></td>
                   <td>
@@ -109,6 +266,9 @@ export default function BoothReport() {
                   </td>
                 </tr>
               ))}
+              {pageSubmissions.length === 0 && submissions.length > 0 && (
+                <tr><td colSpan={5} className="empty-state">No submissions match the selected filters.</td></tr>
+              )}
               {submissions.length === 0 && (
                 <tr><td colSpan={5} className="empty-state">No submissions yet.</td></tr>
               )}
