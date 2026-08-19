@@ -77,6 +77,17 @@ const Chip = ({ label, onRemove }) => (
   </span>
 );
 
+const SORT_OPTIONS = [
+  { value: 'booth_name-asc', label: 'Booth (A–Z)' },
+  { value: 'booth_name-desc', label: 'Booth (Z–A)' },
+  { value: 'state_name-asc', label: 'State (A–Z)' },
+  { value: 'state_name-desc', label: 'State (Z–A)' },
+  { value: 'lga_name-asc', label: 'LGA (A–Z)' },
+  { value: 'lga_name-desc', label: 'LGA (Z–A)' },
+  { value: 'ward_name-asc', label: 'Ward (A–Z)' },
+  { value: 'ward_name-desc', label: 'Ward (Z–A)' },
+];
+
 export default function LocationManagement() {
   const [locations, setLocations] = useState([]);
   const [formData, setFormData] = useState({
@@ -97,6 +108,8 @@ export default function LocationManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
+  const [sortKey, setSortKey] = useState('booth_name-asc');
+
   const fetchLocations = async () => {
     const data = await apiCall('/locations/all');
     if (data.success) setLocations(data.locations);
@@ -106,7 +119,7 @@ export default function LocationManagement() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterState, filterLga, filterWard, searchTerm]);
+  }, [filterState, filterLga, filterWard, searchTerm, sortKey]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -165,9 +178,18 @@ export default function LocationManagement() {
     return true;
   });
 
+  const [sortField, sortDir] = sortKey.split('-');
+  const sortedBooths = [...filteredBooths].sort((a, b) => {
+    const cmp = (a[sortField] || '').localeCompare(b[sortField] || '');
+    return sortDir === 'desc' ? -cmp : cmp;
+  });
+
   // ---- Pagination ----
-  const totalPages = Math.max(1, Math.ceil(filteredBooths.length / PAGE_SIZE));
-  const pageBooths = filteredBooths.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  // const totalPages = Math.max(1, Math.ceil(filteredBooths.length / PAGE_SIZE));
+  // const pageBooths = filteredBooths.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  const totalPages = Math.max(1, Math.ceil(sortedBooths.length / PAGE_SIZE));
+  const pageBooths = sortedBooths.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
     <div>
@@ -179,7 +201,7 @@ export default function LocationManagement() {
         </div>
       </div> */}
 
-      <div className="two-col-grid" style={{ gridTemplateColumns: '1fr 2fr', alignItems: 'start' }}>
+      <div className="two-col-grid two-col-grid--form-table">
         <div className="card">
           <div className="card-header"><h2>Add geographic polling unit</h2></div>
           <div className="card-body">
@@ -289,9 +311,21 @@ export default function LocationManagement() {
               <h2>Registered polling units</h2>
               <span className="muted">{filteredBooths.length} of {booths.length} total</span>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                type="button" title="Search" aria-label="Toggle search"
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+              Sort by
+            </span>
+            <select
+              className="form-control ward-sort-select"
+              value={sortKey}
+              onChange={e => setSortKey(e.target.value)}
+            >
+              {SORT_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            <button
+              type="button" title="Search" aria-label="Toggle search"
                 style={iconBtnStyle(searchOpen)}
                 onClick={() => { setSearchOpen(o => !o); if (filterOpen) setFilterOpen(false); }}
               >

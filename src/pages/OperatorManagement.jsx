@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { apiCall } from '../api/client';
 
 const PAGE_SIZE = 6;
@@ -77,6 +77,95 @@ const Chip = ({ label, onRemove }) => (
   </span>
 );
 
+const IconChevron = (props) => (
+  <svg width="10" height="6" viewBox="0 0 10 6" fill="none" {...props}>
+    <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+// Searchable single-select for the booth assignment field — typing filters
+// the list but can only pick an existing booth (unlike WardManagement's
+// Combobox, which purposely allows free text for new states/LGAs).
+function SearchableSelect({ value, onChange, options = [], placeholder = '' }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const wrapRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) {
+        setOpen(false);
+        setQuery('');
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selected = options.find(o => o.value === value);
+  const filtered = query
+    ? options.filter(o => o.label.toLowerCase().includes(query.toLowerCase()))
+    : options;
+
+  const selectOption = (opt) => {
+    onChange(opt.value);
+    setQuery('');
+    setOpen(false);
+  };
+
+  return (
+    <div className="combobox" ref={wrapRef}>
+      <input
+        type="text"
+        className="form-control combobox-input"
+        value={open ? query : (selected ? selected.label : '')}
+        placeholder={placeholder}
+        autoComplete="off"
+        onFocus={() => { setOpen(true); setQuery(''); }}
+        onChange={e => { setQuery(e.target.value); setOpen(true); }}
+        onKeyDown={e => { if (e.key === 'Escape') { setOpen(false); setQuery(''); } }}
+      />
+      <button
+        type="button"
+        className="combobox-toggle"
+        tabIndex={-1}
+        onClick={() => setOpen(o => !o)}
+        aria-label="Toggle options"
+      >
+        <IconChevron className={open ? 'combobox-chevron open' : 'combobox-chevron'} />
+      </button>
+
+      {open && (
+        <div className="combobox-panel">
+          {filtered.length > 0 ? (
+            filtered.map(opt => (
+              <button
+                type="button"
+                key={opt.value || 'none'}
+                className={`combobox-option ${opt.value === value ? 'selected' : ''}`}
+                onClick={() => selectOption(opt)}
+              >
+                {opt.label}
+              </button>
+            ))
+          ) : (
+            <div className="combobox-empty">No matching booth</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+
+const SORT_OPTIONS = [
+  { value: 'full_name-asc', label: 'Name (A–Z)' },
+  { value: 'full_name-desc', label: 'Name (Z–A)' },
+  { value: 'username-asc', label: 'Username (A–Z)' },
+  { value: 'username-desc', label: 'Username (Z–A)' },
+];
+
 export default function OperatorManagement() {
   const [operators, setOperators] = useState([]);
   const [booths, setBooths] = useState([]);
@@ -93,6 +182,8 @@ export default function OperatorManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
+  const [sortKey, setSortKey] = useState('full_name-asc');
+
   const fetchData = async () => {
     const opRes = await apiCall('/operators/all');
     if (opRes.success) setOperators(opRes.operators);
@@ -108,7 +199,7 @@ export default function OperatorManagement() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterState, filterLga, filterWard, searchTerm]);
+  }, [filterState, filterLga, filterWard, searchTerm, sortKey]);
 
   const resetForm = () => {
     setEditingId(null);
@@ -189,9 +280,19 @@ export default function OperatorManagement() {
     return true;
   });
 
+  const [sortField, sortDir] = sortKey.split('-');
+  const sortedOperators = [...filteredOperators].sort((a, b) => {
+    const cmp = (a[sortField] || '').localeCompare(b[sortField] || '');
+    return sortDir === 'desc' ? -cmp : cmp;
+  });
+
+
   // ---- Pagination ----
-  const totalPages = Math.max(1, Math.ceil(filteredOperators.length / PAGE_SIZE));
-  const pageOperators = filteredOperators.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  // const totalPages = Math.max(1, Math.ceil(filteredOperators.length / PAGE_SIZE));
+  // const pageOperators = filteredOperators.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  const totalPages = Math.max(1, Math.ceil(sortedOperators.length / PAGE_SIZE));
+  const pageOperators = sortedOperators.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
     <div>
@@ -203,7 +304,7 @@ export default function OperatorManagement() {
         </div>
       </div> */}
 
-      <div className="two-col-grid" style={{ gridTemplateColumns: '1fr 2fr', alignItems: 'start' }}>
+      <div className="two-col-grid two-col-grid--form-table">
         <div className="card">
           <div className="card-header"><h2>{editingId ? 'Edit booth officer' : 'Register booth officer'}</h2></div>
           <div className="card-body">
@@ -236,18 +337,18 @@ export default function OperatorManagement() {
               </div>
               <div className="form-group">
                 <label className="form-label">Assign Polling Unit / Booth</label>
-                <select
-                  className="form-control"
+                <SearchableSelect
+                  placeholder="Search booth by code, name, or ward…"
                   value={formData.assigned_booth_id}
-                  onChange={e => setFormData({ ...formData, assigned_booth_id: e.target.value })}
-                >
-                  <option value="">-- No assigned booth (operator picks dynamic) --</option>
-                  {booths.map(b => (
-                    <option key={b.booth_id} value={b.booth_id}>
-                      {b.unique_booth_code} — {b.booth_name} ({b.ward_name})
-                    </option>
-                  ))}
-                </select>
+                  onChange={val => setFormData({ ...formData, assigned_booth_id: val })}
+                  options={[
+                    { value: '', label: '-- No assigned booth (operator picks dynamic) --' },
+                    ...booths.map(b => ({
+                      value: b.booth_id,
+                      label: `${b.unique_booth_code} — ${b.booth_name} (${b.ward_name})`,
+                    })),
+                  ]}
+                />
               </div>
               <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
                 {submitting ? 'Saving…' : editingId ? 'Update Booth Officer' : 'Create Booth Officer'}
@@ -263,11 +364,23 @@ export default function OperatorManagement() {
 
         <div className="card">
           <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-            <div>
-              <h2>Registered booth officers &amp; booth assignments</h2>
+            <div style={{ minWidth: 0 }}>
+              <h2>Registered booth officers </h2>
               <span className="muted">{filteredOperators.length} of {operators.length} total</span>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'nowrap', flexShrink: 0 }}>
+              <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                Sort by
+              </span>
+              <select
+                className="form-control ward-sort-select"
+                value={sortKey}
+                onChange={e => setSortKey(e.target.value)}
+              >
+                {SORT_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
               <button
                 type="button" title="Search" aria-label="Toggle search"
                 style={iconBtnStyle(searchOpen)}

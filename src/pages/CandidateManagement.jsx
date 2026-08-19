@@ -77,6 +77,15 @@ const Chip = ({ label, onRemove }) => (
   </span>
 );
 
+const SORT_OPTIONS = [
+  { value: 'candidate_name-asc', label: 'Candidate (A–Z)' },
+  { value: 'candidate_name-desc', label: 'Candidate (Z–A)' },
+  { value: 'party_name-asc', label: 'Party (A–Z)' },
+  { value: 'party_name-desc', label: 'Party (Z–A)' },
+  { value: 'ward_name-asc', label: 'Ward (A–Z)' },
+  { value: 'ward_name-desc', label: 'Ward (Z–A)' },
+];
+
 export default function CandidateManagement() {
   const [candidates, setCandidates] = useState([]);
   const [parties, setParties] = useState([]);
@@ -96,6 +105,8 @@ export default function CandidateManagement() {
   const [filterWard, setFilterWard] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+
+  const [sortKey, setSortKey] = useState('candidate_name-asc');
 
   const fetchData = async () => {
     const candRes = await apiCall('/candidates/all');
@@ -123,7 +134,7 @@ export default function CandidateManagement() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterState, filterLga, filterWard, searchTerm]);
+  }, [filterState, filterLga, filterWard, searchTerm, sortKey]);
 
   const resetForm = () => {
     setEditingId(null);
@@ -183,9 +194,17 @@ export default function CandidateManagement() {
     return true;
   });
 
+  const [sortField, sortDir] = sortKey.split('-');
+  const sortedCandidates = [...filteredCandidates].sort((a, b) => {
+    const cmp = (a[sortField] || '').localeCompare(b[sortField] || '');
+    return sortDir === 'desc' ? -cmp : cmp;
+  });
+
   // ---- Pagination ----
-  const totalPages = Math.max(1, Math.ceil(filteredCandidates.length / PAGE_SIZE));
-  const pageCandidates = filteredCandidates.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  // const totalPages = Math.max(1, Math.ceil(filteredCandidates.length / PAGE_SIZE));
+  // const pageCandidates = filteredCandidates.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(sortedCandidates.length / PAGE_SIZE));
+  const pageCandidates = sortedCandidates.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
     <div>
@@ -254,7 +273,20 @@ export default function CandidateManagement() {
               <h2>Contesting candidates by ward</h2>
               <span className="muted">{filteredCandidates.length} of {candidates.length} total</span>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'nowrap', flexShrink: 0 }}>
+              <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                Sort by
+              </span>
+              <select
+                className="form-control ward-sort-select"
+                style={{ minWidth: 0, flexShrink: 1 }}
+                value={sortKey}
+                onChange={e => setSortKey(e.target.value)}
+              >
+                {SORT_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
               <button
                 type="button" title="Search" aria-label="Toggle search"
                 style={iconBtnStyle(searchOpen)}

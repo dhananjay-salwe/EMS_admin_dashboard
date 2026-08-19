@@ -224,8 +224,7 @@ export default function BoothReport() {
                 justifyContent: 'center', 
                 backgroundColor: '#0f172a',
                 padding: 16,
-                minHeight: '320px',
-                maxHeight: '68vh',
+                maxHeight: '65vh',
                 overflow: 'auto'
               }}
             >

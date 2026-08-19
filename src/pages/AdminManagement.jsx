@@ -1,6 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { apiCall } from '../api/client';
 
+const EditIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+  </svg>
+);
+
+const DeleteIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6" />
+    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+    <path d="M10 11v6" />
+    <path d="M14 11v6" />
+    <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+  </svg>
+);
+
+const actionIconStyle = (variant) => ({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: 32,
+  height: 32,
+  borderRadius: 6,
+  border: '1px solid ' + (variant === 'danger' ? '#f46a6a' : '#556ee6'),
+  background: '#fff',
+  color: variant === 'danger' ? '#f46a6a' : '#556ee6',
+  cursor: 'pointer',
+});
+
 export default function AdminManagement({ currentAdminRole }) {
   const [admins, setAdmins] = useState([]);
   const [formData, setFormData] = useState({ username: '', password: '', role: 'SubAdmin' });
@@ -127,9 +157,9 @@ export default function AdminManagement({ currentAdminRole }) {
                 </tr>
               </thead>
               <tbody>
-                {admins.map((adm) => (
+                {admins.map((adm, index) => (
                   <tr key={adm.id}>
-                    <td>{adm.id}</td>
+                    <td>{index + 1}</td>
                     <td><strong>{adm.username}</strong></td>
                     <td>
                       <span className={`badge ${adm.role === 'SuperAdmin' ? 'badge-soft-success' : 'badge-soft-info'}`}>
@@ -141,7 +171,9 @@ export default function AdminManagement({ currentAdminRole }) {
                       {adm.role === 'SuperAdmin' ? (
                         <span className="muted" style={{ fontSize: 12 }}>Protected</span>
                       ) : (
-                        <button className="btn btn-danger btn-sm" onClick={() => handleDelete(adm.id)}>Delete</button>
+                        <button className="btn-icon" style={actionIconStyle('danger')} title="Delete" aria-label="Delete party" onClick={() => handleDelete(p.id)}>
+                          <DeleteIcon />
+                        </button>
                       )}
                     </td>
                   </tr>
