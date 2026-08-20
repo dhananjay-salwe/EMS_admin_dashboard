@@ -135,6 +135,9 @@ const iconBtnStyle = (active) => ({
   background: active ? 'var(--bs-primary, #556ee6)' : '#fff',
   color: active ? '#fff' : '#556ee6',
   cursor: 'pointer',
+  flexShrink: 0,
+  padding: 0,
+  boxSizing: 'border-box'
 });
 
 const Chip = ({ label, onRemove }) => (
@@ -358,7 +361,7 @@ export default function WardManagement() {
         </div>
 
         {searchOpen && (
-          <div style={{ padding: '12px 22px 0' }}>
+          <div style={{ padding: '12px 22px 0', display: 'flex', justifyContent: 'flex-end' }}>
             <input
               ref={searchInputRef}
               type="text"
@@ -367,6 +370,7 @@ export default function WardManagement() {
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               autoFocus
+              style={{ maxWidth: '240px' }}
             />
           </div>
         )}

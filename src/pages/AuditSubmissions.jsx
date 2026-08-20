@@ -38,6 +38,8 @@ const iconBtnStyle = (active) => ({
   color: active ? '#fff' : '#556ee6',
   cursor: 'pointer',
   flexShrink: 0,
+  padding: 0,
+  boxSizing: 'border-box'
 });
 
 const Chip = ({ label, onRemove }) => (

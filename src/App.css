@@ -1642,11 +1642,16 @@ table.data-table {
   align-items: center;
   gap: 12px;
   flex-wrap: nowrap; /* keep side-by-side on desktop */
+  justify-content: flex-end; /* align to the right side */
 }
 
 .custom-select-container {
   display: inline-block;
   width: 100%;
+}
+
+.custom-select-container .form-control {
+  padding: 8px 12px;
 }
 
 .filter-select-responsive {

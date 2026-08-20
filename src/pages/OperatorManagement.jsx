@@ -59,6 +59,9 @@ const iconBtnStyle = (active) => ({
   background: active ? 'var(--bs-primary, #556ee6)' : '#fff',
   color: active ? '#fff' : '#556ee6',
   cursor: 'pointer',
+  flexShrink: 0,
+  padding: 0,
+  boxSizing: 'border-box'
 });
 
 const Chip = ({ label, onRemove }) => (
@@ -399,10 +402,11 @@ export default function OperatorManagement() {
           </div>
 
           {searchOpen && (
-            <div style={{ padding: '12px 20px 0' }}>
+            <div style={{ padding: '12px 20px 0', display: 'flex', justifyContent: 'flex-end' }}>
               <input
                 type="text" className="form-control" placeholder="Type to search..."
                 value={searchTerm} onChange={e => setSearchTerm(e.target.value)} autoFocus
+                style={{ maxWidth: '240px' }}
               />
             </div>
           )}
