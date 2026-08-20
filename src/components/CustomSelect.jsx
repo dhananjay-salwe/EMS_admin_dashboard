@@ -13,6 +13,7 @@ export default function CustomSelect({
   className = '',
   placeholder = 'Select option...',
   disabled = false,
+  isClearable = false,
   style = {}
 }) {
   const [open, setOpen] = useState(false);
@@ -46,6 +47,9 @@ export default function CustomSelect({
     ? (typeof selectedOpt === 'object' ? (selectedOpt.label || selectedOpt.text || selectedOpt.value) : selectedOpt)
     : placeholder;
 
+  // Check if we should render clear button
+  const showClear = isClearable && value && !disabled;
+
   return (
     <div
       className={`custom-select-container ${className}`}
@@ -69,7 +73,7 @@ export default function CustomSelect({
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
-          paddingRight: '30px', // leave room for chevron
+          paddingRight: showClear ? '48px' : '30px', // leave room for clear button + chevron
           background: disabled ? '#f5f6f8' : '#fff'
         }}
       >
@@ -81,14 +85,51 @@ export default function CustomSelect({
           right: '12px',
           top: '50%',
           transform: 'translateY(-50%)',
-          pointerEvents: 'none',
           display: 'flex',
           alignItems: 'center',
+          gap: '8px',
           color: '#8f95a0'
         }}>
+          {showClear && (
+            <span
+              role="button"
+              tabIndex={0}
+              aria-label="Clear selection"
+              onClick={(e) => {
+                e.stopPropagation(); // prevent opening dropdown
+                onChange({ target: { value: '' } });
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.stopPropagation();
+                  onChange({ target: { value: '' } });
+                }
+              }}
+              style={{
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '2px',
+                borderRadius: '50%',
+                background: '#f1f2f6',
+                color: '#6c757d',
+                fontSize: '11px',
+                fontWeight: 'bold',
+                width: '16px',
+                height: '16px',
+                lineHeight: 1
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#e4e6eb'; e.currentTarget.style.color = '#333'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#f1f2f6'; e.currentTarget.style.color = '#6c757d'; }}
+            >
+              &times;
+            </span>
+          )}
           <IconChevron style={{
             transform: open ? 'rotate(180deg)' : 'none',
-            transition: 'transform 0.2s ease'
+            transition: 'transform 0.2s ease',
+            pointerEvents: 'none'
           }} />
         </span>
       </div>

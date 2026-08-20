@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { apiCall } from '../api/client';
 import CustomSelect from '../components/CustomSelect';
 
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+
 const IconTrophy = (props) => (
   <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4Z" />
@@ -64,6 +66,8 @@ export default function LiveAnalytics() {
   const PARTY_PAGE_SIZE = 10;
 
   const allLgas = [...new Set((data.ward_details || []).map(w => w.lga_name).filter(Boolean))].sort();
+
+  const CHART_COLORS = ['#556ee6', '#34c38f', '#f1b44c', '#f46a6a', '#50a5f1', '#e83e8c', '#343a40'];
 
   // Dynamically calculate LGA-specific standings if an LGA is selected
   let displayedLeaderboard = data.leaderboard || [];
@@ -213,17 +217,16 @@ export default function LiveAnalytics() {
         </div>
       </div>
 
-      {/* Ward Filter & Results Section */}
+{/* Ward Filter & Results Section */}
       <div className="card" style={{ marginTop: 20 }}>
         <div className="card-header responsive-header">
           <div className="header-title-group">
             <h2>Ward Standings &amp; Results</h2>
-            <span className="muted">{filteredWardList.length} wards available</span>
+            <span className="muted">{selectedWardFilter ? 'Showing selected ward' : 'Select a ward to view standings'}</span>
           </div>
 
           {/* Cascading Direct Dropdowns */}
           <div className="filter-toolbar">
-            {/* State Dropdown */}
             <CustomSelect
               className="filter-select-responsive"
               value={selectedState}
@@ -233,11 +236,8 @@ export default function LiveAnalytics() {
                 setSelectedState(e.target.value);
                 setSelectedLga('');
                 setSelectedWardFilter('');
-                setWardCurrentPage(1);
               }}
             />
-
-            {/* LGA Dropdown */}
             <CustomSelect
               className="filter-select-responsive"
               value={selectedLga}
@@ -247,21 +247,15 @@ export default function LiveAnalytics() {
               onChange={e => {
                 setSelectedLga(e.target.value);
                 setSelectedWardFilter('');
-                setWardCurrentPage(1);
               }}
             />
-
-            {/* Ward Dropdown */}
             <CustomSelect
               className="filter-select-responsive"
               value={selectedWardFilter}
               placeholder="Select Ward"
               disabled={!selectedLga}
               options={wardFilterList}
-              onChange={e => {
-                setSelectedWardFilter(e.target.value);
-                setWardCurrentPage(1);
-              }}
+              onChange={e => setSelectedWardFilter(e.target.value)}
             />
 
             {hasSelectedFilters && (
@@ -272,7 +266,6 @@ export default function LiveAnalytics() {
                   setSelectedState('');
                   setSelectedLga('');
                   setSelectedWardFilter('');
-                  setWardCurrentPage(1);
                 }}
               >
                 Clear
@@ -281,71 +274,89 @@ export default function LiveAnalytics() {
           </div>
         </div>
 
-        <div className="table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Ward Name</th>
-                <th>LGA</th>
-                <th>State</th>
-                <th>Total Candidates</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedWards.map((ward) => (
-                <tr key={ward.ward_id}>
-                  <td><strong>{ward.ward_name}</strong></td>
-                  <td>{ward.lga_name}</td>
-                  <td>{ward.state_name}</td>
-                  <td>{ward.candidates ? ward.candidates.length : 0} candidates</td>
-                  <td>
-                    <button
-                      type="button"
-                      className="btn btn-outline btn-sm"
-                      onClick={() => setSelectedWardDetail(ward)}
-                    >
-                      View standings
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {paginatedWards.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="empty-state">No wards found matching the selected filters.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        {/* Dynamic Display: Show Grid ONLY if Ward is selected */}
+        {selectedWardFilter ? (() => {
+          const activeWardData = (data.ward_details || []).find(w => w.ward_name === selectedWardFilter);
+          const sortedCandidates = activeWardData && activeWardData.candidates 
+            ? [...activeWardData.candidates].sort((a, b) => (b.total_votes || 0) - (a.total_votes || 0))
+            : [];
 
-        {/* 10-item Pagination Controls */}
-        {totalWardPages > 1 && (
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 14, padding: '16px 0' }}>
-            <button
-              type="button"
-              className="btn btn-outline btn-sm"
-              disabled={wardCurrentPage === 1}
-              onClick={() => setWardCurrentPage(p => Math.max(1, p - 1))}
-            >
-              &larr; Prev
-            </button>
-            <span className="muted" style={{ fontSize: 13 }}>
-              Page {wardCurrentPage} of {totalWardPages}
-            </span>
-            <button
-              type="button"
-              className="btn btn-outline btn-sm"
-              disabled={wardCurrentPage === totalWardPages}
-              onClick={() => setWardCurrentPage(p => Math.min(totalWardPages, p + 1))}
-            >
-              Next &rarr;
-            </button>
+          return (
+            <div className="ward-analysis-grid">
+              {/* Left Side: Candidate List */}
+              <div className="ward-list-side">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Symbol</th>
+                      <th>Candidate Name</th>
+                      <th>Votes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedCandidates.map((cand, idx) => (
+                      <tr key={cand.candidate_id || idx} className={idx === 0 && cand.total_votes > 0 ? 'row-highlight' : ''}>
+                        <td>
+                          {cand.party_icon_url ? (
+                            <img src={cand.party_icon_url} alt="" className="avatar-sm" />
+                          ) : (
+                            <span className="avatar-title">{cand.party_name?.charAt(0) || 'P'}</span>
+                          )}
+                        </td>
+                        <td>
+                          <strong>{cand.candidate_name}</strong>
+                          <div className="muted" style={{ fontSize: 12 }}>{cand.party_name} ({cand.party_code})</div>
+                        </td>
+                        <td>
+                          <strong style={{ fontSize: 15 }}>{(cand.total_votes || 0).toLocaleString()}</strong>
+                        </td>
+                      </tr>
+                    ))}
+                    {sortedCandidates.length === 0 && (
+                      <tr>
+                        <td colSpan={3} className="empty-state">No candidates found for this ward.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Right Side: Bar Chart */}
+              <div className="ward-chart-side">
+                <h4 style={{ margin: '0 0 16px 0', color: '#495057' }}>Vote Distribution</h4>
+                {sortedCandidates.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart
+                      data={sortedCandidates}
+                      layout="vertical"
+                      margin={{ top: 0, right: 20, left: -20, bottom: 0 }}
+                    >
+                      <XAxis type="number" hide />
+                      <YAxis dataKey="party_code" type="category" tick={{ fontSize: 12, fontWeight: 600 }} axisLine={false} tickLine={false} />
+                      <Tooltip 
+                        formatter={(value) => [value.toLocaleString(), 'Votes']}
+                        cursor={{ fill: '#f8f9fa' }}
+                        contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                      />
+                      <Bar dataKey="total_votes" fill="#556ee6" radius={[0, 4, 4, 0]} barSize={24} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="empty-state" style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    No data to display
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })() : (
+          <div className="empty-state-placeholder">
+            Select a State, LGA, and Ward from the dropdowns above to view the candidate standings and charts.
           </div>
         )}
       </div>
 
-      <div className="card">
+      <div className="card" style={{ marginTop: 20 }}>
         <div className="card-header responsive-header">
           <div className="header-title-group">
             <h2>Party-wise seat standings</h2>
@@ -357,6 +368,7 @@ export default function LiveAnalytics() {
             placeholder="All LGAs (Global Standings)"
             options={allLgas}
             value={partyLgaFilter}
+            isClearable={true}
             onChange={e => {
               setPartyLgaFilter(e.target.value);
               setPartyCurrentPage(1);
@@ -364,72 +376,92 @@ export default function LiveAnalytics() {
             style={{ maxWidth: '240px' }}
           />
         </div>
-        <div className="table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Rank</th>
-                <th>Party</th>
-                <th>Symbol</th>
-                <th>Seats won / leading</th>
-                <th>Total popular votes</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {/* Note: We map over paginatedLeaderboard instead of data.leaderboard */}
-              {paginatedLeaderboard.map((party, idx) => (
-                <tr key={party.party_id}>
-                  <td>
-                    <strong>#{partyLgaFilter ? ((partyCurrentPage - 1) * PARTY_PAGE_SIZE) + idx + 1 : idx + 1}</strong>
-                  </td>
-                  <td><strong>{party.party_name}</strong> <span className="muted">({party.party_code})</span></td>
-                  <td>
-                    {party.party_icon_url
-                      ? <img src={party.party_icon_url} alt="" className="avatar-sm" />
-                      : <span className="avatar-title">{party.party_name?.charAt(0)}</span>}
-                  </td>
-                  <td><span className="badge badge-soft-primary">{party.seats_won} seats</span></td>
-                  <td><strong>{party.total_popular_votes.toLocaleString()}</strong></td>
-                  <td>
-                    <button className="btn btn-outline btn-sm" onClick={() => setSelectedParty(party)}>
-                      <IconFileText style={{ marginRight: 5 }} />
-                      View
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {paginatedLeaderboard.length === 0 && (
-                <tr><td colSpan={6} className="empty-state">No results yet.</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
 
-        {/* 10-item Pagination Controls (Only renders if LGA is selected and > 1 page) */}
-        {partyLgaFilter && totalPartyPages > 1 && (
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 14, padding: '16px 0' }}>
-            <button
-              type="button"
-              className="btn btn-outline btn-sm"
-              disabled={partyCurrentPage === 1}
-              onClick={() => setPartyCurrentPage(p => Math.max(1, p - 1))}
-            >
-              &larr; Prev
-            </button>
-            <span className="muted" style={{ fontSize: 13 }}>
-              Page {partyCurrentPage} of {totalPartyPages}
-            </span>
-            <button
-              type="button"
-              className="btn btn-outline btn-sm"
-              disabled={partyCurrentPage === totalPartyPages}
-              onClick={() => setPartyCurrentPage(p => Math.min(totalPartyPages, p + 1))}
-            >
-              Next &rarr;
-            </button>
+        <div className="party-standings-grid">
+          {/* Left Side: 2/3 Width - Minimal Party List */}
+          <div className="party-list-side">
+            <div className="table-wrap" style={{ flex: 1 }}>
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Symbol</th>
+                    <th>Party</th>
+                    <th>Seats</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedLeaderboard.map((party, idx) => (
+                    <tr key={party.party_id}>
+                      <td>
+                        {party.party_icon_url
+                          ? <img src={party.party_icon_url} alt="" className="avatar-sm" />
+                          : <span className="avatar-title">{party.party_name?.charAt(0)}</span>}
+                      </td>
+                      <td>
+                        <strong>{party.party_name}</strong> <span className="muted">({party.party_code})</span>
+                      </td>
+                      <td>
+                        <span className="badge badge-soft-primary">{party.seats_won} seats</span>
+                      </td>
+                    </tr>
+                  ))}
+                  {paginatedLeaderboard.length === 0 && (
+                    <tr><td colSpan={3} className="empty-state">No results yet.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* 10-item Pagination Controls integrated inside the list side */}
+            {partyLgaFilter && totalPartyPages > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 14, padding: '16px 0', borderTop: '1px solid #e2e5f1' }}>
+                <button type="button" className="btn btn-outline btn-sm" disabled={partyCurrentPage === 1} onClick={() => setPartyCurrentPage(p => Math.max(1, p - 1))}>
+                  &larr; Prev
+                </button>
+                <span className="muted" style={{ fontSize: 13 }}>Page {partyCurrentPage} of {totalPartyPages}</span>
+                <button type="button" className="btn btn-outline btn-sm" disabled={partyCurrentPage === totalPartyPages} onClick={() => setPartyCurrentPage(p => Math.min(totalPartyPages, p + 1))}>
+                  Next &rarr;
+                </button>
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Right Side: 1/3 Width - Pie Chart */}
+          <div className="party-chart-side">
+            <h4 style={{ margin: '0 0 16px 0', color: '#495057' }}>Seat Distribution</h4>
+            <div style={{ flex: 1, minHeight: 300 }}>
+              {paginatedLeaderboard.filter(p => p.seats_won > 0).length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={paginatedLeaderboard.filter(p => p.seats_won > 0)}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={3}
+                      dataKey="seats_won"
+                      nameKey="party_code"
+                    >
+                      {paginatedLeaderboard.filter(p => p.seats_won > 0).map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value) => [`${value} Seats`, 'Won']}
+                      contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                    />
+                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="empty-state" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  No seats won yet
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
       
 
