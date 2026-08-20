@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiCall } from '../api/client';
+import CustomSelect from '../components/CustomSelect';
 
 const PAGE_SIZE = 8;
 
@@ -320,45 +321,39 @@ export default function WardManagement() {
       </div>
 
       <div className="card">
-        <div
-          className="card-header"
-          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}
-        >
-          <div>
+        <div className="card-header responsive-header">
+          <div className="header-title-group">
             <h2>Electoral Wards</h2>
             <span className="muted">{sortedWards.length} of {uniqueWards.length} total</span>
           </div>
 
-          {/* Sort + search + filter now share one row instead of sort
-              getting its own full-width strip below the header. */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-              Sort by
-            </span>
-            <select
-              className="form-control ward-sort-select"
-              value={sortKey}
-              onChange={e => setSortKey(e.target.value)}
-            >
-              {SORT_OPTIONS.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
+          <div className="header-controls-group">
+            <div className="sort-filter-actions">
+              <span className="sort-label-text">
+                Sort by
+              </span>
+              <CustomSelect
+                className="sort-select-responsive"
+                value={sortKey}
+                options={SORT_OPTIONS}
+                onChange={e => setSortKey(e.target.value)}
+              />
 
-            <button
-              type="button" title="Search" aria-label="Toggle search"
-              style={iconBtnStyle(searchOpen)}
-              onClick={toggleSearch}
-            >
-              <SearchIcon />
-            </button>
-            <button
-              type="button" title="Filter" aria-label="Toggle filter"
-              style={iconBtnStyle(filterOpen || hasActiveFilters)}
-              onClick={toggleFilter}
-            >
-              <FilterIcon />
-            </button>
+              <button
+                type="button" title="Search" aria-label="Toggle search"
+                style={iconBtnStyle(searchOpen)}
+                onClick={toggleSearch}
+              >
+                <SearchIcon />
+              </button>
+              <button
+                type="button" title="Filter" aria-label="Toggle filter"
+                style={iconBtnStyle(filterOpen || hasActiveFilters)}
+                onClick={toggleFilter}
+              >
+                <FilterIcon />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -367,7 +362,7 @@ export default function WardManagement() {
             <input
               ref={searchInputRef}
               type="text"
-              className="form-control"
+              className="form-control search-input-responsive"
               placeholder="Search ward, LGA, or state…"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
@@ -377,24 +372,30 @@ export default function WardManagement() {
         )}
 
         {filterOpen && (
-          <div style={{ padding: '12px 22px 0', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+          <div className="filter-toolbar" style={{ padding: '12px 16px 0' }}>
             {filterState && <Chip label={filterState} onRemove={() => { setFilterState(''); setFilterLga(''); }} />}
             {filterLga && <Chip label={filterLga} onRemove={() => setFilterLga('')} />}
 
             {!filterState && (
-              <select className="form-control" style={{ maxWidth: 220 }} value="" onChange={e => setFilterState(e.target.value)}>
-                <option value="">Select State…</option>
-                {stateOptions.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
+              <CustomSelect
+                className="filter-select-responsive"
+                value={filterState}
+                placeholder="Select State…"
+                options={stateOptions}
+                onChange={e => setFilterState(e.target.value)}
+              />
             )}
             {filterState && !filterLga && (
-              <select className="form-control" style={{ maxWidth: 220 }} value="" onChange={e => setFilterLga(e.target.value)}>
-                <option value="">Select LGA…</option>
-                {lgaOptionsForFilter.map(l => <option key={l} value={l}>{l}</option>)}
-              </select>
+              <CustomSelect
+                className="filter-select-responsive"
+                value={filterLga}
+                placeholder="Select LGA…"
+                options={lgaOptionsForFilter}
+                onChange={e => setFilterLga(e.target.value)}
+              />
             )}
             {hasActiveFilters && (
-              <button type="button" className="btn btn-secondary btn-sm" onClick={clearFilters}>Clear</button>
+              <button type="button" className="btn btn-secondary btn-sm filter-clear-btn" onClick={clearFilters}>Clear</button>
             )}
           </div>
         )}

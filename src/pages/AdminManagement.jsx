@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiCall } from '../api/client';
+import CustomSelect from '../components/CustomSelect';
 
 const EditIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -119,14 +120,11 @@ export default function AdminManagement({ currentAdminRole }) {
               </div>
               <div className="form-group">
                 <label className="form-label">Role</label>
-                <select
-                  className="form-control"
+                <CustomSelect
                   value={formData.role}
+                  options={hasSuperAdmin ? ['SubAdmin'] : ['SubAdmin', 'SuperAdmin']}
                   onChange={e => setFormData({ ...formData, role: e.target.value })}
-                >
-                  <option value="SubAdmin">SubAdmin</option>
-                  {!hasSuperAdmin && <option value="SuperAdmin">SuperAdmin</option>}
-                </select>
+                />
                 {hasSuperAdmin && (
                   <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
                     A SuperAdmin account already exists — only one is allowed.
@@ -141,9 +139,11 @@ export default function AdminManagement({ currentAdminRole }) {
         </div>
 
         <div className="card">
-          <div className="card-header">
-            <h2>System Administrators</h2>
-            <span className="muted">{admins.length} total</span>
+          <div className="card-header responsive-header">
+            <div className="header-title-group">
+              <h2>System Administrators</h2>
+              <span className="muted">{admins.length} total</span>
+            </div>
           </div>
           <div className="table-wrap">
             <table className="data-table">
@@ -171,7 +171,7 @@ export default function AdminManagement({ currentAdminRole }) {
                       {adm.role === 'SuperAdmin' ? (
                         <span className="muted" style={{ fontSize: 12 }}>Protected</span>
                       ) : (
-                        <button className="btn-icon" style={actionIconStyle('danger')} title="Delete" aria-label="Delete party" onClick={() => handleDelete(p.id)}>
+                        <button className="btn-icon" style={actionIconStyle('danger')} title="Delete" aria-label="Delete admin" onClick={() => handleDelete(adm.id)}>
                           <DeleteIcon />
                         </button>
                       )}

@@ -411,6 +411,8 @@ h5 {
   border-radius: 10px;
   box-shadow: 0 1px 2px rgba(56, 65, 74, 0.06);
   margin-bottom: 22px;
+  overflow-x: hidden;
+  min-width: 0;
 }
 
 .card-header {
@@ -645,6 +647,7 @@ table.data-table {
 
 .form-control {
   width: 100%;
+  max-width: 100%;
   padding: 10px 13px;
   background: #fff;
   border: 1px solid #dfe2e8;
@@ -656,6 +659,12 @@ table.data-table {
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease;
+}
+
+select.form-control {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .form-control::placeholder {
   color: #adb2bc;
@@ -1449,7 +1458,6 @@ table.data-table {
   }
   .page-content {
     padding: 18px 16px 40px;
-    overflow-x: hidden;
   }
 
   .modal-overlay {
@@ -1497,5 +1505,166 @@ table.data-table {
   }
   .auth-card {
     width: 100%;
+  }
+}
+
+/* ==========================================================================
+   UNIVERSAL MOBILE RESPONSIVENESS & TABLE SCROLL UTILITIES
+   ========================================================================== */
+
+/* 1. Enhanced Responsive Table Wrapper with Touch Momentum Scrolling */
+.table-wrap,
+.table-scroll-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* On mobile, reduce table cell padding and font-size for better fit.
+   Keep thead nowrap so tables that are too wide scroll horizontally
+   via .table-wrap instead of cramming everything into a tiny viewport. */
+@media (max-width: 780px) {
+  .data-table thead th,
+  .data-table tbody td {
+    padding: 10px 10px;
+    font-size: 12.5px;
+  }
+  /* Let flex-based cells (e.g. party-cell) shrink properly */
+  .party-cell {
+    min-width: 0;
+    gap: 6px;
+    font-size: 12px;
+  }
+  .party-cell .avatar-xs {
+    width: 22px;
+    height: 22px;
+  }
+  .badge {
+    font-size: 10px;
+    padding: 3px 7px;
+  }
+}
+
+@media (max-width: 480px) {
+  .data-table thead th,
+  .data-table tbody td {
+    padding: 8px 6px;
+    font-size: 11.5px;
+  }
+  .data-table thead th {
+    font-size: 10px;
+  }
+  .party-cell {
+    gap: 4px;
+    font-size: 11px;
+  }
+  .party-cell .avatar-xs {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* 2. Responsive Card Header Toolbar Architecture */
+.responsive-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.header-title-group {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.header-controls-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: auto;
+}
+
+.sort-filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sort-label-text {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .responsive-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .header-controls-group {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .search-input-responsive {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .sort-filter-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .sort-select-responsive {
+    flex: 1;
+    min-width: 0;
+    max-width: 100% !important;
+  }
+
+  .sort-label-text {
+    font-size: 11px;
+  }
+}
+
+/* 3. Filter Drawer & Toolbar Layout Rules */
+.filter-toolbar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.filter-select-responsive {
+  min-width: 140px;
+  flex: 1 1 auto;
+  max-width: 100%;
+}
+
+@media (max-width: 640px) {
+  .filter-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .filter-select-responsive,
+  .filter-select-full-mobile {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .filter-clear-btn {
+    width: 100%;
+    margin-top: 4px;
   }
 }

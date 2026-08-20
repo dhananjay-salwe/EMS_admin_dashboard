@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiCall } from '../api/client';
+import CustomSelect from '../components/CustomSelect';
 
 
 const EditIcon = () => (
@@ -183,24 +184,23 @@ export default function PartyManagement() {
         </div>
 
         <div className="card">
-          <div className="card-header" style={{ flexWrap: 'wrap', gap: 12 }}>
-            <div>
+          <div className="card-header responsive-header">
+            <div className="header-title-group">
               <h2>Registered political parties</h2>
               <span className="muted">{parties.length} total</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                Sort by
-              </span>
-              <select
-                className="form-control ward-sort-select"
-                value={sortKey}
-                onChange={e => setSortKey(e.target.value)}
-              >
-                {SORT_OPTIONS.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
+            <div className="header-controls-group">
+              <div className="sort-filter-actions">
+                <span className="sort-label-text">
+                  Sort by
+                </span>
+                <CustomSelect
+                  className="sort-select-responsive"
+                  value={sortKey}
+                  options={SORT_OPTIONS}
+                  onChange={e => setSortKey(e.target.value)}
+                />
+              </div>
             </div>
           </div>
           <div className="table-wrap">

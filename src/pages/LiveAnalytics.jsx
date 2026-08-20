@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiCall } from '../api/client';
+import CustomSelect from '../components/CustomSelect';
 
 const IconTrophy = (props) => (
   <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -214,78 +215,70 @@ export default function LiveAnalytics() {
 
       {/* Ward Filter & Results Section */}
       <div className="card" style={{ marginTop: 20 }}>
-        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-          <div>
+        <div className="card-header responsive-header">
+          <div className="header-title-group">
             <h2>Ward Standings &amp; Results</h2>
             <span className="muted">{filteredWardList.length} wards available</span>
           </div>
 
           {/* Cascading Direct Dropdowns */}
-{/* Inline Cascading Dropdowns */}
-<div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'nowrap' }}>
-  {/* State Dropdown */}
-  <select
-    className="form-control"
-    style={{ minWidth: 180, width: 'auto' }}
-    value={selectedState}
-    onChange={e => {
-      setSelectedState(e.target.value);
-      setSelectedLga('');
-      setSelectedWardFilter('');
-      setWardCurrentPage(1);
-    }}
-  >
-    <option value="">Select State</option>
-    {stateList.map(s => <option key={s} value={s}>{s}</option>)}
-  </select>
+          <div className="filter-toolbar">
+            {/* State Dropdown */}
+            <CustomSelect
+              className="filter-select-responsive"
+              value={selectedState}
+              placeholder="Select State"
+              options={stateList}
+              onChange={e => {
+                setSelectedState(e.target.value);
+                setSelectedLga('');
+                setSelectedWardFilter('');
+                setWardCurrentPage(1);
+              }}
+            />
 
-  {/* LGA Dropdown */}
-  <select
-    className="form-control"
-    style={{ minWidth: 180, width: 'auto' }}
-    value={selectedLga}
-    disabled={!selectedState}
-    onChange={e => {
-      setSelectedLga(e.target.value);
-      setSelectedWardFilter('');
-      setWardCurrentPage(1);
-    }}
-  >
-    <option value="">Select LGA</option>
-    {lgaList.map(l => <option key={l} value={l}>{l}</option>)}
-  </select>
+            {/* LGA Dropdown */}
+            <CustomSelect
+              className="filter-select-responsive"
+              value={selectedLga}
+              placeholder="Select LGA"
+              disabled={!selectedState}
+              options={lgaList}
+              onChange={e => {
+                setSelectedLga(e.target.value);
+                setSelectedWardFilter('');
+                setWardCurrentPage(1);
+              }}
+            />
 
-  {/* Ward Dropdown */}
-  <select
-    className="form-control"
-    style={{ minWidth: 180, width: 'auto' }}
-    value={selectedWardFilter}
-    disabled={!selectedLga}
-    onChange={e => {
-      setSelectedWardFilter(e.target.value);
-      setWardCurrentPage(1);
-    }}
-  >
-    <option value="">Select Ward</option>
-    {wardFilterList.map(w => <option key={w} value={w}>{w}</option>)}
-  </select>
+            {/* Ward Dropdown */}
+            <CustomSelect
+              className="filter-select-responsive"
+              value={selectedWardFilter}
+              placeholder="Select Ward"
+              disabled={!selectedLga}
+              options={wardFilterList}
+              onChange={e => {
+                setSelectedWardFilter(e.target.value);
+                setWardCurrentPage(1);
+              }}
+            />
 
-  {hasSelectedFilters && (
-    <button
-      type="button"
-      className="btn btn-secondary btn-sm"
-      style={{ whiteSpace: 'nowrap' }}
-      onClick={() => {
-        setSelectedState('');
-        setSelectedLga('');
-        setSelectedWardFilter('');
-        setWardCurrentPage(1);
-      }}
-    >
-      Clear
-    </button>
-  )}
-</div>
+            {hasSelectedFilters && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm filter-clear-btn"
+                onClick={() => {
+                  setSelectedState('');
+                  setSelectedLga('');
+                  setSelectedWardFilter('');
+                  setWardCurrentPage(1);
+                }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="table-wrap">
@@ -352,23 +345,24 @@ export default function LiveAnalytics() {
         )}
       </div>
 
-<div className="card">
-        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-          <h2>Party-wise seat standings</h2>
+      <div className="card">
+        <div className="card-header responsive-header">
+          <div className="header-title-group">
+            <h2>Party-wise seat standings</h2>
+          </div>
           
           {/* Main Page LGA Dropdown */}
-          <select
-            className="form-control"
-            style={{ minWidth: 200, width: 'auto', padding: '6px 12px' }}
+          <CustomSelect
+            className="filter-select-responsive"
+            placeholder="All LGAs (Global Standings)"
+            options={allLgas}
             value={partyLgaFilter}
             onChange={e => {
               setPartyLgaFilter(e.target.value);
               setPartyCurrentPage(1);
             }}
-          >
-            <option value="">All LGAs (Global Standings)</option>
-            {allLgas.map(lga => <option key={lga} value={lga}>{lga}</option>)}
-          </select>
+            style={{ maxWidth: '240px' }}
+          />
         </div>
         <div className="table-wrap">
           <table className="data-table">
