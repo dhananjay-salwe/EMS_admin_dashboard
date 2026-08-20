@@ -349,11 +349,7 @@ export default function LiveAnalytics() {
               </div>
             </div>
           );
-        })() : (
-          <div className="empty-state-placeholder">
-            Select a State, LGA, and Ward from the dropdowns above to view the candidate standings and charts.
-          </div>
-        )}
+        })() : null}
       </div>
 
       <div className="card" style={{ marginTop: 20 }}>
@@ -362,19 +358,40 @@ export default function LiveAnalytics() {
             <h2>Party-wise seat standings</h2>
           </div>
           
-          {/* Main Page LGA Dropdown */}
-          <CustomSelect
-            className="filter-select-responsive"
-            placeholder="All LGAs (Global Standings)"
-            options={allLgas}
-            value={partyLgaFilter}
-            isClearable={true}
-            onChange={e => {
-              setPartyLgaFilter(e.target.value);
-              setPartyCurrentPage(1);
-            }}
-            style={{ maxWidth: '240px' }}
-          />
+          {/* Main Page LGA Dropdown with Clear Button */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <CustomSelect
+              className="filter-select-responsive"
+              placeholder="All LGAs (Global Standings)"
+              options={allLgas}
+              value={partyLgaFilter}
+              onChange={e => {
+                setPartyLgaFilter(e.target.value);
+                setPartyCurrentPage(1);
+              }}
+              style={{ maxWidth: '240px' }}
+            />
+            {partyLgaFilter && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => {
+                  setPartyLgaFilter('');
+                  setPartyCurrentPage(1);
+                }}
+                style={{
+                  whiteSpace: 'nowrap',
+                  height: '38px',
+                  padding: '0 12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontWeight: '600'
+                }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="party-standings-grid">

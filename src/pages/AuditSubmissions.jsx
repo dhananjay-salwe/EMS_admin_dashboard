@@ -166,7 +166,7 @@ export default function BoothReport() {
             <input
               type="text"
               className="form-control search-input-responsive"
-              placeholder="Search operator, booth code, or booth name…"
+              placeholder="Type to search..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />

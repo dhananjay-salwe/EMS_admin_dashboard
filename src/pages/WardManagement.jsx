@@ -363,7 +363,7 @@ export default function WardManagement() {
               ref={searchInputRef}
               type="text"
               className="form-control search-input-responsive"
-              placeholder="Search ward, LGA, or state…"
+              placeholder="Type to search..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               autoFocus

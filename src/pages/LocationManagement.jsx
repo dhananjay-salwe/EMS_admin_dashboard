@@ -335,7 +335,7 @@ export default function LocationManagement() {
           {searchOpen && (
             <div style={{ padding: '12px 20px 0' }}>
               <input
-                type="text" className="form-control search-input-responsive" placeholder="Search booth name or code…"
+                type="text" className="form-control search-input-responsive" placeholder="Type to search..."
                 value={searchTerm} onChange={e => setSearchTerm(e.target.value)} autoFocus
               />
             </div>

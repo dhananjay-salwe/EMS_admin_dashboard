@@ -411,7 +411,6 @@ h5 {
   border-radius: 10px;
   box-shadow: 0 1px 2px rgba(56, 65, 74, 0.06);
   margin-bottom: 22px;
-  overflow-x: hidden;
   min-width: 0;
 }
 
@@ -1599,6 +1598,10 @@ table.data-table {
   white-space: nowrap;
 }
 
+.search-input-responsive {
+  width: 240px;
+}
+
 @media (max-width: 640px) {
   .responsive-header {
     flex-direction: column;
@@ -1638,14 +1641,17 @@ table.data-table {
   flex-direction: row;
   align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
-  flex: 1 1 auto;
-  min-width: 0;
+  flex-wrap: nowrap; /* keep side-by-side on desktop */
+}
+
+.custom-select-container {
+  display: inline-block;
+  width: 100%;
 }
 
 .filter-select-responsive {
-  min-width: 140px;
-  flex: 1 1 auto;
+  width: 160px; /* fixed width to align in a single line next to headers */
+  min-width: 120px;
   max-width: 100%;
 }
 
@@ -1654,6 +1660,8 @@ table.data-table {
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
+    flex-wrap: wrap;
+    width: 100%;
   }
 
   .filter-select-responsive,

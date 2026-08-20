@@ -401,7 +401,7 @@ export default function OperatorManagement() {
           {searchOpen && (
             <div style={{ padding: '12px 20px 0' }}>
               <input
-                type="text" className="form-control" placeholder="Search name or username…"
+                type="text" className="form-control" placeholder="Type to search..."
                 value={searchTerm} onChange={e => setSearchTerm(e.target.value)} autoFocus
               />
             </div>

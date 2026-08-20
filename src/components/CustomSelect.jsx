@@ -56,8 +56,6 @@ export default function CustomSelect({
       ref={containerRef}
       style={{
         position: 'relative',
-        display: 'inline-block',
-        width: '100%',
         ...style
       }}
     >
