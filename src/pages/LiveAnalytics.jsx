@@ -51,6 +51,15 @@ export default function LiveAnalytics() {
   const [selectedParty, setSelectedParty] = useState(null);
   const [showWardModal, setShowWardModal] = useState(false);
 
+  // FIX: Manual refresh UI controls state and handler
+  const [refreshing, setRefreshing] = useState(false);
+  const handleManualRefresh = async () => {
+    setRefreshing(true);
+    await fetchStats();
+    setRefreshing(false);
+  };
+
+
   // --- Ward Filter & Pagination States ---
   const [selectedState, setSelectedState] = useState('');
   const [selectedLga, setSelectedLga] = useState('');
@@ -149,23 +158,88 @@ export default function LiveAnalytics() {
 
   const hasSelectedFilters = selectedState || selectedLga || selectedWardFilter;
 
+  // OLD CODE:
+  // useEffect(() => {
+  //   fetchStats();
+  //   const interval = setInterval(fetchStats, 10000);
+  //   return () => clearInterval(interval);
+  // }, []);
+
+  // FIX: Added visibilitychange listener to prevent background bandwidth drain
   useEffect(() => {
     fetchStats();
-    const interval = setInterval(fetchStats, 10000);
-    return () => clearInterval(interval);
+    
+    let intervalId = null;
+
+    const startPolling = () => {
+      if (!intervalId) {
+        intervalId = setInterval(() => {
+          if (document.visibilityState === 'visible') {
+            fetchStats();
+          }
+        }, 10000);
+      }
+    };
+
+    const stopPolling = () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchStats();
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    };
+
+    startPolling();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const leadingParty = data.leaderboard.length > 0 ? data.leaderboard[0] : null;
 
   return (
     <div>
-      {/* <div className="page-title-box">
+      {/* OLD CODE:
+      <div className="page-title-box">
         <div>
           <div className="breadcrumb">
             <span>Dashboard</span> / <span className="current">Live Tallies</span>
           </div>
         </div>
-      </div> */}
+      </div>
+      */}
+
+      {/* FIX: Added page title box with manual refresh trigger */}
+      <div className="page-title-box" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
+        <div>
+          <div className="breadcrumb">
+            <span>Dashboard</span> / <span className="current">Live Tallies</span>
+          </div>
+        </div>
+        <div>
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            onClick={handleManualRefresh}
+            disabled={refreshing}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', minHeight: '34px' }}
+          >
+            {refreshing ? '🔄 Refreshing...' : '🔄 Refresh Live Data'}
+          </button>
+        </div>
+      </div>
+
 
 <div className="stat-grid">
         {/* 1. Total Wards */}

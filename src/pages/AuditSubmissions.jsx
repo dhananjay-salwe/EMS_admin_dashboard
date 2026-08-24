@@ -68,6 +68,11 @@ const SORT_OPTIONS = [
 
 export default function BoothReport() {
   const [submissions, setSubmissions] = useState([]);
+  // FIX: Added server pagination states and locations state
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [locations, setLocations] = useState([]);
+
   const [selectedReport, setSelectedReport] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -80,31 +85,84 @@ export default function BoothReport() {
   const [filterLga, setFilterLga] = useState('');
   const [filterWard, setFilterWard] = useState('');
 
-  const fetchSubmissions = async () => {
-    const data = await apiCall('/audit/submissions');
-    if (data.success) {
-      setSubmissions(data.submissions || []);
+  // OLD CODE:
+  // const fetchSubmissions = async () => {
+  //   const data = await apiCall('/audit/submissions');
+  //   if (data.success) {
+  //     setSubmissions(data.submissions || []);
+  //   }
+  // };
+  // 
+  // useEffect(() => {
+  //   fetchSubmissions();
+  // }, []);
+
+  // FIX: Server-side pagination fetch and location loaders
+  const fetchSubmissions = async (page = 1) => {
+    try {
+      const query = new URLSearchParams({
+        page,
+        limit: PAGE_SIZE,
+        state: filterState,
+        lga: filterLga,
+        ward: filterWard,
+        search: searchTerm,
+        sort: sortDir
+      }).toString();
+
+      const data = await apiCall(`/audit/submissions?${query}`);
+      if (data.success) {
+        setSubmissions(data.submissions || []);
+        setTotalPages(data.pagination?.totalPages || 1);
+        setTotalRecords(data.pagination?.totalRecords || 0);
+      }
+    } catch (err) {
+      console.error("Failed to fetch submissions:", err);
+    }
+  };
+
+  const fetchLocations = async () => {
+    try {
+      const data = await apiCall('/locations/all');
+      if (data.success) {
+        setLocations(data.locations || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch locations:", err);
     }
   };
 
   useEffect(() => {
-    fetchSubmissions();
+    fetchLocations();
   }, []);
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, sortDir, filterState, filterLga, filterWard]);
+    fetchSubmissions(currentPage);
+  }, [currentPage, searchTerm, sortDir, filterState, filterLga, filterWard]);
 
-  // ---- Cascading location option lists, derived from submissions ----
-  const stateOptions = [...new Set(submissions.map(s => s.state_name).filter(Boolean))].sort();
+  // OLD CODE:
+  // // ---- Cascading location option lists, derived from submissions ----
+  // const stateOptions = [...new Set(submissions.map(s => s.state_name).filter(Boolean))].sort();
+  // 
+  // const lgaOptions = [...new Set(
+  //   submissions.filter(s => s.state_name === filterState).map(s => s.lga_name).filter(Boolean)
+  // )].sort();
+  // 
+  // const wardOptions = [...new Set(
+  //   submissions.filter(s => s.state_name === filterState && s.lga_name === filterLga).map(s => s.ward_name).filter(Boolean)
+  // )].sort();
+
+  // FIX: Cascade location options derived from complete location hierarchy
+  const stateOptions = [...new Set(locations.map(l => l.state_name).filter(Boolean))].sort();
 
   const lgaOptions = [...new Set(
-    submissions.filter(s => s.state_name === filterState).map(s => s.lga_name).filter(Boolean)
+    locations.filter(l => l.state_name === filterState).map(l => l.lga_name).filter(Boolean)
   )].sort();
 
   const wardOptions = [...new Set(
-    submissions.filter(s => s.state_name === filterState && s.lga_name === filterLga).map(s => s.ward_name).filter(Boolean)
+    locations.filter(l => l.state_name === filterState && l.lga_name === filterLga).map(l => l.ward_name).filter(Boolean)
   )].sort();
+
 
   const clearFilters = () => {
     setFilterState('');
@@ -114,34 +172,40 @@ export default function BoothReport() {
 
   const hasActiveFilters = filterState || filterLga || filterWard;
 
-  // ---- Apply filters + search ----
-  const filteredSubmissions = submissions.filter(sub => {
-    if (filterState && sub.state_name !== filterState) return false;
-    if (filterLga && sub.lga_name !== filterLga) return false;
-    if (filterWard && sub.ward_name !== filterWard) return false;
+  // OLD CODE:
+  // // ---- Apply filters + search ----
+  // const filteredSubmissions = submissions.filter(sub => {
+  //   if (filterState && sub.state_name !== filterState) return false;
+  //   if (filterLga && sub.lga_name !== filterLga) return false;
+  //   if (filterWard && sub.ward_name !== filterWard) return false;
+  // 
+  //   if (searchTerm) {
+  //     const term = searchTerm.toLowerCase();
+  //     const matches =
+  //       sub.operator_name?.toLowerCase().includes(term) ||
+  //       sub.unique_booth_code?.toLowerCase().includes(term) ||
+  //       sub.booth_name?.toLowerCase().includes(term);
+  //     if (!matches) return false;
+  //   }
+  // 
+  //   return true;
+  // });
+  // 
+  // // ---- Sort A-Z / Z-A by operator name ----
+  // const sortedSubmissions = [...filteredSubmissions].sort((a, b) => {
+  //   const cmp = (a.operator_name || '').localeCompare(b.operator_name || '');
+  //   return sortDir === 'desc' ? -cmp : cmp;
+  // });
+  // 
+  // // ---- Pagination ----
+  // const totalPages = Math.max(1, Math.ceil(sortedSubmissions.length / PAGE_SIZE));
+  // const pageSubmissions = sortedSubmissions.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  // const totalSubmissions = submissions.length;
 
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      const matches =
-        sub.operator_name?.toLowerCase().includes(term) ||
-        sub.unique_booth_code?.toLowerCase().includes(term) ||
-        sub.booth_name?.toLowerCase().includes(term);
-      if (!matches) return false;
-    }
+  // FIX: Shifted filtering, sorting and pagination to server-side
+  const pageSubmissions = submissions;
+  const totalSubmissions = totalRecords;
 
-    return true;
-  });
-
-  // ---- Sort A-Z / Z-A by operator name ----
-  const sortedSubmissions = [...filteredSubmissions].sort((a, b) => {
-    const cmp = (a.operator_name || '').localeCompare(b.operator_name || '');
-    return sortDir === 'desc' ? -cmp : cmp;
-  });
-
-  // ---- Pagination ----
-  const totalPages = Math.max(1, Math.ceil(sortedSubmissions.length / PAGE_SIZE));
-  const pageSubmissions = sortedSubmissions.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-  const totalSubmissions = submissions.length;
 
   const isPdf = (url) => {
     if (!url) return false;
@@ -162,7 +226,12 @@ export default function BoothReport() {
         <div className="card-header responsive-header">
           <div className="header-title-group">
             <h2>Booth Reports</h2>
-            <span className="muted">{filteredSubmissions.length} of {totalSubmissions} submissions</span>
+            {/* OLD CODE:
+            // <span className="muted">{filteredSubmissions.length} of {totalSubmissions} submissions</span>
+            */}
+            
+            {/* FIX: Use server-provided totalSubmissions count to prevent undefined variable crash */}
+            <span className="muted">{totalSubmissions} submissions found</span>
           </div>
           <div className="header-controls-group">
             <input

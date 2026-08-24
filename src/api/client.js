@@ -1,4 +1,8 @@
-const API_BASE_URL = 'https://ems-backend-t6u3.onrender.com/api';
+// OLD CODE:
+const API_BASE_URL = 'https://ems-backend-55q1.onrender.com/api';
+
+// FIX: Point to local backend API server on port 5000 for testing
+// const API_BASE_URL = 'http://localhost:5000/api';
 
 export const apiCall = async (endpoint, options = {}) => {
   try {
