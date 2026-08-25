@@ -1757,3 +1757,8 @@ table.data-table {
     gap: 16px;
   }
 }
+
+/* FEATURE: Video upload media elements and layout custom styling */
+.media-actions-cell { display: flex; gap: 8px; }
+.btn-icon { margin-right: 5px; }
+.video-player-preview { width: 100%; max-height: 65vh; border-radius: 6px; background-color: #000; }

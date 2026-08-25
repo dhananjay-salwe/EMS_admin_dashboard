@@ -20,6 +20,9 @@ const IconImage = (props) => (
   </svg>
 );
 
+// FEATURE: SVG Icon component for displaying/auditing recorded video submissions
+const IconVideo = (props) => ( <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg> );
+
 const FilterIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
@@ -74,7 +77,13 @@ export default function BoothReport() {
   const [locations, setLocations] = useState([]);
 
   const [selectedReport, setSelectedReport] = useState(null);
+  // OLD CODE:
+  // const [selectedImage, setSelectedImage] = useState(null);
+  // const [currentPage, setCurrentPage] = useState(1);
+
+  // FEATURE: State tracking for selected video modals
   const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedVideo, setSelectedVideo] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -309,7 +318,11 @@ export default function BoothReport() {
                 <th>Booth Code &amp; Name</th>
                 <th>Time Submitted</th>
                 <th>Reports</th>
+                {/* OLD CODE:
                 <th>Photos</th>
+                */}
+                {/* FEATURE: Media Attachments column label for photos & videos */}
+                <th>Media Attachments</th>
               </tr>
             </thead>
             <tbody>
@@ -330,6 +343,7 @@ export default function BoothReport() {
                       <IconFileText style={{ marginRight: 5 }} /> View report
                     </button>
                   </td>
+                  {/* OLD CODE:
                   <td>
                     <button
                       type="button"
@@ -342,6 +356,35 @@ export default function BoothReport() {
                     >
                       <IconImage style={{ marginRight: 5 }} /> View Photo
                     </button>
+                  </td>
+                  */}
+
+                  {/* FEATURE: flex cell container rendering physical document photo and recorded video controls */}
+                  <td className="media-actions-cell">
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm"
+                      onClick={() => setSelectedImage({
+                        url: sub.tally_sheet_url,
+                        booth: sub.unique_booth_code,
+                        operator: sub.operator_name
+                      })}
+                    >
+                      <IconImage style={{ marginRight: 5 }} /> View Photo
+                    </button>
+                    {sub.video_url && (
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-sm"
+                        onClick={() => setSelectedVideo({
+                          url: sub.video_url,
+                          booth: sub.unique_booth_code,
+                          operator: sub.operator_name
+                        })}
+                      >
+                        <IconVideo className="btn-icon" /> View Video
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -517,6 +560,74 @@ export default function BoothReport() {
                 )}
               </div>
               <button type="button" className="btn btn-secondary btn-sm" onClick={() => setSelectedImage(null)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FEATURE: 3. IN-APP RECORDED VIDEO PREVIEW MODAL */}
+      {selectedVideo && (
+        <div className="modal-overlay" onClick={() => setSelectedVideo(null)}>
+          <div 
+            className="modal-box" 
+            style={{ 
+              maxWidth: '800px', 
+              width: '92%', 
+              maxHeight: '90vh', 
+              display: 'flex', 
+              flexDirection: 'column',
+              overflow: 'hidden' 
+            }} 
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <div>
+                <h3 style={{ margin: 0, fontSize: 16 }}>Tally Video — {selectedVideo.booth}</h3>
+                <span className="muted" style={{ fontSize: 12 }}>Operator: {selectedVideo.operator}</span>
+              </div>
+              <button className="modal-close" onClick={() => setSelectedVideo(null)}>&times;</button>
+            </div>
+
+            <div 
+              className="modal-body" 
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                backgroundColor: '#0f172a',
+                padding: 16,
+                maxHeight: '65vh',
+                overflow: 'auto'
+              }}
+            >
+              {selectedVideo.url ? (
+                <video 
+                  controls 
+                  src={selectedVideo.url} 
+                  className="video-player-preview" 
+                />
+              ) : (
+                <div style={{ padding: '40px 20px', color: '#94a3b8', textAlign: 'center' }}>
+                  <p style={{ fontSize: 15, fontWeight: 600, margin: '0 0 6px' }}>No video uploaded</p>
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer" style={{ justifyContent: 'space-between', padding: '10px 16px' }}>
+              <div>
+                {selectedVideo.url && (
+                  <a
+                    href={selectedVideo.url}
+                    download={`TallyVideo_${selectedVideo.booth}.mp4`}
+                    className="btn btn-outline btn-sm"
+                  >
+                    Download Video
+                  </a>
+                )}
+              </div>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => setSelectedVideo(null)}>
                 Close
               </button>
             </div>
