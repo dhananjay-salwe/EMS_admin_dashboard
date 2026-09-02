@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { apiCall } from '../api/client';
 import CustomSelect from '../components/CustomSelect';
+import { toast } from 'react-hot-toast';
 
 const IconFileText = (props) => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
     <polyline points="14 2 14 8 20 8" />
     <line x1="16" y1="13" x2="8" y2="13" />
@@ -13,7 +14,7 @@ const IconFileText = (props) => (
 );
 
 const IconImage = (props) => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
     <circle cx="8.5" cy="8.5" r="1.5" />
     <polyline points="21 15 16 10 5 21" />
@@ -21,7 +22,34 @@ const IconImage = (props) => (
 );
 
 // FEATURE: SVG Icon component for displaying/auditing recorded video submissions
-const IconVideo = (props) => ( <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg> );
+const IconVideo = (props) => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <polygon points="23 7 16 12 23 17 23 7" />
+    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+  </svg>
+);
+
+const EditIcon = (props) => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+  </svg>
+);
+
+const actionIconStyle = (variant = 'primary') => ({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: 32,
+  height: 32,
+  borderRadius: 6,
+  border: '1px solid ' + (variant === 'danger' ? '#f46a6a' : '#556ee6'),
+  background: '#fff',
+  color: variant === 'danger' ? '#f46a6a' : '#556ee6',
+  cursor: 'pointer',
+  padding: 0,
+  flexShrink: 0,
+});
 
 const FilterIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -77,14 +105,13 @@ export default function BoothReport() {
   const [locations, setLocations] = useState([]);
 
   const [selectedReport, setSelectedReport] = useState(null);
-  // OLD CODE:
-  // const [selectedImage, setSelectedImage] = useState(null);
-  // const [currentPage, setCurrentPage] = useState(1);
 
   // FEATURE: State tracking for selected video modals
   const [selectedImage, setSelectedImage] = useState(null);
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+
+  const [imageZoom, setImageZoom] = useState(1);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [sortDir, setSortDir] = useState('asc');
@@ -94,17 +121,72 @@ export default function BoothReport() {
   const [filterLga, setFilterLga] = useState('');
   const [filterWard, setFilterWard] = useState('');
 
-  // OLD CODE:
-  // const fetchSubmissions = async () => {
-  //   const data = await apiCall('/audit/submissions');
-  //   if (data.success) {
-  //     setSubmissions(data.submissions || []);
-  //   }
-  // };
-  // 
-  // useEffect(() => {
-  //   fetchSubmissions();
-  // }, []);
+  const [verifyingReport, setVerifyingReport] = useState(null);
+  const [verifiedCounts, setVerifiedCounts] = useState({});
+  const [verifying, setVerifying] = useState(false);
+
+
+  const openVerifyModal = (report) => {
+    const initialCounts = {};
+    report.votes_breakdown.forEach(item => {
+      // Default to the moderator count if it exists, otherwise fall back to the operator's count
+      initialCounts[item.candidate_id] = item.moderator_vote_count !== null ? item.moderator_vote_count : item.vote_count;
+    });
+    setVerifiedCounts(initialCounts);
+    setVerifyingReport(report);
+  };
+
+const handleVerifySubmit = async (e) => {
+    if (e && e.preventDefault) e.preventDefault(); // Safely handle event
+    setVerifying(true);
+    
+    const payload = Object.keys(verifiedCounts).map(candidate_id => ({
+      candidate_id: parseInt(candidate_id, 10),
+      count: parseInt(verifiedCounts[candidate_id], 10) || 0
+    }));
+
+    try {
+      const res = await apiCall(`/audit/verify/${verifyingReport.id}`, { 
+        method: 'PUT', 
+        body: JSON.stringify({ verified_votes: payload }) 
+      });
+
+      if (res.success) {
+        toast.success('Verified counts saved successfully!');
+        setVerifyingReport(null);
+        fetchSubmissions(currentPage); // Refresh the table
+      } else {
+        toast.error(res.message || 'Failed to save counts.');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Network error while saving counts.');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const forceDownload = async (fileUrl, fileName) => {
+    try {
+      toast.loading('Downloading file...', { id: 'download-toast' });
+      const response = await fetch(fileUrl);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+      toast.success('Download complete!', { id: 'download-toast' });
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('Download failed. Please try again.', { id: 'download-toast' });
+    }
+  };
 
   // FIX: Server-side pagination fetch and location loaders
   const fetchSubmissions = async (page = 1) => {
@@ -149,18 +231,6 @@ export default function BoothReport() {
     fetchSubmissions(currentPage);
   }, [currentPage, searchTerm, sortDir, filterState, filterLga, filterWard]);
 
-  // OLD CODE:
-  // // ---- Cascading location option lists, derived from submissions ----
-  // const stateOptions = [...new Set(submissions.map(s => s.state_name).filter(Boolean))].sort();
-  // 
-  // const lgaOptions = [...new Set(
-  //   submissions.filter(s => s.state_name === filterState).map(s => s.lga_name).filter(Boolean)
-  // )].sort();
-  // 
-  // const wardOptions = [...new Set(
-  //   submissions.filter(s => s.state_name === filterState && s.lga_name === filterLga).map(s => s.ward_name).filter(Boolean)
-  // )].sort();
-
   // FIX: Cascade location options derived from complete location hierarchy
   const stateOptions = [...new Set(locations.map(l => l.state_name).filter(Boolean))].sort();
 
@@ -181,36 +251,6 @@ export default function BoothReport() {
 
   const hasActiveFilters = filterState || filterLga || filterWard;
 
-  // OLD CODE:
-  // // ---- Apply filters + search ----
-  // const filteredSubmissions = submissions.filter(sub => {
-  //   if (filterState && sub.state_name !== filterState) return false;
-  //   if (filterLga && sub.lga_name !== filterLga) return false;
-  //   if (filterWard && sub.ward_name !== filterWard) return false;
-  // 
-  //   if (searchTerm) {
-  //     const term = searchTerm.toLowerCase();
-  //     const matches =
-  //       sub.operator_name?.toLowerCase().includes(term) ||
-  //       sub.unique_booth_code?.toLowerCase().includes(term) ||
-  //       sub.booth_name?.toLowerCase().includes(term);
-  //     if (!matches) return false;
-  //   }
-  // 
-  //   return true;
-  // });
-  // 
-  // // ---- Sort A-Z / Z-A by operator name ----
-  // const sortedSubmissions = [...filteredSubmissions].sort((a, b) => {
-  //   const cmp = (a.operator_name || '').localeCompare(b.operator_name || '');
-  //   return sortDir === 'desc' ? -cmp : cmp;
-  // });
-  // 
-  // // ---- Pagination ----
-  // const totalPages = Math.max(1, Math.ceil(sortedSubmissions.length / PAGE_SIZE));
-  // const pageSubmissions = sortedSubmissions.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-  // const totalSubmissions = submissions.length;
-
   // FIX: Shifted filtering, sorting and pagination to server-side
   const pageSubmissions = submissions;
   const totalSubmissions = totalRecords;
@@ -223,23 +263,11 @@ export default function BoothReport() {
 
   return (
     <div>
-      {/* <div className="page-title-box">
-        <div>
-          <div className="breadcrumb">
-            <span>Dashboard</span> / <span className="current">Booth Report</span>
-          </div>
-        </div>
-      </div> */}
 
       <div className="card">
         <div className="card-header responsive-header">
           <div className="header-title-group">
             <h2>Booth Reports</h2>
-            {/* OLD CODE:
-            // <span className="muted">{filteredSubmissions.length} of {totalSubmissions} submissions</span>
-            */}
-            
-            {/* FIX: Use server-provided totalSubmissions count to prevent undefined variable crash */}
             <span className="muted">{totalSubmissions} submissions found</span>
           </div>
           <div className="header-controls-group">
@@ -318,11 +346,8 @@ export default function BoothReport() {
                 <th>Booth Code &amp; Name</th>
                 <th>Time Submitted</th>
                 <th>Reports</th>
-                {/* OLD CODE:
-                <th>Photos</th>
-                */}
-                {/* FEATURE: Media Attachments column label for photos & videos */}
                 <th>Media Attachments</th>
+                <th>Moderator Count</th>
               </tr>
             </thead>
             <tbody>
@@ -337,62 +362,73 @@ export default function BoothReport() {
                   <td>
                     <button
                       type="button"
-                      className="btn btn-outline btn-sm"
+                      className="btn-icon"
+                      style={actionIconStyle('primary')}
+                      title="View Report"
+                      aria-label="View Report"
                       onClick={() => setSelectedReport(sub)}
                     >
-                      <IconFileText style={{ marginRight: 5 }} /> View report
+                      <IconFileText />
                     </button>
                   </td>
-                  {/* OLD CODE:
                   <td>
-                    <button
-                      type="button"
-                      className="btn btn-outline btn-sm"
-                      onClick={() => setSelectedImage({
-                        url: sub.tally_sheet_url,
-                        booth: sub.unique_booth_code,
-                        operator: sub.operator_name
-                      })}
-                    >
-                      <IconImage style={{ marginRight: 5 }} /> View Photo
-                    </button>
-                  </td>
-                  */}
-
-                  {/* FEATURE: flex cell container rendering physical document photo and recorded video controls */}
-                  <td className="media-actions-cell">
-                    <button
-                      type="button"
-                      className="btn btn-outline btn-sm"
-                      onClick={() => setSelectedImage({
-                        url: sub.tally_sheet_url,
-                        booth: sub.unique_booth_code,
-                        operator: sub.operator_name
-                      })}
-                    >
-                      <IconImage style={{ marginRight: 5 }} /> View Photo
-                    </button>
-                    {sub.video_url && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <button
                         type="button"
-                        className="btn btn-outline btn-sm"
-                        onClick={() => setSelectedVideo({
-                          url: sub.video_url,
+                        className="btn-icon"
+                        style={actionIconStyle('primary')}
+                        title="View Photo"
+                        aria-label="View Photo"
+                        onClick={() => setSelectedImage({
+                          url: sub.tally_sheet_url,
                           booth: sub.unique_booth_code,
                           operator: sub.operator_name
                         })}
                       >
-                        <IconVideo className="btn-icon" /> View Video
+                        <IconImage />
                       </button>
-                    )}
+                      {sub.video_url && (
+                        <button
+                          type="button"
+                          className="btn-icon"
+                          style={actionIconStyle('primary')}
+                          title="View Video"
+                          aria-label="View Video"
+                          onClick={() => setSelectedVideo({
+                            url: sub.video_url,
+                            booth: sub.unique_booth_code,
+                            operator: sub.operator_name
+                          })}
+                        >
+                          <IconVideo />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <button
+                        type="button"
+                        className="btn-icon"
+                        style={actionIconStyle('primary')}
+                        title="Edit / Verify Count"
+                        aria-label="Edit / Verify Count"
+                        onClick={() => openVerifyModal(sub)}
+                      >
+                        <EditIcon />
+                      </button>
+                      {sub.votes_breakdown?.some(v => v.moderator_vote_count !== null) && (
+                        <span className="badge badge-soft-success">Verified</span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
               {pageSubmissions.length === 0 && submissions.length > 0 && (
-                <tr><td colSpan={5} className="empty-state">No submissions match the selected filters.</td></tr>
+                <tr><td colSpan={6} className="empty-state">No submissions match the selected filters.</td></tr>
               )}
               {submissions.length === 0 && (
-                <tr><td colSpan={5} className="empty-state">No submissions yet.</td></tr>
+                <tr><td colSpan={6} className="empty-state">No submissions yet.</td></tr>
               )}
             </tbody>
           </table>
@@ -475,19 +511,12 @@ export default function BoothReport() {
         </div>
       )}
 
-      {/* 2. IN-APP TALLY SHEET & DOCUMENT PREVIEW MODAL */}
+    {/* 2. IN-APP TALLY SHEET & DOCUMENT PREVIEW MODAL */}
       {selectedImage && (
-        <div className="modal-overlay" onClick={() => setSelectedImage(null)}>
+        <div className="modal-overlay" onClick={() => { setSelectedImage(null); setImageZoom(1); }}>
           <div 
             className="modal-box" 
-            style={{ 
-              maxWidth: '800px', 
-              width: '92%', 
-              maxHeight: '90vh', 
-              display: 'flex', 
-              flexDirection: 'column',
-              overflow: 'hidden' 
-            }} 
+            style={{ maxWidth: '800px', width: '92%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }} 
             onClick={e => e.stopPropagation()}
           >
             <div className="modal-header">
@@ -495,9 +524,10 @@ export default function BoothReport() {
                 <h3 style={{ margin: 0, fontSize: 16 }}>Tally Document — {selectedImage.booth}</h3>
                 <span className="muted" style={{ fontSize: 12 }}>Operator: {selectedImage.operator}</span>
               </div>
-              <button className="modal-close" onClick={() => setSelectedImage(null)}>&times;</button>
+              <button className="modal-close" onClick={() => { setSelectedImage(null); setImageZoom(1); }}>&times;</button>
             </div>
 
+            {/* Dynamically toggle overflow based on zoom level */}
             <div 
               className="modal-body" 
               style={{ 
@@ -506,35 +536,27 @@ export default function BoothReport() {
                 justifyContent: 'center', 
                 backgroundColor: '#0f172a',
                 padding: 16,
-                maxHeight: '65vh',
-                overflow: 'auto'
+                height: '65vh',
+                overflow: imageZoom > 1 ? 'auto' : 'hidden' 
               }}
             >
               {selectedImage.url && 
                !selectedImage.url.includes('via.placeholder.com') && 
                selectedImage.url !== 'https://via.placeholder.com/600x800.png?text=No+Image' ? (
                 isPdf(selectedImage.url) ? (
-                  <iframe
-                    src={selectedImage.url}
-                    title="Tally Sheet PDF Preview"
-                    style={{
-                      width: '100%',
-                      height: '62vh',
-                      border: 'none',
-                      borderRadius: 6,
-                      backgroundColor: '#ffffff'
-                    }}
-                  />
+                  <iframe src={selectedImage.url} title="Tally Sheet PDF Preview" style={{ width: '100%', height: '100%', border: 'none', borderRadius: 6, backgroundColor: '#ffffff' }} />
                 ) : (
                   <img
                     src={selectedImage.url}
                     alt="Uploaded Tally Sheet"
                     style={{
-                      maxWidth: '100%',
-                      maxHeight: '62vh',
+                      maxWidth: imageZoom === 1 ? '100%' : 'none',
+                      maxHeight: imageZoom === 1 ? '100%' : 'none',
+                      height: imageZoom > 1 ? `${imageZoom * 100}%` : 'auto',
                       objectFit: 'contain',
                       borderRadius: 6,
-                      boxShadow: '0 4px 16px rgba(0,0,0,0.3)'
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+                      transition: 'height 0.15s ease-in-out'
                     }}
                   />
                 )
@@ -547,19 +569,28 @@ export default function BoothReport() {
             </div>
 
             <div className="modal-footer" style={{ justifyContent: 'space-between', padding: '10px 16px' }}>
-              <div>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
                 {selectedImage.url && 
                  !selectedImage.url.includes('via.placeholder.com') && (
-                  <a
-                    href={selectedImage.url}
-                    download={`TallySheet_${selectedImage.booth}`}
-                    className="btn btn-outline btn-sm"
-                  >
-                    Download File
-                  </a>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => forceDownload(selectedImage.url, `TallySheet_${selectedImage.booth}`)}
+                      className="btn btn-outline btn-sm"
+                    >
+                      Download File
+                    </button>
+
+                    {!isPdf(selectedImage.url) && (
+                      <div className="zoom-controls">
+                        <button type="button" className="btn-zoom" onClick={() => setImageZoom(p => Math.max(p - 0.5, 1))} title="Zoom Out">-</button>
+                        <button type="button" className="btn-zoom" onClick={() => setImageZoom(p => Math.min(p + 0.5, 4))} title="Zoom In">+</button>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
-              <button type="button" className="btn btn-secondary btn-sm" onClick={() => setSelectedImage(null)}>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => { setSelectedImage(null); setImageZoom(1); }}>
                 Close
               </button>
             </div>
@@ -567,19 +598,12 @@ export default function BoothReport() {
         </div>
       )}
 
-      {/* FEATURE: 3. IN-APP RECORDED VIDEO PREVIEW MODAL */}
+{/* FEATURE: 3. IN-APP RECORDED VIDEO PREVIEW MODAL */}
       {selectedVideo && (
         <div className="modal-overlay" onClick={() => setSelectedVideo(null)}>
           <div 
             className="modal-box" 
-            style={{ 
-              maxWidth: '800px', 
-              width: '92%', 
-              maxHeight: '90vh', 
-              display: 'flex', 
-              flexDirection: 'column',
-              overflow: 'hidden' 
-            }} 
+            style={{ maxWidth: '800px', width: '92%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }} 
             onClick={e => e.stopPropagation()}
           >
             <div className="modal-header">
@@ -590,24 +614,9 @@ export default function BoothReport() {
               <button className="modal-close" onClick={() => setSelectedVideo(null)}>&times;</button>
             </div>
 
-            <div 
-              className="modal-body" 
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                backgroundColor: '#0f172a',
-                padding: 16,
-                maxHeight: '65vh',
-                overflow: 'auto'
-              }}
-            >
+            <div className="modal-body media-preview-container">
               {selectedVideo.url ? (
-                <video 
-                  controls 
-                  src={selectedVideo.url} 
-                  className="video-player-preview" 
-                />
+                <video controls src={selectedVideo.url} style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: 6 }} />
               ) : (
                 <div style={{ padding: '40px 20px', color: '#94a3b8', textAlign: 'center' }}>
                   <p style={{ fontSize: 15, fontWeight: 600, margin: '0 0 6px' }}>No video uploaded</p>
@@ -618,13 +627,13 @@ export default function BoothReport() {
             <div className="modal-footer" style={{ justifyContent: 'space-between', padding: '10px 16px' }}>
               <div>
                 {selectedVideo.url && (
-                  <a
-                    href={selectedVideo.url}
-                    download={`TallyVideo_${selectedVideo.booth}.mp4`}
+                  <button
+                    type="button"
+                    onClick={() => forceDownload(selectedVideo.url, `TallyVideo_${selectedVideo.booth}.mp4`)}
                     className="btn btn-outline btn-sm"
                   >
                     Download Video
-                  </a>
+                  </button>
                 )}
               </div>
               <button type="button" className="btn btn-secondary btn-sm" onClick={() => setSelectedVideo(null)}>
@@ -634,6 +643,84 @@ export default function BoothReport() {
           </div>
         </div>
       )}
+
+      {/* FEATURE: Side-by-Side Verification Modal */}
+      {verifyingReport && (
+        <div className="modal-overlay" onClick={() => setVerifyingReport(null)}>
+          <div 
+            className="modal-box" 
+            style={{ maxWidth: '1000px', width: '95%', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }} 
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <h3>Verify Counts — {verifyingReport.unique_booth_code}</h3>
+              <button className="modal-close" onClick={() => setVerifyingReport(null)}>&times;</button>
+            </div>
+            
+            <div className="modal-body" style={{ display: 'flex', gap: '20px', overflow: 'hidden', padding: 0 }}>
+              
+              {/* LEFT SIDE: Image Preview */}
+              <div style={{ flex: 1, backgroundColor: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px' }}>
+                {verifyingReport.tally_sheet_url ? (
+                  isPdf(verifyingReport.tally_sheet_url) ? (
+                    <iframe src={verifyingReport.tally_sheet_url} style={{ width: '100%', height: '65vh', border: 'none' }} />
+                  ) : (
+                    <img src={verifyingReport.tally_sheet_url} alt="Tally Sheet" style={{ maxWidth: '100%', maxHeight: '65vh', objectFit: 'contain' }} />
+                  )
+                ) : (
+                  <span style={{ color: '#94a3b8' }}>No image attached</span>
+                )}
+              </div>
+
+              {/* RIGHT SIDE: Form Inputs */}
+              <div style={{ flex: 1, padding: '20px', overflowY: 'auto', maxHeight: '65vh' }}>
+                <form id="verify-form" onSubmit={handleVerifySubmit}>
+                  <p className="muted" style={{ marginBottom: 20 }}>Manually verify and enter the final counts for each candidate below.</p>
+                  
+                  {verifyingReport.votes_breakdown.map((item) => (
+                    <div className="form-group" key={item.candidate_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                      <div style={{ flex: 1 }}>
+                        <strong>{item.candidate_name}</strong>
+                        <div className="muted" style={{ fontSize: 12 }}>{item.party_name} ({item.party_code})</div>
+                        <div className="muted" style={{ fontSize: 11, color: 'var(--bs-primary)' }}>Operator input: {item.vote_count}</div>
+                      </div>
+                      <input
+                        type="number"
+                        required
+                        min="0"
+                        className="form-control"
+                        style={{ width: '120px', textAlign: 'center', fontSize: 18, fontWeight: 'bold' }}
+                        value={verifiedCounts[item.candidate_id] !== undefined ? verifiedCounts[item.candidate_id] : ''}
+                        onChange={(e) => setVerifiedCounts(prev => ({
+                          ...prev,
+                          [item.candidate_id]: e.target.value
+                        }))}
+                      />
+                    </div>
+                  ))}
+                </form>
+              </div>
+
+            </div>
+            
+            <div className="modal-footer" style={{ justifyContent: 'flex-end' }}>
+              <button type="button" className="btn btn-secondary" onClick={() => setVerifyingReport(null)}>Cancel</button>
+              
+              {/* Updated Button! */}
+              <button 
+                type="button" 
+                className="btn btn-primary" 
+                disabled={verifying}
+                onClick={handleVerifySubmit}
+              >
+                {verifying ? 'Saving...' : 'Save Verified Counts'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
     </div>
   );
 }

@@ -6,6 +6,7 @@ const IconChevron = (props) => (
   </svg>
 );
 
+/*
 export default function CustomSelect({
   value,
   onChange,
@@ -15,6 +16,19 @@ export default function CustomSelect({
   disabled = false,
   isClearable = false,
   style = {}
+}) {
+*/
+// FIX: Add support for custom dropdownStyle override
+export default function CustomSelect({
+  value,
+  onChange,
+  options = [],
+  className = '',
+  placeholder = 'Select option...',
+  disabled = false,
+  isClearable = false,
+  style = {},
+  dropdownStyle = {}
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef(null);
@@ -132,6 +146,7 @@ export default function CustomSelect({
         </span>
       </div>
 
+      {/*
       {open && (
         <div
           className="custom-select-dropdown"
@@ -148,6 +163,27 @@ export default function CustomSelect({
             boxShadow: '0 4px 12px rgba(56, 65, 74, 0.12)',
             maxHeight: '220px',
             overflowY: 'auto'
+          }}
+        >
+      */}
+      {/* FIX: Merge dropdownStyle prop to enable custom dropdown positioning overrides */}
+      {open && (
+        <div
+          className="custom-select-dropdown"
+          style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
+            zIndex: 9999,
+            background: '#fff',
+            border: '1px solid #dfe2e8',
+            borderRadius: '7px',
+            marginTop: '4px',
+            boxShadow: '0 4px 12px rgba(56, 65, 74, 0.12)',
+            maxHeight: '220px',
+            overflowY: 'auto',
+            ...dropdownStyle
           }}
         >
           {options.map((opt, i) => {

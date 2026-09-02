@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { apiCall } from '../api/client';
 import CustomSelect from '../components/CustomSelect';
+import { toast } from 'react-hot-toast';
 
 const PAGE_SIZE = 6;
 
-// Small inline icons so there's no dependency on an icon library
 const SearchIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="11" cy="11" r="7" />
@@ -99,6 +99,8 @@ export default function CandidateManagement() {
   const [editingId, setEditingId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
+  const [loading, setLoading] = useState(true);
+
   // Toolbar toggles
   const [searchOpen, setSearchOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -111,8 +113,10 @@ export default function CandidateManagement() {
   const [currentPage, setCurrentPage] = useState(1);
 
   const [sortKey, setSortKey] = useState('candidate_name-asc');
+  const [deletingCandidate, setDeletingCandidate] = useState(null);
 
   const fetchData = async () => {
+    try { 
     const candRes = await apiCall('/candidates/all');
     if (candRes.success) setCandidates(candRes.candidates);
 
@@ -132,6 +136,11 @@ export default function CandidateManagement() {
       });
       setLocations(uniqueWards);
     }
+  } catch (error) {
+    console.error('Error fetching data:', error);
+  } finally {
+    setLoading(false);
+  }
   };
 
   useEffect(() => { fetchData(); }, []);
@@ -148,14 +157,23 @@ export default function CandidateManagement() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
+    
+    let res;
     if (editingId) {
-      await apiCall(`/candidates/${editingId}`, { method: 'PUT', body: JSON.stringify(formData) });
+      res = await apiCall(`/candidates/${editingId}`, { method: 'PUT', body: JSON.stringify(formData) });
     } else {
-      await apiCall('/candidates/add', { method: 'POST', body: JSON.stringify(formData) });
+      res = await apiCall('/candidates/add', { method: 'POST', body: JSON.stringify(formData) });
     }
+    
     setSubmitting(false);
-    resetForm();
-    fetchData();
+
+    if (res.success) {
+      toast.success(editingId ? 'Candidate updated successfully!' : 'Candidate registered successfully!');
+      resetForm();
+      fetchData();
+    } else {
+      toast.error(res.message || 'Failed to save candidate.');
+    }
   };
 
   const handleEdit = (c) => {
@@ -163,14 +181,25 @@ export default function CandidateManagement() {
     setFormData({ candidate_name: c.candidate_name, party_id: c.party_id, ward_id: c.ward_id });
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Delete this candidate?')) {
-      await apiCall(`/candidates/${id}`, { method: 'DELETE' });
-      fetchData();
-    }
+// 1. Opens the modal and sets the target candidate
+  const handleDeleteClick = (candidate) => {
+    setDeletingCandidate(candidate);
   };
 
-  // ---- Cascading location option lists, derived from ward-level locations ----
+  // 2. Fires when the user clicks "Confirm" inside the modal
+  const handleDelete = async () => {
+    if (!deletingCandidate) return;
+    
+    const res = await apiCall(`/candidates/${deletingCandidate.id}`, { method: 'DELETE' });
+    if (res.success) {
+      toast.success('Candidate deleted successfully!');
+      fetchData();
+    } else {
+      toast.error(res.message || 'Failed to delete candidate.');
+    }
+    setDeletingCandidate(null);
+  };
+
   const stateOptions = [...new Set(locations.map(l => l.state_name).filter(Boolean))].sort();
 
   const lgaOptions = [...new Set(
@@ -204,21 +233,11 @@ export default function CandidateManagement() {
     return sortDir === 'desc' ? -cmp : cmp;
   });
 
-  // ---- Pagination ----
-  // const totalPages = Math.max(1, Math.ceil(filteredCandidates.length / PAGE_SIZE));
-  // const pageCandidates = filteredCandidates.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
   const totalPages = Math.max(1, Math.ceil(sortedCandidates.length / PAGE_SIZE));
   const pageCandidates = sortedCandidates.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
     <div>
-      {/* <div className="page-title-box">
-        <div>
-          <div className="breadcrumb">
-            <span>Dashboard</span> / <span className="current">Candidates</span>
-          </div>
-        </div>
-      </div> */}
 
       <div className="two-col-grid two-col-grid--form-table">
         <div className="card">
@@ -359,31 +378,54 @@ export default function CandidateManagement() {
                 </tr>
               </thead>
               <tbody>
-                {pageCandidates.map(c => (
-                  <tr key={c.id}>
-                    <td><strong>{c.candidate_name}</strong></td>
-                    <td>
-                      <div className="party-cell">
-                        {c.party_icon_url && <img src={c.party_icon_url} alt="" className="avatar-xs" />}
-                        {c.party_name} ({c.party_code})
-                      </div>
-                    </td>
-                    <td><span className="badge badge-soft-info">{c.ward_name}</span></td>
-                    <td>{c.lga_name}, {c.state_name}</td>
-                    <td>
-                      <button className="btn-icon" style={{ ...actionIconStyle('primary'), marginRight: 8 }} title="Edit" aria-label="Edit candidate" onClick={() => handleEdit(c)}>
-                        <EditIcon />
-                      </button>
-                      <button className="btn-icon" style={actionIconStyle('danger')} title="Delete" aria-label="Delete candidate" onClick={() => handleDelete(c.id)}>
-                        <DeleteIcon />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {filteredCandidates.length === 0 && candidates.length > 0 && (
+                {loading ? (
+                  // Render 5 skeleton rows while fetching
+                  [...Array(5)].map((_, i) => (
+                    <tr key={`skeleton-${i}`}>
+                      <td><div className="skeleton-box" style={{ width: 120, height: 16 }} /></td>
+                      <td>
+                        <div className="party-cell">
+                          <div className="skeleton-circle" style={{ width: 24, height: 24 }} />
+                          <div className="skeleton-box" style={{ width: 100, height: 16 }} />
+                        </div>
+                      </td>
+                      <td><div className="skeleton-box" style={{ width: 80, height: 20, borderRadius: 12 }} /></td>
+                      <td><div className="skeleton-box" style={{ width: 140, height: 16 }} /></td>
+                      <td>
+                        <div style={{ display: 'flex' }}>
+                          <div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6, marginRight: 8 }} />
+                          <div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6 }} />
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  pageCandidates.map(c => (
+                    <tr key={c.id}>
+                      <td><strong>{c.candidate_name}</strong></td>
+                      <td>
+                        <div className="party-cell">
+                          {c.party_icon_url && <img src={c.party_icon_url} alt="" className="avatar-xs" />}
+                          {c.party_name} ({c.party_code})
+                        </div>
+                      </td>
+                      <td><span className="badge badge-soft-info">{c.ward_name}</span></td>
+                      <td>{c.lga_name}, {c.state_name}</td>
+                      <td>
+                        <button className="btn-icon" style={{ ...actionIconStyle('primary'), marginRight: 8 }} title="Edit" aria-label="Edit candidate" onClick={() => handleEdit(c)}>
+                          <EditIcon />
+                        </button>
+                        <button className="btn-icon" style={actionIconStyle('danger')} title="Delete" aria-label="Delete candidate" onClick={() => handleDeleteClick(c)}>
+                          <DeleteIcon />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+                {!loading && filteredCandidates.length === 0 && candidates.length > 0 && (
                   <tr><td colSpan={5} className="empty-state">No candidates match the selected filters.</td></tr>
                 )}
-                {candidates.length === 0 && (
+                {!loading && candidates.length === 0 && (
                   <tr><td colSpan={5} className="empty-state">No candidates registered yet.</td></tr>
                 )}
               </tbody>
@@ -411,6 +453,30 @@ export default function CandidateManagement() {
           )}
         </div>
       </div>
+
+      {/* FEATURE: Custom Delete Confirmation Modal */}
+      {deletingCandidate && (
+        <div className="modal-overlay" onClick={() => setDeletingCandidate(null)}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Confirm Deletion</h3>
+              <button className="modal-close" onClick={() => setDeletingCandidate(null)}>&times;</button>
+            </div>
+            <div className="modal-body">
+              <p>Are you sure you want to remove the candidate <strong>{deletingCandidate.candidate_name}</strong>?</p>
+              <p className="muted" style={{ fontSize: '13px', marginTop: '8px' }}>This action cannot be undone.</p>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-secondary" onClick={() => setDeletingCandidate(null)}>Cancel</button>
+              <button type="button" className="btn btn-primary" style={{ backgroundColor: '#f46a6a', borderColor: '#f46a6a' }} onClick={handleDelete}>
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      
     </div>
   );
 }

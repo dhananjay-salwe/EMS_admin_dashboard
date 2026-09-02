@@ -42,12 +42,14 @@ const IconFileText = (props) => (
 );
 
 export default function LiveAnalytics() {
-  const [data, setData] = useState({ total_wards: 0,
+  const [data, setData] = useState({
+    total_wards: 0,
     total_booths: 0,
     total_candidates: 0,
     total_votes: 0,
     leaderboard: [],
-    ward_details: [] });
+    ward_details: []
+  });
   const [selectedParty, setSelectedParty] = useState(null);
   const [showWardModal, setShowWardModal] = useState(false);
 
@@ -68,7 +70,7 @@ export default function LiveAnalytics() {
   const [selectedWardDetail, setSelectedWardDetail] = useState(null);
   const WARDS_PAGE_SIZE = 10;
 
-  
+
   // --- Party Standings LGA Filter & Pagination ---
   const [partyLgaFilter, setPartyLgaFilter] = useState('');
   const [partyCurrentPage, setPartyCurrentPage] = useState(1);
@@ -77,6 +79,8 @@ export default function LiveAnalytics() {
   const allLgas = [...new Set((data.ward_details || []).map(w => w.lga_name).filter(Boolean))].sort();
 
   const CHART_COLORS = ['#556ee6', '#34c38f', '#f1b44c', '#f46a6a', '#50a5f1', '#e83e8c', '#343a40'];
+
+  const [loading, setLoading] = useState(true);
 
   // Dynamically calculate LGA-specific standings if an LGA is selected
   let displayedLeaderboard = data.leaderboard || [];
@@ -121,13 +125,22 @@ export default function LiveAnalytics() {
   }
 
   const fetchStats = async () => {
-    const res = await apiCall('/votes/dashboard-summary');
-    if (res.success) setData(res);
+    try {
+      const res = await apiCall('/votes/dashboard-summary');
+      if (res.success) {
+        setData(res);
+      }
+    } catch (err) {
+      console.error("Dashboard error:", err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   };
 
   // Extract distinct cascading dropdown values from data.ward_details
   const stateList = [...new Set((data.ward_details || []).map(w => w.state_name).filter(Boolean))].sort();
-  
+
   const lgaList = [...new Set(
     (data.ward_details || [])
       .filter(w => !selectedState || w.state_name === selectedState)
@@ -168,7 +181,7 @@ export default function LiveAnalytics() {
   // FIX: Added visibilitychange listener to prevent background bandwidth drain
   useEffect(() => {
     fetchStats();
-    
+
     let intervalId = null;
 
     const startPolling = () => {
@@ -241,57 +254,66 @@ export default function LiveAnalytics() {
       </div>
 
 
-<div className="stat-grid">
-        {/* 1. Total Wards */}
+      {/* Top 4 Stat Metric Cards */}
+      <div className="stat-grid">
+        {/* Total Wards */}
         <div className="stat-card">
           <div>
             <div className="stat-label">Total Wards</div>
-            <div className="stat-value">{(data.total_wards ?? 0).toLocaleString()}</div>
+            {loading ? (
+              <div className="skeleton-box" style={{ width: 80, height: 28, marginTop: 4 }} />
+            ) : (
+              <div className="stat-value">{(data.total_wards ?? 0).toLocaleString()}</div>
+            )}
             <div className="muted" style={{ marginTop: 10, fontSize: 13 }}>Wards covered</div>
-            {/* <button 
-              type="button"
-              className="btn btn-outline btn-sm" 
-              style={{ marginTop: 10 }} 
-              onClick={() => setShowWardModal(true)}
-            >
-              View ward results
-            </button> */}
           </div>
           <div className="stat-icon info"><IconLayers /></div>
         </div>
 
-        {/* 2. Total Booths */}
+        {/* Total Booths */}
         <div className="stat-card">
           <div>
             <div className="stat-label">Total Booths</div>
-            <div className="stat-value">{(data.total_booths ?? 0).toLocaleString()}</div>
+            {loading ? (
+              <div className="skeleton-box" style={{ width: 80, height: 28, marginTop: 4 }} />
+            ) : (
+              <div className="stat-value">{(data.total_booths ?? 0).toLocaleString()}</div>
+            )}
             <div className="muted" style={{ marginTop: 10, fontSize: 13 }}>Registered polling units</div>
           </div>
           <div className="stat-icon primary"><IconTrophy /></div>
         </div>
 
-        {/* 3. Total Candidates */}
+        {/* Total Candidates */}
         <div className="stat-card">
           <div>
             <div className="stat-label">Total Candidates</div>
-            <div className="stat-value">{(data.total_candidates ?? 0).toLocaleString()}</div>
+            {loading ? (
+              <div className="skeleton-box" style={{ width: 80, height: 28, marginTop: 4 }} />
+            ) : (
+              <div className="stat-value">{(data.total_candidates ?? 0).toLocaleString()}</div>
+            )}
             <div className="muted" style={{ marginTop: 10, fontSize: 13 }}>Contesting across wards</div>
           </div>
           <div className="stat-icon warning"><IconUsers /></div>
         </div>
 
-        {/* 4. Total Voting */}
+        {/* Total Voting */}
         <div className="stat-card">
           <div>
             <div className="stat-label">Total Voting</div>
-            <div className="stat-value">{(data.total_votes ?? 0).toLocaleString()}</div>
+            {loading ? (
+              <div className="skeleton-box" style={{ width: 110, height: 28, marginTop: 4 }} />
+            ) : (
+              <div className="stat-value">{(data.total_votes ?? 0).toLocaleString()}</div>
+            )}
             <div className="muted" style={{ marginTop: 10, fontSize: 13 }}>Cumulative votes polled</div>
           </div>
           <div className="stat-icon success"><IconActivity /></div>
         </div>
       </div>
 
-{/* Ward Filter & Results Section */}
+      {/* Ward Filter & Results Section */}
       <div className="card" style={{ marginTop: 20 }}>
         <div className="card-header responsive-header">
           <div className="header-title-group">
@@ -351,7 +373,7 @@ export default function LiveAnalytics() {
         {/* Dynamic Display: Show Grid ONLY if Ward is selected */}
         {selectedWardFilter ? (() => {
           const activeWardData = (data.ward_details || []).find(w => w.ward_name === selectedWardFilter);
-          const sortedCandidates = activeWardData && activeWardData.candidates 
+          const sortedCandidates = activeWardData && activeWardData.candidates
             ? [...activeWardData.candidates].sort((a, b) => (b.total_votes || 0) - (a.total_votes || 0))
             : [];
 
@@ -407,7 +429,7 @@ export default function LiveAnalytics() {
                     >
                       <XAxis type="number" hide />
                       <YAxis dataKey="party_code" type="category" tick={{ fontSize: 12, fontWeight: 600 }} axisLine={false} tickLine={false} />
-                      <Tooltip 
+                      <Tooltip
                         formatter={(value) => [value.toLocaleString(), 'Votes']}
                         cursor={{ fill: '#f8f9fa' }}
                         contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
@@ -431,7 +453,7 @@ export default function LiveAnalytics() {
           <div className="header-title-group">
             <h2>Party-wise seat standings</h2>
           </div>
-          
+
           {/* Main Page LGA Dropdown with Clear Button */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <CustomSelect
@@ -469,7 +491,7 @@ export default function LiveAnalytics() {
         </div>
 
         <div className="party-standings-grid">
-          {/* Left Side: 2/3 Width - Minimal Party List */}
+          {/* Table Column */}
           <div className="party-list-side">
             <div className="table-wrap" style={{ flex: 1 }}>
               <table className="data-table">
@@ -481,47 +503,48 @@ export default function LiveAnalytics() {
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedLeaderboard.map((party, idx) => (
-                    <tr key={party.party_id}>
-                      <td>
-                        {party.party_icon_url
-                          ? <img src={party.party_icon_url} alt="" className="avatar-sm" />
-                          : <span className="avatar-title">{party.party_name?.charAt(0)}</span>}
-                      </td>
-                      <td>
-                        <strong>{party.party_name}</strong> <span className="muted">({party.party_code})</span>
-                      </td>
-                      <td>
-                        <span className="badge badge-soft-primary">{party.seats_won} seats</span>
-                      </td>
-                    </tr>
-                  ))}
-                  {paginatedLeaderboard.length === 0 && (
+                  {loading ? (
+                    // Render 4 placeholder skeleton rows
+                    [...Array(4)].map((_, i) => (
+                      <tr key={`skeleton-row-${i}`}>
+                        <td><div className="skeleton-circle" style={{ width: 32, height: 32 }} /></td>
+                        <td><div className="skeleton-box" style={{ width: '70%', height: 16 }} /></td>
+                        <td><div className="skeleton-box" style={{ width: 55, height: 20, borderRadius: 12 }} /></td>
+                      </tr>
+                    ))
+                  ) : (
+                    paginatedLeaderboard.map((party) => (
+                      <tr key={party.party_id}>
+                        <td>
+                          {party.party_icon_url
+                            ? <img src={party.party_icon_url} alt="" className="avatar-sm" />
+                            : <span className="avatar-title">{party.party_name?.charAt(0)}</span>}
+                        </td>
+                        <td>
+                          <strong>{party.party_name}</strong> <span className="muted">({party.party_code})</span>
+                        </td>
+                        <td>
+                          <span className="badge badge-soft-primary">{party.seats_won} seats</span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                  {!loading && paginatedLeaderboard.length === 0 && (
                     <tr><td colSpan={3} className="empty-state">No results yet.</td></tr>
                   )}
                 </tbody>
               </table>
             </div>
-
-            {/* 10-item Pagination Controls integrated inside the list side */}
-            {partyLgaFilter && totalPartyPages > 1 && (
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 14, padding: '16px 0', borderTop: '1px solid #e2e5f1' }}>
-                <button type="button" className="btn btn-outline btn-sm" disabled={partyCurrentPage === 1} onClick={() => setPartyCurrentPage(p => Math.max(1, p - 1))}>
-                  &larr; Prev
-                </button>
-                <span className="muted" style={{ fontSize: 13 }}>Page {partyCurrentPage} of {totalPartyPages}</span>
-                <button type="button" className="btn btn-outline btn-sm" disabled={partyCurrentPage === totalPartyPages} onClick={() => setPartyCurrentPage(p => Math.min(totalPartyPages, p + 1))}>
-                  Next &rarr;
-                </button>
-              </div>
-            )}
           </div>
 
-          {/* Right Side: 1/3 Width - Pie Chart */}
+          {/* Chart Column */}
           <div className="party-chart-side">
             <h4 style={{ margin: '0 0 16px 0', color: '#495057' }}>Seat Distribution</h4>
-            <div style={{ flex: 1, minHeight: 300 }}>
-              {paginatedLeaderboard.filter(p => p.seats_won > 0).length > 0 ? (
+            <div style={{ flex: 1, minHeight: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {loading ? (
+                // Circular Skeleton matching the Pie Chart boundary
+                <div className="skeleton-circle" style={{ width: 180, height: 180 }} />
+              ) : paginatedLeaderboard.filter(p => p.seats_won > 0).length > 0 ? (
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
@@ -538,10 +561,7 @@ export default function LiveAnalytics() {
                         <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip 
-                      formatter={(value) => [`${value} Seats`, 'Won']}
-                      contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                    />
+                    <Tooltip formatter={(value) => [`${value} Seats`, 'Won']} />
                     <Legend verticalAlign="bottom" height={36} iconType="circle" />
                   </PieChart>
                 </ResponsiveContainer>
@@ -553,177 +573,194 @@ export default function LiveAnalytics() {
             </div>
           </div>
         </div>
-      </div>
-      
 
-      {/* Party Breakdown Modal */}
-{/* Party Breakdown Modal */}
-      {selectedParty && (
-        <div className="modal-overlay" onClick={() => setSelectedParty(null)}>
-          <div className="modal-box modal-lg" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{selectedParty.party_name} — Won seats &amp; candidates</h3>
-              <button className="modal-close" onClick={() => setSelectedParty(null)}>&times;</button>
-            </div>
-            <div className="modal-body">
-              <p style={{ marginBottom: 14, fontWeight: 600 }}>Seats won: {selectedParty.seats_won}</p>
-              {selectedParty.won_wards.length === 0 ? (
-                <p className="muted">No wards currently won by this party.</p>
-              ) : (
+        {/* 10-item Pagination Controls integrated inside the list side */}
+        {partyLgaFilter && totalPartyPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 14, padding: '16px 0', borderTop: '1px solid #e2e5f1' }}>
+            <button type="button" className="btn btn-outline btn-sm" disabled={partyCurrentPage === 1} onClick={() => setPartyCurrentPage(p => Math.max(1, p - 1))}>
+              &larr; Prev
+            </button>
+            <span className="muted" style={{ fontSize: 13 }}>Page {partyCurrentPage} of {totalPartyPages}</span>
+            <button type="button" className="btn btn-outline btn-sm" disabled={partyCurrentPage === totalPartyPages} onClick={() => setPartyCurrentPage(p => Math.min(totalPartyPages, p + 1))}>
+              Next &rarr;
+            </button>
+          </div>
+        )}
+      </div>
+
+  {/* Party Breakdown Modal */ }
+  {
+    selectedParty && (
+      <div className="modal-overlay" onClick={() => setSelectedParty(null)}>
+        <div className="modal-box modal-lg" onClick={e => e.stopPropagation()}>
+          <div className="modal-header">
+            <h3>{selectedParty.party_name} — Won seats &amp; candidates</h3>
+            <button className="modal-close" onClick={() => setSelectedParty(null)}>&times;</button>
+          </div>
+          <div className="modal-body">
+            <p style={{ marginBottom: 14, fontWeight: 600 }}>Seats won: {selectedParty.seats_won}</p>
+            {selectedParty.won_wards.length === 0 ? (
+              <p className="muted">No wards currently won by this party.</p>
+            ) : (
+              <div className="table-wrap">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Ward / seat</th>
+                      <th>LGA &amp; state</th>
+                      <th>Winning candidate</th>
+                      <th>Votes polled</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedParty.won_wards.map((w, i) => (
+                      <tr key={i}>
+                        <td><strong>{w.ward_name}</strong></td>
+                        <td>{w.lga_name}, {w.state_name}</td>
+                        <td>{w.candidate_name}</td>
+                        <td>{w.candidate_votes.toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+          <div className="modal-footer">
+            <button className="btn btn-secondary" onClick={() => setSelectedParty(null)}>Close</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  {/* All Wards Detailed Modal */ }
+  {
+    showWardModal && (
+      <div className="modal-overlay" onClick={() => setShowWardModal(false)}>
+        <div className="modal-box modal-xl" onClick={e => e.stopPropagation()}>
+          <div className="modal-header">
+            <h3>Ward-by-ward candidate standings</h3>
+            <button className="modal-close" onClick={() => setShowWardModal(false)}>&times;</button>
+          </div>
+          <div className="modal-body">
+            {data.ward_details.map((ward) => (
+              <div key={ward.ward_id} className="ward-card">
+                <div className="ward-card-header">
+                  {ward.ward_name} <span>({ward.lga_name}, {ward.state_name})</span>
+                </div>
                 <div className="table-wrap">
                   <table className="data-table">
                     <thead>
                       <tr>
-                        <th>Ward / seat</th>
-                        <th>LGA &amp; state</th>
-                        <th>Winning candidate</th>
-                        <th>Votes polled</th>
+                        <th>Candidate</th>
+                        <th>Party</th>
+                        <th>Votes counted</th>
+                        <th>Standing</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedParty.won_wards.map((w, i) => (
-                        <tr key={i}>
-                          <td><strong>{w.ward_name}</strong></td>
-                          <td>{w.lga_name}, {w.state_name}</td>
-                          <td>{w.candidate_name}</td>
-                          <td>{w.candidate_votes.toLocaleString()}</td>
+                      {ward.candidates.map((c, i) => (
+                        <tr key={c.candidate_id} className={i === 0 && c.total_votes > 0 ? 'row-highlight' : ''}>
+                          <td><strong>{c.candidate_name}</strong></td>
+                          <td>{c.party_name} ({c.party_code})</td>
+                          <td>{c.total_votes.toLocaleString()}</td>
+                          <td>
+                            {i === 0 && c.total_votes > 0
+                              ? <span className="badge badge-soft-success">Seat winner</span>
+                              : <span className="badge badge-soft-secondary">Runner up</span>}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-              )}
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setSelectedParty(null)}>Close</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* All Wards Detailed Modal */}
-      {showWardModal && (
-        <div className="modal-overlay" onClick={() => setShowWardModal(false)}>
-          <div className="modal-box modal-xl" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Ward-by-ward candidate standings</h3>
-              <button className="modal-close" onClick={() => setShowWardModal(false)}>&times;</button>
-            </div>
-            <div className="modal-body">
-              {data.ward_details.map((ward) => (
-                <div key={ward.ward_id} className="ward-card">
-                  <div className="ward-card-header">
-                    {ward.ward_name} <span>({ward.lga_name}, {ward.state_name})</span>
-                  </div>
-                  <div className="table-wrap">
-                    <table className="data-table">
-                      <thead>
-                        <tr>
-                          <th>Candidate</th>
-                          <th>Party</th>
-                          <th>Votes counted</th>
-                          <th>Standing</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {ward.candidates.map((c, i) => (
-                          <tr key={c.candidate_id} className={i === 0 && c.total_votes > 0 ? 'row-highlight' : ''}>
-                            <td><strong>{c.candidate_name}</strong></td>
-                            <td>{c.party_name} ({c.party_code})</td>
-                            <td>{c.total_votes.toLocaleString()}</td>
-                            <td>
-                              {i === 0 && c.total_votes > 0
-                                ? <span className="badge badge-soft-success">Seat winner</span>
-                                : <span className="badge badge-soft-secondary">Runner up</span>}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setShowWardModal(false)}>Close</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-
-
-
-
-      {/* Ward Candidate Standings Modal (Sorted Descending by Votes) */}
-      {selectedWardDetail && (
-        <div className="modal-overlay" onClick={() => setSelectedWardDetail(null)}>
-          <div className="modal-box modal-lg" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <div>
-                <h3>{selectedWardDetail.ward_name} — Candidate Standings</h3>
-                <span className="muted" style={{ fontSize: 13 }}>
-                  {selectedWardDetail.lga_name}, {selectedWardDetail.state_name}
-                </span>
               </div>
-              <button type="button" className="modal-close" onClick={() => setSelectedWardDetail(null)}>&times;</button>
-            </div>
+            ))}
+          </div>
+          <div className="modal-footer">
+            <button className="btn btn-secondary" onClick={() => setShowWardModal(false)}>Close</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
-            <div className="modal-body">
-              <div className="table-wrap">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Rank</th>
-                      <th>Symbol</th>
-                      <th>Candidate Name</th>
-                      <th>Party Name</th>
-                      <th>Total Votes</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[...(selectedWardDetail.candidates || [])]
-                      .sort((a, b) => (b.total_votes || 0) - (a.total_votes || 0))
-                      .map((cand, idx) => (
-                        <tr key={cand.candidate_id || idx} className={idx === 0 && cand.total_votes > 0 ? 'row-highlight' : ''}>
-                          <td><strong>#{idx + 1}</strong></td>
-                          <td>
-                            {cand.party_icon_url ? (
-                              <img src={cand.party_icon_url} alt="" className="avatar-sm" />
-                            ) : (
-                              <span className="avatar-title">{cand.party_name?.charAt(0) || 'P'}</span>
-                            )}
-                          </td>
-                          <td><strong>{cand.candidate_name}</strong></td>
-                          <td>
-                            <span className="badge badge-soft-secondary">
-                              {cand.party_name} {cand.party_code ? `(${cand.party_code})` : ''}
-                            </span>
-                          </td>
-                          <td>
-                            <strong style={{ fontSize: 15 }}>{(cand.total_votes || 0).toLocaleString()}</strong>
-                          </td>
-                        </tr>
-                      ))}
-                    {(!selectedWardDetail.candidates || selectedWardDetail.candidates.length === 0) && (
-                      <tr>
-                        <td colSpan={5} className="empty-state">No candidate votes recorded for this ward.</td>
+
+
+
+
+  {/* Ward Candidate Standings Modal (Sorted Descending by Votes) */ }
+  {
+    selectedWardDetail && (
+      <div className="modal-overlay" onClick={() => setSelectedWardDetail(null)}>
+        <div className="modal-box modal-lg" onClick={e => e.stopPropagation()}>
+          <div className="modal-header">
+            <div>
+              <h3>{selectedWardDetail.ward_name} — Candidate Standings</h3>
+              <span className="muted" style={{ fontSize: 13 }}>
+                {selectedWardDetail.lga_name}, {selectedWardDetail.state_name}
+              </span>
+            </div>
+            <button type="button" className="modal-close" onClick={() => setSelectedWardDetail(null)}>&times;</button>
+          </div>
+
+          <div className="modal-body">
+            <div className="table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Symbol</th>
+                    <th>Candidate Name</th>
+                    <th>Party Name</th>
+                    <th>Total Votes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...(selectedWardDetail.candidates || [])]
+                    .sort((a, b) => (b.total_votes || 0) - (a.total_votes || 0))
+                    .map((cand, idx) => (
+                      <tr key={cand.candidate_id || idx} className={idx === 0 && cand.total_votes > 0 ? 'row-highlight' : ''}>
+                        <td><strong>#{idx + 1}</strong></td>
+                        <td>
+                          {cand.party_icon_url ? (
+                            <img src={cand.party_icon_url} alt="" className="avatar-sm" />
+                          ) : (
+                            <span className="avatar-title">{cand.party_name?.charAt(0) || 'P'}</span>
+                          )}
+                        </td>
+                        <td><strong>{cand.candidate_name}</strong></td>
+                        <td>
+                          <span className="badge badge-soft-secondary">
+                            {cand.party_name} {cand.party_code ? `(${cand.party_code})` : ''}
+                          </span>
+                        </td>
+                        <td>
+                          <strong style={{ fontSize: 15 }}>{(cand.total_votes || 0).toLocaleString()}</strong>
+                        </td>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div className="modal-footer">
-              <button type="button" className="btn btn-secondary" onClick={() => setSelectedWardDetail(null)}>
-                Close
-              </button>
+                    ))}
+                  {(!selectedWardDetail.candidates || selectedWardDetail.candidates.length === 0) && (
+                    <tr>
+                      <td colSpan={5} className="empty-state">No candidate votes recorded for this ward.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
-        </div>
-      )}
 
-    </div>
+          <div className="modal-footer">
+            <button type="button" className="btn btn-secondary" onClick={() => setSelectedWardDetail(null)}>
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+    </div >
   );
 }

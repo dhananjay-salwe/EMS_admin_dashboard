@@ -10,6 +10,8 @@ import OperatorManagement from './pages/OperatorManagement';
 import AuditSubmissions from './pages/AuditSubmissions';
 import AdminManagement from './pages/AdminManagement';
 import Login from './pages/Login';
+import {Toaster} from 'react-hot-toast';
+
 
 import WardManagement from './pages/WardManagement';
 
@@ -81,6 +83,11 @@ export default function App() {
 
   return (
     <div className={`app-wrapper ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
+      <Toaster 
+        position="top-right" 
+        toastOptions={{ duration: 3000 }} 
+      />
+      
       <Sidebar
         activeTab={activeTab}
         setActiveTab={handleTabChange}

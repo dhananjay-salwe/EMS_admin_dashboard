@@ -144,7 +144,7 @@ const NAV_ITEMS = [
   
   { key: 'parties', label: 'Political Parties', Icon: IconParty },
 
-  { key: 'admins', label: 'Admin Management', Icon: IconShield },
+  { key: 'admins', label: 'User Management', Icon: IconShield },
 ];
 
 export default function Sidebar({ activeTab, setActiveTab, mobileOpen, onCloseMobile }) {

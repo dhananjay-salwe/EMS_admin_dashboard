@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { apiCall } from '../api/client';
 import logoIcon from '../assets/icon.png';
+import { toast } from 'react-hot-toast'; 
 
 const IconBolt = (props) => (
   <svg width="26" height="26" viewBox="0 0 24 24" fill="none" {...props}>
@@ -9,10 +10,12 @@ const IconBolt = (props) => (
 );
 
 export default function Login({ onLoginSuccess }) {
-  // Empty default states
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  
+  // 2. Add a new state to track the visual success delay
+  const [loginSuccess, setLoginSuccess] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,11 +27,35 @@ export default function Login({ onLoginSuccess }) {
     setSubmitting(false);
 
     if (data.success) {
-      onLoginSuccess(data.admin);
+      // 3. Trigger the visual success state
+      setLoginSuccess(true);
+      
+// 4. Fire the welcome toast notification
+      toast.success(`Welcome back, ${data.admin?.username || 'Admin'}!`, {
+        icon: '👋',
+        style: {
+          borderRadius: '8px',
+          background: '#fff',
+          color: '#333',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)' // Adds a nice soft shadow
+        },
+      });
+
+      // 5. Pause for 800ms so the user can see the green success button
+      setTimeout(() => {
+        onLoginSuccess(data.admin);
+      }, 800);
+      
     } else {
-      alert(data.message || 'Invalid credentials');
+      // Bonus: Replace the ugly browser alert with a clean error toast!
+      toast.error(data.message || 'Invalid credentials');
     }
   };
+
+  // Dynamic button styling for the success state
+  const buttonStyle = loginSuccess 
+    ? { backgroundColor: '#34c38f', borderColor: '#34c38f', color: '#fff' } 
+    : {};
 
   return (
     <div className="auth-wrapper">
@@ -37,11 +64,13 @@ export default function Login({ onLoginSuccess }) {
           <h2>Welcome back!</h2>
           <p>Sign in to EMS to continue</p>
         </div>
-        <div className="auth-logo"><img 
+        <div className="auth-logo">
+          <img 
             src={logoIcon} 
             alt="EMS Logo" 
             style={{ width: 50, height: 50, objectFit: 'contain' }} 
-          /></div>
+          />
+        </div>
 
         <form onSubmit={handleSubmit} className="auth-form" autoComplete="off">
           <div className="form-group">
@@ -53,6 +82,7 @@ export default function Login({ onLoginSuccess }) {
               value={username}
               onChange={e => setUsername(e.target.value)}
               required
+              disabled={loginSuccess} // Lock input during success delay
             />
           </div>
           <div className="form-group">
@@ -64,10 +94,16 @@ export default function Login({ onLoginSuccess }) {
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
+              disabled={loginSuccess} // Lock input during success delay
             />
           </div>
-          <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
-            {submitting ? 'Signing in…' : 'Sign In'}
+          <button 
+            type="submit" 
+            className="btn btn-primary btn-block" 
+            disabled={submitting || loginSuccess}
+            style={buttonStyle}
+          >
+            {loginSuccess ? '✅ Login Successful!' : submitting ? 'Signing in…' : 'Sign In'}
           </button>
         </form>
       </div>

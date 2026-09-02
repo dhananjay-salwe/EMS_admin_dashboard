@@ -43,7 +43,13 @@ export default function Topbar({ admin, collapsed, mobileOpen, onToggleSidebar, 
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  const initial = admin?.username ? admin.username.charAt(0).toUpperCase() : '?';
+// FIX: Pull the first letter of the full name instead of username
+  // const initial = admin?.full_name ? admin.full_name.charAt(0).toUpperCase() : '?';
+  // First, determine what name we are actually displaying
+  const displayName = admin?.full_name || 'Admin';
+  
+  // Then, safely grab the first letter of that display name
+  const initial = displayName.charAt(0).toUpperCase();
 
   return (
     <header className="app-topbar">
@@ -51,24 +57,17 @@ export default function Topbar({ admin, collapsed, mobileOpen, onToggleSidebar, 
         <button className="topbar-toggle" onClick={onToggleSidebar} aria-label={sidebarIsOpen ? 'Collapse sidebar' : 'Expand sidebar'}>
           <IconMenu />
         </button>
-        {/* <div className="topbar-search">
-          <IconSearch />
-          <input type="text" placeholder="Search booth, ward, candidate…" />
-        </div> */}
       </div>
 
       <div className="topbar-right">
-        {/* <button className="icon-btn" aria-label="Notifications">
-          <IconBell />
-          <span className="dot" />
-        </button> */}
-
         <div className="profile-menu" ref={menuRef}>
           <button className="profile-trigger" onClick={() => setMenuOpen(o => !o)}>
             <span className="profile-avatar">{initial}</span>
             <span className="profile-info">
-              {/* <span className="profile-name">{admin?.username}</span> */}
-              <span className="profile-role">{admin?.role || 'Admin'}</span>
+              {/* <span className="profile-name">{admin?.full_name}</span> */}
+              <span className="profile-name" style={{ fontWeight: 700 }}>
+                {admin?.full_name || 'Admin'}
+              </span>
             </span>
             <IconChevron />
           </button>

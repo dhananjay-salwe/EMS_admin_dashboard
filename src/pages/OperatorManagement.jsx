@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiCall } from '../api/client';
 import CustomSelect from '../components/CustomSelect';
+import { toast } from 'react-hot-toast';
 
 const PAGE_SIZE = 6;
 
@@ -87,9 +88,6 @@ const IconChevron = (props) => (
   </svg>
 );
 
-// Searchable single-select for the booth assignment field — typing filters
-// the list but can only pick an existing booth (unlike WardManagement's
-// Combobox, which purposely allows free text for new states/LGAs).
 function SearchableSelect({ value, onChange, options = [], placeholder = '' }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -177,6 +175,8 @@ export default function OperatorManagement() {
   const [editingId, setEditingId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
+  const [loading, setLoading] = useState(true);
+
   const [searchOpen, setSearchOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
 
@@ -187,8 +187,10 @@ export default function OperatorManagement() {
   const [currentPage, setCurrentPage] = useState(1);
 
   const [sortKey, setSortKey] = useState('full_name-asc');
+  const [deletingOperator, setDeletingOperator] = useState(null);
 
   const fetchData = async () => {
+    try { 
     const opRes = await apiCall('/operators/all');
     if (opRes.success) setOperators(opRes.operators);
 
@@ -197,6 +199,11 @@ export default function OperatorManagement() {
       const validBooths = locRes.locations.filter(l => l.booth_id);
       setBooths(validBooths);
     }
+  } catch (err) {
+    console.error("Error fetching data:", err);
+  } finally {
+    setLoading(false);
+  }
   };
 
   useEffect(() => { fetchData(); }, []);
@@ -210,17 +217,26 @@ export default function OperatorManagement() {
     setFormData({ full_name: '', username: '', password: '', assigned_booth_id: '' });
   };
 
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
+    
+    let res;
     if (editingId) {
-      await apiCall(`/operators/${editingId}`, { method: 'PUT', body: JSON.stringify(formData) });
+      res = await apiCall(`/operators/${editingId}`, { method: 'PUT', body: JSON.stringify(formData) });
     } else {
-      await apiCall('/operators/add', { method: 'POST', body: JSON.stringify(formData) });
+      res = await apiCall('/operators/add', { method: 'POST', body: JSON.stringify(formData) });
     }
+    
     setSubmitting(false);
-    resetForm();
-    fetchData();
+
+    if (res.success) {
+      toast.success(editingId ? 'Booth officer updated successfully!' : 'Booth officer registered successfully!');
+      resetForm();
+      fetchData();
+    } else {
+      toast.error(res.message || 'Failed to save booth officer.');
+    }
   };
 
   const handleEdit = (op) => {
@@ -228,21 +244,30 @@ export default function OperatorManagement() {
     setFormData({ full_name: op.full_name, username: op.username, password: '', assigned_booth_id: op.assigned_booth_id || '' });
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Delete this booth Officer?')) {
-      await apiCall(`/operators/${id}`, { method: 'DELETE' });
-      fetchData();
-    }
+// 1. Opens the modal and sets the target operator
+  const handleDeleteClick = (op) => {
+    setDeletingOperator(op);
   };
 
-  // Booth officers don't carry ward/lga/state directly — join to their
-  // assigned booth (which does) so we can filter by location.
+  // 2. Fires when the user clicks "Confirm" inside the modal
+  const handleDelete = async () => {
+    if (!deletingOperator) return;
+    
+    const res = await apiCall(`/operators/${deletingOperator.id}`, { method: 'DELETE' });
+    if (res.success) {
+      toast.success('Booth officer deleted successfully!');
+      fetchData();
+    } else {
+      toast.error(res.message || 'Failed to delete booth officer.');
+    }
+    setDeletingOperator(null);
+  };
+
   const boothById = booths.reduce((acc, b) => {
     acc[b.booth_id] = b;
     return acc;
   }, {});
 
-  // ---- Cascading location option lists, derived from booths ----
   const stateOptions = [...new Set(booths.map(b => b.state_name).filter(Boolean))].sort();
 
   const lgaOptions = [...new Set(
@@ -291,22 +316,11 @@ export default function OperatorManagement() {
   });
 
 
-  // ---- Pagination ----
-  // const totalPages = Math.max(1, Math.ceil(filteredOperators.length / PAGE_SIZE));
-  // const pageOperators = filteredOperators.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-
   const totalPages = Math.max(1, Math.ceil(sortedOperators.length / PAGE_SIZE));
   const pageOperators = sortedOperators.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
     <div>
-      {/* <div className="page-title-box">
-        <div>
-          <div className="breadcrumb">
-            <span>Dashboard</span> / <span className="current">Booth Officers</span>
-          </div>
-        </div>
-      </div> */}
 
       <div className="two-col-grid two-col-grid--form-table">
         <div className="card">
@@ -461,36 +475,58 @@ export default function OperatorManagement() {
                 </tr>
               </thead>
               <tbody>
-                {pageOperators.map(op => (
-                  <tr key={op.id}>
-                    <td>
-                      <div className="party-cell">
-                        <span className="avatar-title">{op.full_name?.charAt(0)}</span>
-                        {op.full_name}
-                      </div>
-                    </td>
-                    <td>{op.username}</td>
-                    <td>
-                      {op.unique_booth_code ? (
-                        <span><strong className="text-primary">{op.unique_booth_code}</strong> ({op.booth_name})</span>
-                      ) : (
-                        <span className="badge badge-soft-warning">Unassigned</span>
-                      )}
-                    </td>
-                    <td>
-                      <button className="btn-icon" style={{ ...actionIconStyle('primary'), marginRight: 8 }} title="Edit" aria-label="Edit officer" onClick={() => handleEdit(op)}>
-                        <EditIcon />
-                      </button>
-                      <button className="btn-icon" style={actionIconStyle('danger')} title="Delete" aria-label="Delete officer" onClick={() => handleDelete(op.id)}>
-                        <DeleteIcon />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {filteredOperators.length === 0 && operators.length > 0 && (
+                {loading ? (
+                  // Render 4 skeleton rows while fetching
+                  [...Array(4)].map((_, i) => (
+                    <tr key={`skeleton-${i}`}>
+                      <td>
+                        <div className="party-cell">
+                          <div className="skeleton-circle" style={{ width: 32, height: 32 }} />
+                          <div className="skeleton-box" style={{ width: 120, height: 16 }} />
+                        </div>
+                      </td>
+                      <td><div className="skeleton-box" style={{ width: 100, height: 16 }} /></td>
+                      <td><div className="skeleton-box" style={{ width: 140, height: 16 }} /></td>
+                      <td>
+                        <div style={{ display: 'flex' }}>
+                          <div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6, marginRight: 8 }} />
+                          <div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6 }} />
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  pageOperators.map(op => (
+                    <tr key={op.id}>
+                      <td>
+                        <div className="party-cell">
+                          <span className="avatar-title">{op.full_name?.charAt(0)}</span>
+                          {op.full_name}
+                        </div>
+                      </td>
+                      <td>{op.username}</td>
+                      <td>
+                        {op.unique_booth_code ? (
+                          <span><strong className="text-primary">{op.unique_booth_code}</strong> ({op.booth_name})</span>
+                        ) : (
+                          <span className="badge badge-soft-warning">Unassigned</span>
+                        )}
+                      </td>
+                      <td>
+                        <button className="btn-icon" style={{ ...actionIconStyle('primary'), marginRight: 8 }} title="Edit" aria-label="Edit officer" onClick={() => handleEdit(op)}>
+                          <EditIcon />
+                        </button>
+                        <button className="btn-icon" style={actionIconStyle('danger')} title="Delete" aria-label="Delete officer" onClick={() => handleDeleteClick(op)}>
+                          <DeleteIcon />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+                {!loading && filteredOperators.length === 0 && operators.length > 0 && (
                   <tr><td colSpan={4} className="empty-state">No booth officers match the selected filters.</td></tr>
                 )}
-                {operators.length === 0 && (
+                {!loading && operators.length === 0 && (
                   <tr><td colSpan={4} className="empty-state">No booth officers registered yet.</td></tr>
                 )}
               </tbody>
@@ -518,6 +554,31 @@ export default function OperatorManagement() {
           )}
         </div>
       </div>
+
+
+      {/* FEATURE: Custom Delete Confirmation Modal */}
+      {deletingOperator && (
+        <div className="modal-overlay" onClick={() => setDeletingOperator(null)}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Confirm Deletion</h3>
+              <button className="modal-close" onClick={() => setDeletingOperator(null)}>&times;</button>
+            </div>
+            <div className="modal-body">
+              <p>Are you sure you want to remove the booth officer <strong>{deletingOperator.full_name}</strong>?</p>
+              <p className="muted" style={{ fontSize: '13px', marginTop: '8px' }}>This action cannot be undone.</p>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-secondary" onClick={() => setDeletingOperator(null)}>Cancel</button>
+              <button type="button" className="btn btn-primary" style={{ backgroundColor: '#f46a6a', borderColor: '#f46a6a' }} onClick={handleDelete}>
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      
     </div>
   );
 }

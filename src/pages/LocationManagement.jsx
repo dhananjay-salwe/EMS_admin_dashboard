@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiCall } from '../api/client';
 import CustomSelect from '../components/CustomSelect';
+import { toast } from 'react-hot-toast';
 
 const PAGE_SIZE = 6;
 
@@ -103,6 +104,8 @@ export default function LocationManagement() {
   });
   const [submitting, setSubmitting] = useState(false);
 
+  const [loading, setLoading] =  useState(true);
+
   const [searchOpen, setSearchOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
 
@@ -113,10 +116,17 @@ export default function LocationManagement() {
   const [currentPage, setCurrentPage] = useState(1);
 
   const [sortKey, setSortKey] = useState('booth_name-asc');
+  const [deletingBooth, setDeletingBooth] = useState(null);
 
   const fetchLocations = async () => {
+    try{ 
     const data = await apiCall('/locations/all');
     if (data.success) setLocations(data.locations);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchLocations(); }, []);
@@ -132,18 +142,31 @@ export default function LocationManagement() {
     setSubmitting(false);
 
     if (res.success) {
+      toast.success('Polling unit registered successfully!');
       setFormData({ state_name: '', lga_name: '', ward_name: '', booth_name: '', unique_booth_code: '' });
       fetchLocations();
     } else {
-      alert(res.message);
+      toast.error(res.message || 'Failed to register polling unit.');
     }
   };
 
-  const handleDeleteBooth = async (boothId) => {
-    if (window.confirm('Delete this polling booth?')) {
-      await apiCall(`/locations/booth/${boothId}`, { method: 'DELETE' });
+// 1. Opens the modal and sets the target booth
+  const handleDelete = (booth) => {
+    setDeletingBooth(booth);
+  };
+
+  // 2. Fires when the user clicks "Confirm" inside the modal
+  const confirmDelete = async () => {
+    if (!deletingBooth) return;
+    
+    const res = await apiCall(`/locations/booth/${deletingBooth.booth_id}`, { method: 'DELETE' });
+    if (res.success) {
+      toast.success('Polling unit deleted successfully!');
       fetchLocations();
+    } else {
+      toast.error(res.message || 'Failed to delete polling unit.');
     }
+    setDeletingBooth(null);
   };
 
   const booths = locations.filter(l => l.booth_id);
@@ -188,22 +211,12 @@ export default function LocationManagement() {
     return sortDir === 'desc' ? -cmp : cmp;
   });
 
-  // ---- Pagination ----
-  // const totalPages = Math.max(1, Math.ceil(filteredBooths.length / PAGE_SIZE));
-  // const pageBooths = filteredBooths.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const totalPages = Math.max(1, Math.ceil(sortedBooths.length / PAGE_SIZE));
   const pageBooths = sortedBooths.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
     <div>
-      {/* <div className="page-title-box">
-        <div>
-          <div className="breadcrumb">
-            <span>Dashboard</span> / <span className="current">Location & Booths</span>
-          </div>
-        </div>
-      </div> */}
 
       <div className="two-col-grid two-col-grid--form-table">
         <div className="card">
@@ -396,23 +409,38 @@ export default function LocationManagement() {
                 </tr>
               </thead>
               <tbody>
-                {pageBooths.map(l => (
-                  <tr key={l.booth_id}>
-                    <td>{l.state_name}</td>
-                    <td>{l.lga_name}</td>
-                    <td>{l.ward_name}</td>
-                    <td><strong>{l.unique_booth_code}</strong> — {l.booth_name}</td>
-                  <td>
-                    <button className="btn-icon" style={actionIconStyle('danger')} title="Delete" aria-label="Delete booth" onClick={() => handleDeleteBooth(l.booth_id)}>
-                      <DeleteIcon />
-                    </button>
-                  </td>
-                  </tr>
-                ))}
-                {filteredBooths.length === 0 && booths.length > 0 && (
+                {loading ? (
+                  // Render 5 skeleton rows while fetching
+                  [...Array(5)].map((_, i) => (
+                    <tr key={`skeleton-${i}`}>
+                      <td><div className="skeleton-box" style={{ width: 80, height: 16 }} /></td>
+                      <td><div className="skeleton-box" style={{ width: 80, height: 16 }} /></td>
+                      <td><div className="skeleton-box" style={{ width: 80, height: 16 }} /></td>
+                      <td><div className="skeleton-box" style={{ width: 180, height: 16 }} /></td>
+                      <td>
+                        <div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6 }} />
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  pageBooths.map(l => (
+                    <tr key={l.booth_id}>
+                      <td>{l.state_name}</td>
+                      <td>{l.lga_name}</td>
+                      <td>{l.ward_name}</td>
+                      <td><strong>{l.unique_booth_code}</strong> — {l.booth_name}</td>
+                      <td>
+                        <button className="btn-icon" style={actionIconStyle('danger')} title="Delete" aria-label="Delete booth" onClick={() => handleDelete(l)}>
+                          <DeleteIcon />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+                {!loading && filteredBooths.length === 0 && booths.length > 0 && (
                   <tr><td colSpan={5} className="empty-state">No polling units match the selected filters.</td></tr>
                 )}
-                {booths.length === 0 && (
+                {!loading && booths.length === 0 && (
                   <tr><td colSpan={5} className="empty-state">No polling units registered yet.</td></tr>
                 )}
               </tbody>
@@ -440,6 +468,27 @@ export default function LocationManagement() {
           )}
         </div>
       </div>
+      {/* FEATURE: Custom Delete Confirmation Modal */}
+      {deletingBooth && (
+        <div className="modal-overlay" onClick={() => setDeletingBooth(null)}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Confirm Deletion</h3>
+              <button className="modal-close" onClick={() => setDeletingBooth(null)}>&times;</button>
+            </div>
+            <div className="modal-body">
+              <p>Are you sure you want to delete the polling unit <strong>{deletingBooth.unique_booth_code} — {deletingBooth.booth_name}</strong>?</p>
+              <p className="muted" style={{ fontSize: '13px', marginTop: '8px' }}>This action cannot be undone.</p>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-secondary" onClick={() => setDeletingBooth(null)}>Cancel</button>
+              <button type="button" className="btn btn-primary" style={{ backgroundColor: '#f46a6a', borderColor: '#f46a6a' }} onClick={confirmDelete}>
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

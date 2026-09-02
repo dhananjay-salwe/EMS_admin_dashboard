@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiCall } from '../api/client';
 import CustomSelect from '../components/CustomSelect';
+import { toast } from 'react-hot-toast';
 
 
 const EditIcon = () => (
@@ -51,9 +52,19 @@ export default function PartyManagement() {
 
   const [sortKey, setSortKey] = useState('party_name-asc');
 
+  const [loading, setLoading] = useState(true);
+
+  const [deletingParty, setDeletingParty] = useState(null);
+
   const fetchParties = async () => {
+    try { 
     const data = await apiCall('/parties/all');
     if (data.success) setParties(data.parties);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchParties(); }, []);
@@ -75,11 +86,10 @@ export default function PartyManagement() {
     setImageErrors(prev => ({ ...prev, [id]: true }));
   };
 
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
 
-    // Switch to FormData to support file uploads
     const payload = new FormData();
     payload.append('party_name', formData.party_name);
     payload.append('party_code', formData.party_code);
@@ -88,14 +98,22 @@ export default function PartyManagement() {
       payload.append('icon_file', iconFile);
     }
 
+    let res;
     if (editingId) {
-      await apiCall(`/parties/${editingId}`, { method: 'PUT', body: payload });
+      res = await apiCall(`/parties/${editingId}`, { method: 'PUT', body: payload });
     } else {
-      await apiCall('/parties/add', { method: 'POST', body: payload });
+      res = await apiCall('/parties/add', { method: 'POST', body: payload });
     }
+    
     setSubmitting(false);
-    resetForm();
-    fetchParties();
+
+    if (res.success) {
+      toast.success(editingId ? 'Political party updated successfully!' : 'Political party added successfully!');
+      resetForm();
+      fetchParties();
+    } else {
+      toast.error(res.message || 'Failed to save political party.');
+    }
   };
 
   const handleEdit = (p) => {
@@ -105,23 +123,27 @@ export default function PartyManagement() {
     setFileInputKey(k => k + 1);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Delete this party? All associated candidates will also be removed.')) {
-      await apiCall(`/parties/${id}`, { method: 'DELETE' });
+// 1. Opens the modal and sets the target party
+  const handleDelete = (party) => {
+    setDeletingParty(party);
+  };
+
+  // 2. Fires when the user clicks "Confirm" inside the modal
+  const confirmDelete = async () => {
+    if (!deletingParty) return;
+    
+    const res = await apiCall(`/parties/${deletingParty.id}`, { method: 'DELETE' });
+    if (res.success) {
+      toast.success('Political party deleted successfully!');
       fetchParties();
+    } else {
+      toast.error(res.message || 'Failed to delete party.');
     }
+    setDeletingParty(null);
   };
 
   return (
     <div>
-      {/* <div className="page-title-box">
-        <div>
-
-          <div className="breadcrumb">
-            <span>Dashboard</span> / <span className="current">Political Parties</span>
-          </div>
-        </div>
-      </div> */}
 
       <div className="two-col-grid two-col-grid--form-table">
         <div className="card">
@@ -144,17 +166,6 @@ export default function PartyManagement() {
                   onChange={e => setFormData({ ...formData, party_code: e.target.value })}
                 />
               </div>
-              {/* <div className="form-group">
-                <label className="form-label">Party Symbol URL (optional)</label>
-                <input
-                  type="text" className="form-control"
-                  value={formData.party_icon_url}
-                  placeholder="https://..."
-                  onChange={e => setFormData({ ...formData, party_icon_url: e.target.value })}
-                />
-              </div> */}
-
-              {/* <div className="form-divider">OR</div> */}
 
               <div className="form-group">
                 <label className="form-label">Upload Party Image from device</label>
@@ -213,34 +224,51 @@ export default function PartyManagement() {
                   <th>Actions</th>
                 </tr>
               </thead>
-              <tbody>
-                {sortedParties.map(p => (
-                  <tr key={p.id}>
-                    <td>
-                      {p.party_icon_url && !imageErrors[p.id] ? (
-                        <img
-                          src={p.party_icon_url}
-                          alt=""
-                          className="avatar-xs"
-                          onError={() => handleImageError(p.id)}
-                        />
-                      ) : (
-                        <span className="avatar-title">{p.party_name?.charAt(0)}</span>
-                      )}
-                    </td>
-                    <td><strong>{p.party_name}</strong></td>
-                    <td><span className="badge badge-soft-secondary">{p.party_code}</span></td>
-<td>
-  <button className="btn-icon" style={{ ...actionIconStyle('primary'), marginRight: 8 }} title="Edit" aria-label="Edit party" onClick={() => handleEdit(p)}>
-    <EditIcon />
-  </button>
-  <button className="btn-icon" style={actionIconStyle('danger')} title="Delete" aria-label="Delete party" onClick={() => handleDelete(p.id)}>
-    <DeleteIcon />
-  </button>
-</td>
-                  </tr>
-                ))}
-                {parties.length === 0 && (
+<tbody>
+                {loading ? (
+                  // Render 4 skeleton rows while fetching
+                  [...Array(4)].map((_, i) => (
+                    <tr key={`skeleton-${i}`}>
+                      <td><div className="skeleton-circle" style={{ width: 32, height: 32 }} /></td>
+                      <td><div className="skeleton-box" style={{ width: 120, height: 16 }} /></td>
+                      <td><div className="skeleton-box" style={{ width: 60, height: 20, borderRadius: 12 }} /></td>
+                      <td>
+                        <div style={{ display: 'flex' }}>
+                          <div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6, marginRight: 8 }} />
+                          <div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6 }} />
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  sortedParties.map(p => (
+                    <tr key={p.id}>
+                      <td>
+                        {p.party_icon_url && !imageErrors[p.id] ? (
+                          <img
+                            src={p.party_icon_url}
+                            alt=""
+                            className="avatar-xs"
+                            onError={() => handleImageError(p.id)}
+                          />
+                        ) : (
+                          <span className="avatar-title">{p.party_name?.charAt(0)}</span>
+                        )}
+                      </td>
+                      <td><strong>{p.party_name}</strong></td>
+                      <td><span className="badge badge-soft-secondary">{p.party_code}</span></td>
+                      <td>
+                        <button className="btn-icon" style={{ ...actionIconStyle('primary'), marginRight: 8 }} title="Edit" aria-label="Edit party" onClick={() => handleEdit(p)}>
+                          <EditIcon />
+                        </button>
+                        <button className="btn-icon" style={actionIconStyle('danger')} title="Delete" aria-label="Delete party" onClick={() => handleDelete(p)}>
+                          <DeleteIcon />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+                {!loading && parties.length === 0 && (
                   <tr><td colSpan={4} className="empty-state">No parties registered yet.</td></tr>
                 )}
               </tbody>
@@ -248,6 +276,31 @@ export default function PartyManagement() {
           </div>
         </div>
       </div>
+
+      {/* FEATURE: Custom Delete Confirmation Modal */}
+      {deletingParty && (
+        <div className="modal-overlay" onClick={() => setDeletingParty(null)}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Confirm Deletion</h3>
+              <button className="modal-close" onClick={() => setDeletingParty(null)}>&times;</button>
+            </div>
+            <div className="modal-body">
+              <p>Are you sure you want to delete <strong>{deletingParty.party_name} ({deletingParty.party_code})</strong>?</p>
+              <p className="muted" style={{ fontSize: '13px', marginTop: '8px' }}>
+                This action cannot be undone. <strong>All associated candidates will also be permanently removed.</strong>
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-secondary" onClick={() => setDeletingParty(null)}>Cancel</button>
+              <button type="button" className="btn btn-primary" style={{ backgroundColor: '#f46a6a', borderColor: '#f46a6a' }} onClick={confirmDelete}>
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
     </div>
   );
 }

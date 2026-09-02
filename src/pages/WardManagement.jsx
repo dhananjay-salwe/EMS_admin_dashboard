@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiCall } from '../api/client';
 import CustomSelect from '../components/CustomSelect';
+import { toast } from 'react-hot-toast';
 
 const PAGE_SIZE = 8;
 
@@ -10,11 +11,6 @@ const IconChevron = (props) => (
   </svg>
 );
 
-// Styled, searchable dropdown that still allows free text — needed for the
-// State/LGA fields below since creating a ward can introduce a brand-new
-// state or LGA that isn't in the options list yet (a plain <select> can't
-// offer a value that doesn't exist yet). Kept local to this file since
-// nothing else in the app needs it.
 function Combobox({ value, onChange, options = [], placeholder = '', disabled = false, required = false }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
@@ -85,9 +81,6 @@ function Combobox({ value, onChange, options = [], placeholder = '', disabled = 
   );
 }
 
-// Icons + inline style helpers — mirrored 1:1 from LocationManagement /
-// OperatorManagement so the search/filter/delete controls match the rest
-// of the app's theme instead of using the old CSS-class-based look.
 const SearchIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="11" cy="11" r="7" />
@@ -171,6 +164,8 @@ export default function WardManagement() {
   const [formData, setFormData] = useState({ state_name: '', lga_name: '', ward_name: '' });
   const [submitting, setSubmitting] = useState(false);
 
+  const [loading, setLoading] = useState(true);
+
   const [searchOpen, setSearchOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -180,10 +175,17 @@ export default function WardManagement() {
   const [currentPage, setCurrentPage] = useState(1);
 
   const searchInputRef = useRef(null);
+  const [deletingWard, setDeletingWard] = useState(null);
 
   const fetchLocations = async () => {
-    const data = await apiCall('/locations/all');
-    if (data.success) setLocations(data.locations);
+    try {
+      const data = await apiCall('/locations/all');
+      if (data.success) setLocations(data.locations);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchLocations(); }, []);
@@ -251,18 +253,31 @@ export default function WardManagement() {
     setSubmitting(false);
 
     if (res.success) {
+      toast.success('Electoral ward created successfully!');
       setFormData({ state_name: '', lga_name: '', ward_name: '' });
       fetchLocations();
     } else {
-      alert(res.message);
+      toast.error(res.message || 'Failed to create electoral ward.');
     }
   };
 
-  const handleDeleteWard = async (wardId) => {
-    if (window.confirm('Delete this electoral ward?')) {
-      await apiCall(`/locations/ward/${wardId}`, { method: 'DELETE' });
+// 1. Opens the modal and sets the target ward
+  const handleDeleteClick = (ward) => {
+    setDeletingWard(ward);
+  };
+
+  // 2. Fires when the user clicks "Confirm" inside the modal
+  const handleDelete = async () => {
+    if (!deletingWard) return;
+    
+    const res = await apiCall(`/locations/ward/${deletingWard.ward_id}`, { method: 'DELETE' });
+    if (res.success) {
+      toast.success('Electoral ward deleted successfully!');
       fetchLocations();
+    } else {
+      toast.error(res.message || 'Failed to delete electoral ward.');
     }
+    setDeletingWard(null);
   };
 
   const toggleSearch = () => {
@@ -415,28 +430,42 @@ export default function WardManagement() {
               </tr>
             </thead>
             <tbody>
-              {pageWards.map(w => (
-                <tr key={w.ward_id}>
-                  <td>{w.state_name}</td>
-                  <td>{w.lga_name}</td>
-                  <td><strong>{w.ward_name}</strong></td>
-                  <td>
-                    <button
-                      type="button"
-                      style={actionIconStyle('danger')}
-                      title="Delete"
-                      aria-label="Delete ward"
-                      onClick={() => handleDeleteWard(w.ward_id)}
-                    >
-                      <DeleteIcon />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {sortedWards.length === 0 && uniqueWards.length > 0 && (
+              {loading ? (
+                // Render 4 skeleton rows while fetching
+                [...Array(4)].map((_, i) => (
+                  <tr key={`skeleton-${i}`}>
+                    <td><div className="skeleton-box" style={{ width: 80, height: 16 }} /></td>
+                    <td><div className="skeleton-box" style={{ width: 80, height: 16 }} /></td>
+                    <td><div className="skeleton-box" style={{ width: 120, height: 16 }} /></td>
+                    <td>
+                      <div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6 }} />
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                pageWards.map(w => (
+                  <tr key={w.ward_id}>
+                    <td>{w.state_name}</td>
+                    <td>{w.lga_name}</td>
+                    <td><strong>{w.ward_name}</strong></td>
+                    <td>
+                      <button
+                        type="button"
+                        style={actionIconStyle('danger')}
+                        title="Delete"
+                        aria-label="Delete ward"
+                        onClick={() => handleDeleteClick(w)}
+                      >
+                        <DeleteIcon />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+              {!loading && sortedWards.length === 0 && uniqueWards.length > 0 && (
                 <tr><td colSpan={4} className="empty-state">No wards match the selected filters.</td></tr>
               )}
-              {uniqueWards.length === 0 && (
+              {!loading && uniqueWards.length === 0 && (
                 <tr><td colSpan={4} className="empty-state">No wards found.</td></tr>
               )}
             </tbody>
@@ -465,6 +494,29 @@ export default function WardManagement() {
           </div>
         )}
       </div>
+
+      {/* FEATURE: Custom Delete Confirmation Modal */}
+      {deletingWard && (
+        <div className="modal-overlay" onClick={() => setDeletingWard(null)}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Confirm Deletion</h3>
+              <button className="modal-close" onClick={() => setDeletingWard(null)}>&times;</button>
+            </div>
+            <div className="modal-body">
+              <p>Are you sure you want to delete the ward <strong>{deletingWard.ward_name}</strong>?</p>
+              <p className="muted" style={{ fontSize: '13px', marginTop: '8px' }}>This action cannot be undone.</p>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-secondary" onClick={() => setDeletingWard(null)}>Cancel</button>
+              <button type="button" className="btn btn-primary" style={{ backgroundColor: '#f46a6a', borderColor: '#f46a6a' }} onClick={handleDelete}>
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
     </div>
   );
 }
