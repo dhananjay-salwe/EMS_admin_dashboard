@@ -80,7 +80,7 @@ export default function Login({ onLoginSuccess }) {
               className="form-control"
               placeholder="Enter your email"
               value={email}
-              onChange={e => setUsername(e.target.value)}
+              onChange={e => setEmail(e.target.value)}
               required
               disabled={loginSuccess} // Lock input during success delay
             />
