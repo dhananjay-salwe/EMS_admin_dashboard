@@ -127,12 +127,12 @@ export default function BoothReport() {
 
 
   const openVerifyModal = (report) => {
-    const initialCounts = {};
-    report.votes_breakdown.forEach(item => {
-      // Default to the moderator count if it exists, otherwise fall back to the operator's count
-      initialCounts[item.candidate_id] = item.moderator_vote_count !== null ? item.moderator_vote_count : item.vote_count;
-    });
-    setVerifiedCounts(initialCounts);
+    // const initialCounts = {};
+    // report.votes_breakdown.forEach(item => {
+    //   // Default to the moderator count if it exists, otherwise fall back to the operator's count
+    //   initialCounts[item.candidate_id] = item.moderator_vote_count !== null ? item.moderator_vote_count : item.vote_count;
+    // });
+    setVerifiedCounts({});
     setVerifyingReport(report);
   };
 
@@ -140,9 +140,9 @@ const handleVerifySubmit = async (e) => {
     if (e && e.preventDefault) e.preventDefault(); // Safely handle event
     setVerifying(true);
     
-    const payload = Object.keys(verifiedCounts).map(candidate_id => ({
-      candidate_id: parseInt(candidate_id, 10),
-      count: parseInt(verifiedCounts[candidate_id], 10) || 0
+    const payload = verifyingReport.votes_breakdown.map(item => ({
+      candidate_id: item.candidate_id,
+      count: parseInt(verifiedCounts[item.candidate_id], 10) || 0
     }));
 
     try {
@@ -682,15 +682,15 @@ const handleVerifySubmit = async (e) => {
                       <div style={{ flex: 1 }}>
                         <strong>{item.candidate_name}</strong>
                         <div className="muted" style={{ fontSize: 12 }}>{item.party_name} ({item.party_code})</div>
-                        <div className="muted" style={{ fontSize: 11, color: 'var(--bs-primary)' }}>Operator input: {item.vote_count}</div>
+                        {/* <div className="muted" style={{ fontSize: 11, color: 'var(--bs-primary)' }}>Operator input: {item.vote_count}</div> */}
                       </div>
                       <input
                         type="number"
-                        required
                         min="0"
+                        placeholder="0"
                         className="form-control"
                         style={{ width: '120px', textAlign: 'center', fontSize: 18, fontWeight: 'bold' }}
-                        value={verifiedCounts[item.candidate_id] !== undefined ? verifiedCounts[item.candidate_id] : ''}
+                        value={verifiedCounts[item.candidate_id] || ''}
                         onChange={(e) => setVerifiedCounts(prev => ({
                           ...prev,
                           [item.candidate_id]: e.target.value

@@ -11,7 +11,7 @@ import AuditSubmissions from './pages/AuditSubmissions';
 import AdminManagement from './pages/AdminManagement';
 import Login from './pages/Login';
 import {Toaster} from 'react-hot-toast';
-
+import WardReport from './pages/WardReport';
 
 import WardManagement from './pages/WardManagement';
 
@@ -112,6 +112,7 @@ export default function App() {
           {activeTab === 'operators' && <OperatorManagement />}
           {activeTab === 'audit' && <AuditSubmissions />}
           {activeTab === 'admins' && <AdminManagement currentAdminRole={admin.role} />}
+          {activeTab === 'ward-reports' && <WardReport />}
         </div>
       </div>
     </div>

@@ -134,6 +134,8 @@ const IconShield = (props) => (
 const NAV_ITEMS = [
   { key: 'analytics', label: 'Dashboard', Icon: IconChart },
   { key: 'audit', label: 'Booth Report', Icon: IconReport },
+  { key: 'ward-reports', label: 'Ward Reports', Icon: IconReport },
+  
   { key: 'operators', label: 'Booth Officers', Icon: IconUsers },
 
   { key: 'candidates', label: 'Ballot List', Icon: IconUser },
