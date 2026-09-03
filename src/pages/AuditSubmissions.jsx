@@ -130,10 +130,10 @@ export default function BoothReport() {
     const initialCounts = {};
     if (report && report.votes_breakdown) {
       report.votes_breakdown.forEach(item => {
-        // Default to the moderator count if it exists, otherwise fall back to the operator's count
+        // Show updated moderator_vote_count if saved by moderator; if not updated yet, default to 0
         const countVal = item.moderator_vote_count !== null && item.moderator_vote_count !== undefined
           ? item.moderator_vote_count
-          : (item.vote_count !== null && item.vote_count !== undefined ? item.vote_count : 0);
+          : 0;
         initialCounts[item.candidate_id] = countVal;
       });
     }
