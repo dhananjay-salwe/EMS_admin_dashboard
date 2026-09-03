@@ -62,10 +62,11 @@ export default function LiveAnalytics() {
   };
 
 
-  // --- Ward Filter & Pagination States ---
+  // --- Ward & Booth Filter States ---
   const [selectedState, setSelectedState] = useState('');
   const [selectedLga, setSelectedLga] = useState('');
   const [selectedWardFilter, setSelectedWardFilter] = useState('');
+  const [selectedBoothFilter, setSelectedBoothFilter] = useState('');
   const [wardCurrentPage, setWardCurrentPage] = useState(1);
   const [selectedWardDetail, setSelectedWardDetail] = useState(null);
   const WARDS_PAGE_SIZE = 10;
@@ -82,7 +83,7 @@ export default function LiveAnalytics() {
 
   const [loading, setLoading] = useState(true);
 
-  // Dynamically calculate LGA-specific standings if an LGA is selected
+  // Dynamically calculate LGA-specific standings if an LGA is selected, based on WARD REPORT TABLE winners
   let displayedLeaderboard = data.leaderboard || [];
   if (partyLgaFilter) {
     const lgaStats = {};
@@ -91,23 +92,28 @@ export default function LiveAnalytics() {
       lgaStats[p.party_id] = { ...p, seats_won: 0, total_popular_votes: 0, won_wards: [] };
     });
 
-    // Tally up votes and seats strictly for the chosen LGA
+    // Tally up votes and seats strictly for the chosen LGA based on ward report table (data.ward_details)
     (data.ward_details || []).filter(w => w.lga_name === partyLgaFilter).forEach(ward => {
-      (ward.candidates || []).forEach((c, idx) => {
+      const explicitWinner = (ward.candidates || []).find(c => c.is_winner);
+      const sortedCandidates = [...(ward.candidates || [])].sort((a, b) => (b.total_votes || 0) - (a.total_votes || 0));
+      const winningCand = explicitWinner || (sortedCandidates[0]?.total_votes > 0 ? sortedCandidates[0] : null);
+
+      (ward.candidates || []).forEach(c => {
         if (lgaStats[c.party_id]) {
           lgaStats[c.party_id].total_popular_votes += (c.total_votes || 0);
-          if (idx === 0 && c.total_votes > 0) {
-            lgaStats[c.party_id].seats_won += 1;
-            lgaStats[c.party_id].won_wards.push({
-              ward_name: ward.ward_name,
-              lga_name: ward.lga_name,
-              state_name: ward.state_name,
-              candidate_name: c.candidate_name,
-              candidate_votes: c.total_votes
-            });
-          }
         }
       });
+
+      if (winningCand && lgaStats[winningCand.party_id]) {
+        lgaStats[winningCand.party_id].seats_won += 1;
+        lgaStats[winningCand.party_id].won_wards.push({
+          ward_name: ward.ward_name,
+          lga_name: ward.lga_name,
+          state_name: ward.state_name,
+          candidate_name: winningCand.candidate_name,
+          candidate_votes: winningCand.total_votes
+        });
+      }
     });
     // Sort by seats, then by popular vote
     displayedLeaderboard = Object.values(lgaStats).sort((a, b) => b.seats_won - a.seats_won || b.total_popular_votes - a.total_popular_votes);
@@ -138,7 +144,7 @@ export default function LiveAnalytics() {
     }
   };
 
-  // Extract distinct cascading dropdown values from data.ward_details
+  // Extract distinct cascading dropdown values from data.ward_details and data.booth_details
   const stateList = [...new Set((data.ward_details || []).map(w => w.state_name).filter(Boolean))].sort();
 
   const lgaList = [...new Set(
@@ -152,6 +158,17 @@ export default function LiveAnalytics() {
     (data.ward_details || [])
       .filter(w => (!selectedState || w.state_name === selectedState) && (!selectedLga || w.lga_name === selectedLga))
       .map(w => w.ward_name)
+      .filter(Boolean)
+  )].sort();
+
+  const boothFilterList = [...new Set(
+    (data.booth_details || [])
+      .filter(b =>
+        (!selectedState || b.state_name === selectedState) &&
+        (!selectedLga || b.lga_name === selectedLga) &&
+        (!selectedWardFilter || b.ward_name === selectedWardFilter)
+      )
+      .map(b => `${b.booth_name} (${b.unique_booth_code})`)
       .filter(Boolean)
   )].sort();
 
@@ -169,7 +186,7 @@ export default function LiveAnalytics() {
     wardCurrentPage * WARDS_PAGE_SIZE
   );
 
-  const hasSelectedFilters = selectedState || selectedLga || selectedWardFilter;
+  const hasSelectedFilters = selectedState || selectedLga || selectedWardFilter || selectedBoothFilter;
 
   // OLD CODE:
   // useEffect(() => {
@@ -307,18 +324,24 @@ export default function LiveAnalytics() {
             ) : (
               <div className="stat-value">{(data.total_votes ?? 0).toLocaleString()}</div>
             )}
-            <div className="muted" style={{ marginTop: 10, fontSize: 13 }}>Cumulative votes polled</div>
+            <div className="muted" style={{ marginTop: 10, fontSize: 13 }}>Ward report votes polled</div>
           </div>
           <div className="stat-icon success"><IconActivity /></div>
         </div>
       </div>
 
-      {/* Ward Filter & Results Section */}
+      {/* Ward & Booth Filter & Results Section */}
       <div className="card" style={{ marginTop: 20 }}>
         <div className="card-header responsive-header">
           <div className="header-title-group">
-            <h2>Ward Standings &amp; Results</h2>
-            <span className="muted">{selectedWardFilter ? 'Showing selected ward' : 'Select a ward to view standings'}</span>
+            <h2>Ward &amp; Booth Standings &amp; Results</h2>
+            <span className="muted">
+              {selectedBoothFilter
+                ? 'Showing selected booth (Moderator Verified)'
+                : selectedWardFilter
+                  ? 'Showing selected ward (Ward Report)'
+                  : 'Select a ward or booth to view standings'}
+            </span>
           </div>
 
           {/* Cascading Direct Dropdowns */}
@@ -332,6 +355,7 @@ export default function LiveAnalytics() {
                 setSelectedState(e.target.value);
                 setSelectedLga('');
                 setSelectedWardFilter('');
+                setSelectedBoothFilter('');
               }}
             />
             <CustomSelect
@@ -343,6 +367,7 @@ export default function LiveAnalytics() {
               onChange={e => {
                 setSelectedLga(e.target.value);
                 setSelectedWardFilter('');
+                setSelectedBoothFilter('');
               }}
             />
             <CustomSelect
@@ -351,7 +376,18 @@ export default function LiveAnalytics() {
               placeholder="Select Ward"
               disabled={!selectedLga}
               options={wardFilterList}
-              onChange={e => setSelectedWardFilter(e.target.value)}
+              onChange={e => {
+                setSelectedWardFilter(e.target.value);
+                setSelectedBoothFilter('');
+              }}
+            />
+            <CustomSelect
+              className="filter-select-responsive"
+              value={selectedBoothFilter}
+              placeholder="Select Booth"
+              disabled={!selectedWardFilter}
+              options={boothFilterList}
+              onChange={e => setSelectedBoothFilter(e.target.value)}
             />
 
             {hasSelectedFilters && (
@@ -362,6 +398,7 @@ export default function LiveAnalytics() {
                   setSelectedState('');
                   setSelectedLga('');
                   setSelectedWardFilter('');
+                  setSelectedBoothFilter('');
                 }}
               >
                 Clear
@@ -370,12 +407,28 @@ export default function LiveAnalytics() {
           </div>
         </div>
 
-        {/* Dynamic Display: Show Grid ONLY if Ward is selected */}
-        {selectedWardFilter ? (() => {
-          const activeWardData = (data.ward_details || []).find(w => w.ward_name === selectedWardFilter);
-          const sortedCandidates = activeWardData && activeWardData.candidates
-            ? [...activeWardData.candidates].sort((a, b) => (b.total_votes || 0) - (a.total_votes || 0))
-            : [];
+        {/* Dynamic Display: Show Grid if Ward or Booth is selected */}
+        {(selectedBoothFilter || selectedWardFilter) ? (() => {
+          let displayCandidates = [];
+          let isBoothView = Boolean(selectedBoothFilter);
+
+          if (isBoothView) {
+            const activeBooth = (data.booth_details || []).find(
+              b => `${b.booth_name} (${b.unique_booth_code})` === selectedBoothFilter || b.booth_name === selectedBoothFilter
+            );
+            displayCandidates = activeBooth && activeBooth.candidates
+              ? [...activeBooth.candidates].sort((a, b) => (b.total_votes || 0) - (a.total_votes || 0))
+              : [];
+          } else {
+            const activeWard = (data.ward_details || []).find(w => w.ward_name === selectedWardFilter);
+            displayCandidates = activeWard && activeWard.candidates
+              ? [...activeWard.candidates].sort((a, b) => {
+                  if (a.is_winner && !b.is_winner) return -1;
+                  if (!a.is_winner && b.is_winner) return 1;
+                  return (b.total_votes || 0) - (a.total_votes || 0);
+                })
+              : [];
+          }
 
           return (
             <div className="ward-analysis-grid">
@@ -390,27 +443,35 @@ export default function LiveAnalytics() {
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedCandidates.map((cand, idx) => (
-                      <tr key={cand.candidate_id || idx} className={idx === 0 && cand.total_votes > 0 ? 'row-highlight' : ''}>
-                        <td>
-                          {cand.party_icon_url ? (
-                            <img src={cand.party_icon_url} alt="" className="avatar-sm" />
-                          ) : (
-                            <span className="avatar-title">{cand.party_name?.charAt(0) || 'P'}</span>
-                          )}
-                        </td>
-                        <td>
-                          <strong>{cand.candidate_name}</strong>
-                          <div className="muted" style={{ fontSize: 12 }}>{cand.party_name} ({cand.party_code})</div>
-                        </td>
-                        <td>
-                          <strong style={{ fontSize: 15 }}>{(cand.total_votes || 0).toLocaleString()}</strong>
-                        </td>
-                      </tr>
-                    ))}
-                    {sortedCandidates.length === 0 && (
+                    {displayCandidates.map((cand, idx) => {
+                      const isWinner = isBoothView ? (idx === 0 && cand.total_votes > 0) : (cand.is_winner || (idx === 0 && cand.total_votes > 0));
+                      return (
+                        <tr key={cand.candidate_id || idx} className={isWinner ? 'row-highlight' : ''}>
+                          <td>
+                            {cand.party_icon_url ? (
+                              <img src={cand.party_icon_url} alt="" className="avatar-sm" />
+                            ) : (
+                              <span className="avatar-title">{cand.party_name?.charAt(0) || 'P'}</span>
+                            )}
+                          </td>
+                          <td>
+                            <strong>{cand.candidate_name}</strong>
+                            {isWinner && !isBoothView && (
+                              <span className="badge badge-soft-success" style={{ marginLeft: 8 }}>Winner</span>
+                            )}
+                            <div className="muted" style={{ fontSize: 12 }}>{cand.party_name} ({cand.party_code})</div>
+                          </td>
+                          <td>
+                            <strong style={{ fontSize: 15 }}>{(cand.total_votes || 0).toLocaleString()}</strong>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {displayCandidates.length === 0 && (
                       <tr>
-                        <td colSpan={3} className="empty-state">No candidates found for this ward.</td>
+                        <td colSpan={3} className="empty-state">
+                          No candidates found for this {isBoothView ? 'booth' : 'ward'}.
+                        </td>
                       </tr>
                     )}
                   </tbody>
@@ -419,11 +480,13 @@ export default function LiveAnalytics() {
 
               {/* Right Side: Bar Chart */}
               <div className="ward-chart-side">
-                <h4 style={{ margin: '0 0 16px 0', color: '#495057' }}>Vote Distribution</h4>
-                {sortedCandidates.length > 0 ? (
+                <h4 style={{ margin: '0 0 16px 0', color: '#495057' }}>
+                  {isBoothView ? 'Booth Vote Distribution (Moderator Verified)' : 'Ward Report Vote Distribution'}
+                </h4>
+                {displayCandidates.length > 0 ? (
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart
-                      data={sortedCandidates}
+                      data={displayCandidates}
                       layout="vertical"
                       margin={{ top: 0, right: 20, left: -20, bottom: 0 }}
                     >

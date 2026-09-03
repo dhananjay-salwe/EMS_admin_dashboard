@@ -93,8 +93,8 @@ const Chip = ({ label, onRemove }) => (
 const PAGE_SIZE = 8;
 
 const SORT_OPTIONS = [
-  { value: 'asc', label: 'A–Z' },
-  { value: 'desc', label: 'Z–A' },
+  { value: 'asc', label: 'Z-A' },
+  { value: 'desc', label: 'A-Z' },
 ];
 
 export default function BoothReport() {
@@ -127,12 +127,17 @@ export default function BoothReport() {
 
 
   const openVerifyModal = (report) => {
-    // const initialCounts = {};
-    // report.votes_breakdown.forEach(item => {
-    //   // Default to the moderator count if it exists, otherwise fall back to the operator's count
-    //   initialCounts[item.candidate_id] = item.moderator_vote_count !== null ? item.moderator_vote_count : item.vote_count;
-    // });
-    setVerifiedCounts({});
+    const initialCounts = {};
+    if (report && report.votes_breakdown) {
+      report.votes_breakdown.forEach(item => {
+        // Default to the moderator count if it exists, otherwise fall back to the operator's count
+        const countVal = item.moderator_vote_count !== null && item.moderator_vote_count !== undefined
+          ? item.moderator_vote_count
+          : (item.vote_count !== null && item.vote_count !== undefined ? item.vote_count : 0);
+        initialCounts[item.candidate_id] = countVal;
+      });
+    }
+    setVerifiedCounts(initialCounts);
     setVerifyingReport(report);
   };
 
@@ -276,7 +281,10 @@ const handleVerifySubmit = async (e) => {
               className="form-control search-input-responsive"
               placeholder="Type to search..."
               value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
+              onChange={e => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
             />
             <div className="sort-filter-actions">
               <span className="sort-label-text">
@@ -286,7 +294,10 @@ const handleVerifySubmit = async (e) => {
                 className="sort-select-responsive"
                 value={sortDir}
                 options={SORT_OPTIONS}
-                onChange={e => setSortDir(e.target.value)}
+                onChange={e => {
+                  setSortDir(e.target.value);
+                  setCurrentPage(1);
+                }}
               />
               <button
                 type="button" title="Filter" aria-label="Toggle filter"
@@ -690,7 +701,7 @@ const handleVerifySubmit = async (e) => {
                         placeholder="0"
                         className="form-control"
                         style={{ width: '120px', textAlign: 'center', fontSize: 18, fontWeight: 'bold' }}
-                        value={verifiedCounts[item.candidate_id] || ''}
+                        value={verifiedCounts[item.candidate_id] !== undefined ? verifiedCounts[item.candidate_id] : ''}
                         onChange={(e) => setVerifiedCounts(prev => ({
                           ...prev,
                           [item.candidate_id]: e.target.value

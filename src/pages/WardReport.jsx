@@ -93,6 +93,7 @@ export default function WardReport() {
   // Edit Modal states
   const [selectedWard, setSelectedWard] = useState(null);
   const [counts, setCounts] = useState({});
+  const [selectedWinner, setSelectedWinner] = useState(null);
   const [saving, setSaving] = useState(false);
 
   // Fetch Ward Reports from Backend
@@ -179,15 +180,32 @@ export default function WardReport() {
     setCurrentPage(1);
   };
 
-  // Open Edit Modal with candidates for this specific ward and EMPTY input values
   const openEditModal = async (ward) => {
     setSelectedWard(ward);
-    setCounts({}); // CRITICAL: Reset counts so inputs start completely empty
+    setCounts({});
+    setSelectedWinner(null);
 
     try {
       const res = await apiCall(`/ward-reports/candidates?ward_id=${ward.id}`);
-      if (res.success) {
-        setCandidates(res.candidates || []);
+      if (res.success && res.candidates) {
+        const fetchedCandidates = res.candidates;
+        setCandidates(fetchedCandidates);
+
+        // Pre-populate counts and selected winner from existing data
+        const initialCounts = {};
+        let winnerId = null;
+
+        fetchedCandidates.forEach(c => {
+          initialCounts[c.id] = c.total_votes !== undefined && c.total_votes !== null ? c.total_votes : 0;
+          if (c.is_winner) {
+            winnerId = c.id;
+          }
+        });
+
+        setCounts(initialCounts);
+        if (winnerId) {
+          setSelectedWinner(winnerId);
+        }
       } else {
         toast.error(res.message || 'Failed to load candidates for this ward.');
       }
@@ -200,6 +218,7 @@ export default function WardReport() {
   const closeEditModal = () => {
     setSelectedWard(null);
     setCounts({});
+    setSelectedWinner(null); // Reset winner selection state
   };
 
   // Handle Count Change per candidate
@@ -216,14 +235,15 @@ export default function WardReport() {
 
     if (!selectedWard) return;
 
-    // Build payload: array of { ward_id, candidate_id, total_votes }
+    // Build payload: array of { ward_id, candidate_id, total_votes, is_winner }
     const payload = candidates.map(c => {
       const rawVal = counts[c.id];
       const parsedVal = rawVal === '' || rawVal === undefined ? 0 : parseInt(rawVal, 10);
       return {
         ward_id: selectedWard.id,
         candidate_id: c.id,
-        total_votes: isNaN(parsedVal) ? 0 : parsedVal
+        total_votes: isNaN(parsedVal) ? 0 : parsedVal,
+        is_winner: c.id === selectedWinner
       };
     });
 
@@ -497,16 +517,37 @@ export default function WardReport() {
                         </div>
                       </div>
 
-                      {/* CRITICAL: Must not have default values, starts completely empty */}
-                      <input
-                        type="number"
-                        min="0"
-                        placeholder="0"
-                        className="form-control"
-                        style={{ width: '130px', textAlign: 'center', fontSize: 16, fontWeight: 600 }}
-                        value={counts[candidate.id] || ''}
-                        onChange={(e) => handleCountChange(candidate.id, e.target.value)}
-                      />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <label
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            fontSize: 13,
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            margin: 0
+                          }}
+                        >
+                          <input
+                            type="radio"
+                            name="ward_winner"
+                            checked={selectedWinner === candidate.id}
+                            onChange={() => setSelectedWinner(candidate.id)}
+                          />
+                          Winner
+                        </label>
+
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          className="form-control"
+                          style={{ width: '130px', textAlign: 'center', fontSize: 16, fontWeight: 600 }}
+                          value={counts[candidate.id] !== undefined ? counts[candidate.id] : ''}
+                          onChange={(e) => handleCountChange(candidate.id, e.target.value)}
+                        />
+                      </div>
                     </div>
                   ))
                 ) : (
