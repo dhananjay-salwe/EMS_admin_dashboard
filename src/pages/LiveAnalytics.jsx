@@ -444,7 +444,7 @@ export default function LiveAnalytics() {
                   </thead>
                   <tbody>
                     {displayCandidates.map((cand, idx) => {
-                      const isWinner = isBoothView ? (idx === 0 && cand.total_votes > 0) : (cand.is_winner || (idx === 0 && cand.total_votes > 0));
+                      const isWinner = isBoothView ? false : (cand.is_winner || (idx === 0 && cand.total_votes > 0));
                       return (
                         <tr key={cand.candidate_id || idx} className={isWinner ? 'row-highlight' : ''}>
                           <td>
