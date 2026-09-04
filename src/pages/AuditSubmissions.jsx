@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { apiCall } from '../api/client';
 import CustomSelect from '../components/CustomSelect';
 import { toast } from 'react-hot-toast';
@@ -51,62 +51,18 @@ const actionIconStyle = (variant = 'primary') => ({
   flexShrink: 0,
 });
 
-const FilterIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-  </svg>
-);
-
-const iconBtnStyle = (active) => ({
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  width: 36,
-  height: 36,
-  borderRadius: '50%',
-  border: '1px solid ' + (active ? 'var(--bs-primary, #556ee6)' : '#e2e5f1'),
-  background: active ? 'var(--bs-primary, #556ee6)' : '#fff',
-  color: active ? '#fff' : '#556ee6',
-  cursor: 'pointer',
-  flexShrink: 0,
-  padding: 0,
-  boxSizing: 'border-box'
-});
-
-const Chip = ({ label, onRemove }) => (
-  <span style={{
-    display: 'inline-flex', alignItems: 'center', gap: 6,
-    background: '#eef1fb', color: '#556ee6', borderRadius: 16,
-    padding: '4px 10px', fontSize: 13, fontWeight: 500,
-  }}>
-    {label}
-    <button
-      type="button" onClick={onRemove}
-      style={{ border: 'none', background: 'transparent', color: '#556ee6', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: 0 }}
-      aria-label={`Remove ${label} filter`}
-    >
-      ×
-    </button>
-  </span>
-);
-
 const PAGE_SIZE = 8;
-
-const SORT_OPTIONS = [
-  { value: 'asc', label: 'Z-A' },
-  { value: 'desc', label: 'A-Z' },
-];
 
 export default function BoothReport() {
   const [submissions, setSubmissions] = useState([]);
-  // FIX: Added server pagination states and locations state
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
   const [locations, setLocations] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [selectedReport, setSelectedReport] = useState(null);
 
-  // FEATURE: State tracking for selected video modals
+  // Feature: State tracking for selected video modals
   const [selectedImage, setSelectedImage] = useState(null);
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -114,9 +70,7 @@ export default function BoothReport() {
   const [imageZoom, setImageZoom] = useState(1);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortDir, setSortDir] = useState('asc');
 
-  const [filterOpen, setFilterOpen] = useState(false);
   const [filterState, setFilterState] = useState('');
   const [filterLga, setFilterLga] = useState('');
   const [filterWard, setFilterWard] = useState('');
@@ -125,35 +79,57 @@ export default function BoothReport() {
   const [verifiedCounts, setVerifiedCounts] = useState({});
   const [verifying, setVerifying] = useState(false);
 
+  const openVerifyModal = async (report) => {
+    let breakdown = report.votes_breakdown || [];
 
-  const openVerifyModal = (report) => {
-    const initialCounts = {};
-    if (report && report.votes_breakdown) {
-      report.votes_breakdown.forEach(item => {
-        // Show updated moderator_vote_count if saved by moderator; if not updated yet, default to 0
-        const countVal = item.moderator_vote_count !== null && item.moderator_vote_count !== undefined
-          ? item.moderator_vote_count
-          : 0;
-        initialCounts[item.candidate_id] = countVal;
-      });
+    // Fallback: If no breakdown exists yet (booth not synced from app), fetch candidates for booth
+    if (breakdown.length === 0 && report.booth_id) {
+      try {
+        const res = await apiCall(`/candidates/by-booth/${report.booth_id}`);
+        if (res.success && res.candidates) {
+          breakdown = res.candidates.map(c => ({
+            candidate_id: c.candidate_id,
+            candidate_name: c.candidate_name,
+            party_name: c.party_name,
+            party_code: c.party_code,
+            vote_count: 0,
+            moderator_vote_count: null
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to load booth candidates:', err);
+      }
     }
+
+    const initialCounts = {};
+    breakdown.forEach(item => {
+      const countVal = item.moderator_vote_count !== null && item.moderator_vote_count !== undefined
+        ? item.moderator_vote_count
+        : '';
+      initialCounts[item.candidate_id] = countVal;
+    });
+
     setVerifiedCounts(initialCounts);
-    setVerifyingReport(report);
+    setVerifyingReport({ ...report, votes_breakdown: breakdown });
   };
 
-const handleVerifySubmit = async (e) => {
-    if (e && e.preventDefault) e.preventDefault(); // Safely handle event
+  const handleVerifySubmit = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
     setVerifying(true);
     
-    const payload = verifyingReport.votes_breakdown.map(item => ({
+    const payload = (verifyingReport.votes_breakdown || []).map(item => ({
       candidate_id: item.candidate_id,
       count: parseInt(verifiedCounts[item.candidate_id], 10) || 0
     }));
 
     try {
-      const res = await apiCall(`/audit/verify/${verifyingReport.id}`, { 
+      const targetId = verifyingReport.id || 0;
+      const res = await apiCall(`/audit/verify/${targetId}`, { 
         method: 'PUT', 
-        body: JSON.stringify({ verified_votes: payload }) 
+        body: JSON.stringify({ 
+          booth_id: verifyingReport.booth_id,
+          verified_votes: payload 
+        }) 
       });
 
       if (res.success) {
@@ -193,8 +169,18 @@ const handleVerifySubmit = async (e) => {
     }
   };
 
-  // FIX: Server-side pagination fetch and location loaders
+  // Server-side pagination fetch with guard clause: requires Ward selection
   const fetchSubmissions = async (page = 1) => {
+    // Guard clause: table must remain completely empty until Ward is actively selected
+    if (!filterWard) {
+      setSubmissions([]);
+      setTotalPages(1);
+      setTotalRecords(0);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
     try {
       const query = new URLSearchParams({
         page,
@@ -202,8 +188,7 @@ const handleVerifySubmit = async (e) => {
         state: filterState,
         lga: filterLga,
         ward: filterWard,
-        search: searchTerm,
-        sort: sortDir
+        search: searchTerm
       }).toString();
 
       const data = await apiCall(`/audit/submissions?${query}`);
@@ -214,49 +199,56 @@ const handleVerifySubmit = async (e) => {
       }
     } catch (err) {
       console.error("Failed to fetch submissions:", err);
-    }
-  };
-
-  const fetchLocations = async () => {
-    try {
-      const data = await apiCall('/locations/all');
-      if (data.success) {
-        setLocations(data.locations || []);
-      }
-    } catch (err) {
-      console.error("Failed to fetch locations:", err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchLocations();
+    let isSubscribed = true;
+    (async () => {
+      try {
+        const data = await apiCall('/locations/all');
+        if (isSubscribed && data.success) {
+          setLocations(data.locations || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch locations:", err);
+      }
+    })();
+    return () => {
+      isSubscribed = false;
+    };
   }, []);
 
   useEffect(() => {
     fetchSubmissions(currentPage);
-  }, [currentPage, searchTerm, sortDir, filterState, filterLga, filterWard]);
+  }, [currentPage, searchTerm, filterState, filterLga, filterWard]);
 
-  // FIX: Cascade location options derived from complete location hierarchy
+  // Cascading location options derived from complete location hierarchy
   const stateOptions = [...new Set(locations.map(l => l.state_name).filter(Boolean))].sort();
 
-  const lgaOptions = [...new Set(
-    locations.filter(l => l.state_name === filterState).map(l => l.lga_name).filter(Boolean)
-  )].sort();
+  const lgaOptions = filterState
+    ? [...new Set(
+        locations.filter(l => l.state_name === filterState).map(l => l.lga_name).filter(Boolean)
+      )].sort()
+    : [];
 
-  const wardOptions = [...new Set(
-    locations.filter(l => l.state_name === filterState && l.lga_name === filterLga).map(l => l.ward_name).filter(Boolean)
-  )].sort();
-
+  const wardOptions = filterState && filterLga
+    ? [...new Set(
+        locations.filter(l => l.state_name === filterState && l.lga_name === filterLga).map(l => l.ward_name).filter(Boolean)
+      )].sort()
+    : [];
 
   const clearFilters = () => {
     setFilterState('');
     setFilterLga('');
     setFilterWard('');
+    setCurrentPage(1);
   };
 
-  const hasActiveFilters = filterState || filterLga || filterWard;
+  const hasActiveFilters = Boolean(filterState || filterLga || filterWard);
 
-  // FIX: Shifted filtering, sorting and pagination to server-side
   const pageSubmissions = submissions;
   const totalSubmissions = totalRecords;
 
@@ -286,68 +278,56 @@ const handleVerifySubmit = async (e) => {
                 setCurrentPage(1);
               }}
             />
-            <div className="sort-filter-actions">
-              <span className="sort-label-text">
-                Sort by
-              </span>
-              <CustomSelect
-                className="sort-select-responsive"
-                value={sortDir}
-                options={SORT_OPTIONS}
-                onChange={e => {
-                  setSortDir(e.target.value);
-                  setCurrentPage(1);
-                }}
-              />
-              <button
-                type="button" title="Filter" aria-label="Toggle filter"
-                style={iconBtnStyle(filterOpen || hasActiveFilters)}
-                onClick={() => setFilterOpen(o => !o)}
+
+            <CustomSelect
+              className="filter-select-responsive"
+              value={filterState}
+              placeholder="Select State…"
+              options={stateOptions}
+              onChange={e => {
+                setFilterState(e.target.value);
+                setFilterLga('');
+                setFilterWard('');
+                setCurrentPage(1);
+              }}
+            />
+
+            <CustomSelect
+              className="filter-select-responsive"
+              value={filterLga}
+              placeholder="Select LGA…"
+              options={lgaOptions}
+              onChange={e => {
+                setFilterLga(e.target.value);
+                setFilterWard('');
+                setCurrentPage(1);
+              }}
+              disabled={!filterState}
+            />
+
+            <CustomSelect
+              className="filter-select-responsive"
+              value={filterWard}
+              placeholder="Select Ward…"
+              options={wardOptions}
+              onChange={e => {
+                setFilterWard(e.target.value);
+                setCurrentPage(1);
+              }}
+              disabled={!filterLga}
+            />
+
+            {hasActiveFilters && (
+              <button 
+                type="button" 
+                className="btn btn-secondary btn-sm filter-clear-btn" 
+                onClick={clearFilters}
               >
-                <FilterIcon />
+                Clear
               </button>
-            </div>
+            )}
           </div>
         </div>
-
-        {filterOpen && (
-          <div className="filter-toolbar" style={{ padding: '12px 16px 0' }}>
-            {filterState && <Chip label={filterState} onRemove={() => { setFilterState(''); setFilterLga(''); setFilterWard(''); }} />}
-            {filterLga && <Chip label={filterLga} onRemove={() => { setFilterLga(''); setFilterWard(''); }} />}
-            {filterWard && <Chip label={filterWard} onRemove={() => setFilterWard('')} />}
-
-            {!filterState && (
-              <CustomSelect
-                className="filter-select-responsive"
-                value={filterState}
-                placeholder="Select State…"
-                options={stateOptions}
-                onChange={e => setFilterState(e.target.value)}
-              />
-            )}
-            {filterState && !filterLga && (
-              <CustomSelect
-                className="filter-select-responsive"
-                value={filterLga}
-                placeholder="Select LGA…"
-                options={lgaOptions}
-                onChange={e => setFilterLga(e.target.value)}
-              />
-            )}
-            {filterState && filterLga && !filterWard && (
-              <CustomSelect
-                className="filter-select-responsive"
-                value={filterWard}
-                placeholder="Select Ward…"
-                options={wardOptions}
-                onChange={e => setFilterWard(e.target.value)}
-              />
-            )}
-            {hasActiveFilters && (
-              <button type="button" className="btn btn-secondary btn-sm filter-clear-btn" onClick={clearFilters}>Clear</button>
-            )}
-          </div>
-        )}
 
         <div className="table-wrap">
           <table className="data-table">
@@ -362,84 +342,115 @@ const handleVerifySubmit = async (e) => {
               </tr>
             </thead>
             <tbody>
-              {pageSubmissions.map((sub) => (
-                <tr key={sub.id}>
-                  <td><strong>{sub.operator_name || 'Booth Officer'}</strong></td>
-                  <td>
-                    <strong>{sub.unique_booth_code}</strong>
-                    <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{sub.booth_name}</div>
+              {isLoading ? (
+                [...Array(PAGE_SIZE)].map((_, i) => (
+                  <tr key={`skeleton-${i}`}>
+                    <td><div className="skeleton-box" style={{ width: '60%', height: 16 }} /></td>
+                    <td><div className="skeleton-box" style={{ width: '50%', height: 16 }} /></td>
+                    <td><div className="skeleton-box" style={{ width: '40%', height: 16 }} /></td>
+                    <td><div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6 }} /></td>
+                    <td><div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6 }} /></td>
+                    <td><div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6 }} /></td>
+                  </tr>
+                ))
+              ) : submissions.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="empty-state">
+                    {filterWard 
+                      ? (searchTerm ? 'No booths match the search in this ward.' : 'No booths found in this ward.')
+                      : 'Please select a State, LGA, and Ward to view booth reports.'}
                   </td>
-                  <td>{new Date(sub.created_at).toLocaleString()}</td>
-                  <td>
-                    <button
-                      type="button"
-                      className="btn-icon"
-                      style={actionIconStyle('primary')}
-                      title="View Report"
-                      aria-label="View Report"
-                      onClick={() => setSelectedReport(sub)}
-                    >
-                      <IconFileText />
-                    </button>
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <button
-                        type="button"
-                        className="btn-icon"
-                        style={actionIconStyle('primary')}
-                        title="View Photo"
-                        aria-label="View Photo"
-                        onClick={() => setSelectedImage({
-                          url: sub.tally_sheet_url,
-                          booth: sub.unique_booth_code,
-                          operator: sub.operator_name
-                        })}
-                      >
-                        <IconImage />
-                      </button>
-                      {sub.video_url && (
+                </tr>
+              ) : (
+                pageSubmissions.map((sub) => (
+                  <tr key={sub.booth_id || sub.id}>
+                    <td><strong>{sub.operator_name || <span className="muted">Not assigned</span>}</strong></td>
+                    <td>
+                      <strong>{sub.unique_booth_code}</strong>
+                      <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{sub.booth_name}</div>
+                    </td>
+                    <td>
+                      {sub.created_at ? (
+                        new Date(sub.created_at).toLocaleString()
+                      ) : (
+                        <span className="muted" style={{ fontSize: 12 }}>Awaiting App Sync</span>
+                      )}
+                    </td>
+                    <td>
+                      {sub.id && sub.created_at ? (
                         <button
                           type="button"
                           className="btn-icon"
                           style={actionIconStyle('primary')}
-                          title="View Video"
-                          aria-label="View Video"
-                          onClick={() => setSelectedVideo({
-                            url: sub.video_url,
-                            booth: sub.unique_booth_code,
-                            operator: sub.operator_name
-                          })}
+                          title="View Report"
+                          aria-label="View Report"
+                          onClick={() => setSelectedReport(sub)}
                         >
-                          <IconVideo />
+                          <IconFileText />
                         </button>
+                      ) : (
+                        <span className="muted" style={{ fontSize: 12 }}>Awaiting App Sync</span>
                       )}
-                    </div>
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <button
-                        type="button"
-                        className="btn-icon"
-                        style={actionIconStyle('primary')}
-                        title="Edit / Verify Count"
-                        aria-label="Edit / Verify Count"
-                        onClick={() => openVerifyModal(sub)}
-                      >
-                        <EditIcon />
-                      </button>
-                      {sub.votes_breakdown?.some(v => v.moderator_vote_count !== null) && (
-                        <span className="badge badge-soft-success">Verified</span>
+                    </td>
+                    <td>
+                      {sub.tally_sheet_url || sub.video_url ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {sub.tally_sheet_url && (
+                            <button
+                              type="button"
+                              className="btn-icon"
+                              style={actionIconStyle('primary')}
+                              title="View Photo"
+                              aria-label="View Photo"
+                              onClick={() => setSelectedImage({
+                                url: sub.tally_sheet_url,
+                                booth: sub.unique_booth_code,
+                                operator: sub.operator_name || 'Unassigned'
+                              })}
+                            >
+                              <IconImage />
+                            </button>
+                          )}
+                          {sub.video_url && (
+                            <button
+                              type="button"
+                              className="btn-icon"
+                              style={actionIconStyle('primary')}
+                              title="View Video"
+                              aria-label="View Video"
+                              onClick={() => setSelectedVideo({
+                                url: sub.video_url,
+                                booth: sub.unique_booth_code,
+                                operator: sub.operator_name || 'Unassigned'
+                              })}
+                            >
+                              <IconVideo />
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="muted" style={{ fontSize: 12 }}>Awaiting App Sync</span>
                       )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {pageSubmissions.length === 0 && submissions.length > 0 && (
-                <tr><td colSpan={6} className="empty-state">No submissions match the selected filters.</td></tr>
-              )}
-              {submissions.length === 0 && (
-                <tr><td colSpan={6} className="empty-state">No submissions yet.</td></tr>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button
+                          type="button"
+                          className="btn-icon"
+                          style={actionIconStyle('primary')}
+                          title="Edit / Verify Count"
+                          aria-label="Edit / Verify Count"
+                          onClick={() => openVerifyModal(sub)}
+                        >
+                          <EditIcon />
+                        </button>
+                        {sub.votes_breakdown?.some(v => v.moderator_vote_count !== null && v.moderator_vote_count !== undefined) && (
+                          <span className="badge badge-soft-success">Verified</span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
@@ -670,16 +681,46 @@ const handleVerifySubmit = async (e) => {
             
             <div className="modal-body" style={{ display: 'flex', gap: '20px', overflow: 'hidden', padding: 0 }}>
               
-              {/* LEFT SIDE: Image Preview */}
-              <div style={{ flex: 1, backgroundColor: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px' }}>
+              {/* LEFT SIDE: Media Preview or Grey Placeholder UI */}
+              <div style={{ 
+                flex: 1, 
+                backgroundColor: verifyingReport.tally_sheet_url ? '#0f172a' : '#f8f9fa', 
+                borderRight: '1px solid #e2e5f1',
+                display: 'flex', 
+                flexDirection: 'column',
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                padding: '24px',
+                minHeight: '400px'
+              }}>
                 {verifyingReport.tally_sheet_url ? (
                   isPdf(verifyingReport.tally_sheet_url) ? (
-                    <iframe src={verifyingReport.tally_sheet_url} style={{ width: '100%', height: '65vh', border: 'none' }} />
+                    <iframe src={verifyingReport.tally_sheet_url} title="Tally Sheet" style={{ width: '100%', height: '65vh', border: 'none' }} />
                   ) : (
                     <img src={verifyingReport.tally_sheet_url} alt="Tally Sheet" style={{ maxWidth: '100%', maxHeight: '65vh', objectFit: 'contain' }} />
                   )
                 ) : (
-                  <span style={{ color: '#94a3b8' }}>No image attached</span>
+                  <div style={{ textAlign: 'center', color: '#64748b' }}>
+                    <div style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: '50%',
+                      background: '#e2e8f0',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: 12,
+                      color: '#94a3b8'
+                    }}>
+                      <IconImage width={28} height={28} />
+                    </div>
+                    <h4 style={{ margin: '0 0 6px', fontSize: 15, fontWeight: 600, color: '#334155' }}>
+                      No media uploaded yet
+                    </h4>
+                    <p style={{ margin: 0, fontSize: 13, color: '#64748b', maxWidth: 260 }}>
+                      Mobile app has not synced tally documents for this booth. You can still enter verified counts manually on the right.
+                    </p>
+                  </div>
                 )}
               </div>
 
