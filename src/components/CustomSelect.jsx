@@ -183,6 +183,8 @@ export default function CustomSelect({
             boxShadow: '0 4px 12px rgba(56, 65, 74, 0.12)',
             maxHeight: '220px',
             overflowY: 'auto',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
             ...dropdownStyle
           }}
         >

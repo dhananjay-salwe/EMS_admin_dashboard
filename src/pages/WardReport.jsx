@@ -79,7 +79,7 @@ export default function WardReport() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Search, Sort, Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -98,13 +98,21 @@ export default function WardReport() {
 
   // Fetch Ward Reports from Backend
   const fetchWardReports = async (page = 1) => {
+    // Guard clause: fetch nothing and clear table until an LGA is selected
+    if (!filterLga) {
+      setWards([]);
+      setTotalPages(1);
+      setTotalRecords(0);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     try {
       const query = new URLSearchParams({
         page,
         limit: PAGE_SIZE,
         search: searchTerm,
-        sort: sortDir,
         state: filterState,
         lga: filterLga,
       }).toString();
@@ -150,7 +158,7 @@ export default function WardReport() {
   // Derived LGA options based on selected State
   const lgaOptions = filterState
     ? [...new Set(locations.filter(l => l.state_name === filterState).map(l => l.lga_name).filter(Boolean))].sort()
-    : [...new Set(locations.map(l => l.lga_name).filter(Boolean))].sort();
+    : [];
 
   // Reset to page 1 on search change
   const handleSearchChange = (e) => {
@@ -280,7 +288,6 @@ export default function WardReport() {
             <h2>Ward Reports</h2>
             <span className="muted">{totalRecords} wards found</span>
           </div>
-
           <div className="header-controls-group">
             <input
               type="text"
@@ -290,75 +297,22 @@ export default function WardReport() {
               onChange={handleSearchChange}
             />
 
-            <div className="sort-filter-actions">
-              <span className="sort-label-text">Sort by</span>
-              <CustomSelect
-                className="sort-select-responsive"
-                value={sortDir}
-                options={SORT_OPTIONS}
-                onChange={handleSortChange}
-              />
+            <CustomSelect
+              className="filter-select-responsive"
+              value={filterState}
+              placeholder="Filter by State…"
+              options={stateList}
+              onChange={handleStateFilterChange}
+            />
 
-              <button
-                type="button"
-                title="Filter"
-                aria-label="Toggle filter"
-                style={iconBtnStyle(filterOpen || hasActiveFilters)}
-                onClick={() => setFilterOpen(o => !o)}
-              >
-                <FilterIcon />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Filter Toolbar */}
-        {filterOpen && (
-          <div className="filter-toolbar" style={{ padding: '12px 16px 0' }}>
-            {/* State Chip */}
-            {filterState && (
-              <Chip
-                label={`State: ${filterState}`}
-                onRemove={() => {
-                  setFilterState('');
-                  setFilterLga('');
-                  setCurrentPage(1);
-                }}
-              />
-            )}
-
-            {/* LGA Chip */}
-            {filterLga && (
-              <Chip
-                label={`LGA: ${filterLga}`}
-                onRemove={() => {
-                  setFilterLga('');
-                  setCurrentPage(1);
-                }}
-              />
-            )}
-
-            {/* State Dropdown */}
-            {!filterState && (
-              <CustomSelect
-                className="filter-select-responsive"
-                value={filterState}
-                placeholder="Filter by State…"
-                options={stateList}
-                onChange={handleStateFilterChange}
-              />
-            )}
-
-            {/* LGA Dropdown */}
-            {!filterLga && (
-              <CustomSelect
-                className="filter-select-responsive"
-                value={filterLga}
-                placeholder="Filter by LGA…"
-                options={lgaOptions}
-                onChange={handleLgaFilterChange}
-              />
-            )}
+            <CustomSelect
+              className="filter-select-responsive"
+              value={filterLga}
+              placeholder="Filter by LGA…"
+              options={lgaOptions}
+              onChange={handleLgaFilterChange}
+              disabled={!filterState}
+            />
 
             {hasActiveFilters && (
               <button
@@ -370,7 +324,7 @@ export default function WardReport() {
               </button>
             )}
           </div>
-        )}
+        </div>
 
         {/* Table Wrapper */}
         <div className="table-wrap">
@@ -426,9 +380,9 @@ export default function WardReport() {
               {!isLoading && wards.length === 0 && (
                 <tr>
                   <td colSpan={3} className="empty-state">
-                    {hasActiveFilters || searchTerm
-                      ? 'No wards match the selected filters or search.'
-                      : 'No wards found.'}
+                    {filterLga
+                      ? 'No wards match the selected LGA or search.'
+                      : 'Please select a State and LGA to view ward reports.'}
                   </td>
                 </tr>
               )}
