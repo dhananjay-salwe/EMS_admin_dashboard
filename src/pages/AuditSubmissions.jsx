@@ -370,11 +370,11 @@ export default function BoothReport() {
                       <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{sub.booth_name}</div>
                     </td>
                     <td>
-                      {sub.created_at ? (
+                      {/* {sub.created_at ? (
                         new Date(sub.created_at).toLocaleString()
                       ) : (
-                        <span className="muted" style={{ fontSize: 12 }}>Awaiting App Sync</span>
-                      )}
+                        // <span className="muted" style={{ fontSize: 12 }}>Awaiting App Sync</span>
+                      )} */}
                     </td>
                     <td>
                       {sub.id && sub.created_at ? (
