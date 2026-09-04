@@ -2075,3 +2075,129 @@ table.data-table {
     font-size: 12.5px;
   }
 }
+
+/* ================= EXPORT DROPDOWN COMPONENT ================= */
+.export-menu-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.export-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 260px;
+  background: #ffffff;
+  border: 1px solid var(--border-color, #eef0f4);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.04);
+  padding: 8px 0;
+  z-index: 1050;
+  animation: exportDropdownFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: top right;
+}
+
+@keyframes exportDropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.export-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted, #878a99);
+  border-bottom: 1px solid var(--border-color, #eef0f4);
+  margin-bottom: 4px;
+}
+
+.export-badge {
+  background: var(--primary-soft, rgba(85, 110, 230, 0.12));
+  color: var(--primary, #556ee6);
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 12px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.export-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+  font-family: inherit;
+}
+
+.export-dropdown-item:hover {
+  background: #f6f8fb;
+}
+
+.export-dropdown-item:active {
+  background: #edf1f8;
+  transform: scale(0.99);
+}
+
+.export-format-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.export-format-badge.csv {
+  background: #e0f2fe;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
+}
+
+.export-format-badge.excel {
+  background: #dcfce7;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.export-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.export-item-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dark, #343a40);
+  line-height: 1.2;
+}
+
+.export-item-desc {
+  font-size: 11px;
+  color: var(--text-muted, #878a99);
+  line-height: 1.2;
+}

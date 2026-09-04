@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { apiCall } from '../api/client';
 import CustomSelect from '../components/CustomSelect';
 import { toast } from 'react-hot-toast';
+import { exportToCSV, exportToExcel } from '../utils/exportImportUtils';
 
 const PAGE_SIZE = 6;
 
@@ -15,6 +16,14 @@ const SearchIcon = () => (
 const FilterIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+  </svg>
+);
+
+const DownloadIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
   </svg>
 );
 
@@ -93,6 +102,15 @@ const SORT_OPTIONS = [
   { value: 'ward_name-desc', label: 'Ward (Z–A)' },
 ];
 
+const EXPORT_COLUMNS = [
+  { label: 'S.No', key: (_, index) => index + 1 },
+  { label: 'State', key: 'state_name' },
+  { label: 'LGA', key: 'lga_name' },
+  { label: 'Ward', key: 'ward_name' },
+  { label: 'Unique Booth Code', key: 'unique_booth_code' },
+  { label: 'Polling Unit Name', key: 'booth_name' },
+];
+
 export default function LocationManagement() {
   const [locations, setLocations] = useState([]);
   const [formData, setFormData] = useState({
@@ -108,6 +126,8 @@ export default function LocationManagement() {
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportMenuRef = useRef(null);
 
   const [filterState, setFilterState] = useState('');
   const [filterLga, setFilterLga] = useState('');
@@ -117,6 +137,21 @@ export default function LocationManagement() {
 
   const [sortKey, setSortKey] = useState('booth_name-asc');
   const [deletingBooth, setDeletingBooth] = useState(null);
+
+  // Close export dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target)) {
+        setExportOpen(false);
+      }
+    };
+    if (exportOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [exportOpen]);
 
   const fetchLocations = async () => {
     try{ 
@@ -211,6 +246,41 @@ export default function LocationManagement() {
     return sortDir === 'desc' ? -cmp : cmp;
   });
 
+  const handleExport = (format) => {
+    if (!sortedBooths || sortedBooths.length === 0) {
+      toast.error('No polling units available to export');
+      return;
+    }
+
+    try {
+      const filename = 'polling_units_list';
+      const title = 'Registered Polling Units List';
+
+      if (format === 'csv') {
+        exportToCSV({
+          data: sortedBooths,
+          columns: EXPORT_COLUMNS,
+          filename,
+          title,
+        });
+        toast.success(`Exported ${sortedBooths.length} polling units as CSV!`);
+      } else if (format === 'excel') {
+        exportToExcel({
+          data: sortedBooths,
+          columns: EXPORT_COLUMNS,
+          filename,
+          sheetName: 'Polling Units',
+          title,
+        });
+        toast.success(`Exported ${sortedBooths.length} polling units as Excel!`);
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export polling units data');
+    } finally {
+      setExportOpen(false);
+    }
+  };
 
   const totalPages = Math.max(1, Math.ceil(sortedBooths.length / PAGE_SIZE));
   const pageBooths = sortedBooths.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -333,17 +403,59 @@ export default function LocationManagement() {
                 <button
                   type="button" title="Search" aria-label="Toggle search"
                   style={iconBtnStyle(searchOpen)}
-                  onClick={() => { setSearchOpen(o => !o); if (filterOpen) setFilterOpen(false); }}
+                  onClick={() => { setSearchOpen(o => !o); if (filterOpen) setFilterOpen(false); setExportOpen(false); }}
                 >
                   <SearchIcon />
                 </button>
                 <button
                   type="button" title="Filter" aria-label="Toggle filter"
                   style={iconBtnStyle(filterOpen || hasActiveFilters)}
-                  onClick={() => { setFilterOpen(o => !o); if (searchOpen) setSearchOpen(false); }}
+                  onClick={() => { setFilterOpen(o => !o); if (searchOpen) setSearchOpen(false); setExportOpen(false); }}
                 >
                   <FilterIcon />
                 </button>
+                <div className="export-menu-container" ref={exportMenuRef}>
+                  <button
+                    type="button"
+                    title="Export List (CSV / Excel)"
+                    aria-label="Export polling units list"
+                    aria-expanded={exportOpen}
+                    style={iconBtnStyle(exportOpen)}
+                    onClick={() => { setExportOpen(o => !o); if (searchOpen) setSearchOpen(false); if (filterOpen) setFilterOpen(false); }}
+                  >
+                    <DownloadIcon />
+                  </button>
+                  {exportOpen && (
+                    <div className="export-dropdown-menu">
+                      <div className="export-dropdown-header">
+                        <span>Export Options</span>
+                        <span className="export-badge">{sortedBooths.length} records</span>
+                      </div>
+                      <button
+                        type="button"
+                        className="export-dropdown-item"
+                        onClick={() => handleExport('csv')}
+                      >
+                        <div className="export-format-badge csv">CSV</div>
+                        <div className="export-item-info">
+                          <span className="export-item-title">Export as CSV</span>
+                          <span className="export-item-desc">Comma-separated values (.csv)</span>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        className="export-dropdown-item"
+                        onClick={() => handleExport('excel')}
+                      >
+                        <div className="export-format-badge excel">XLS</div>
+                        <div className="export-item-info">
+                          <span className="export-item-title">Export as Excel</span>
+                          <span className="export-item-desc">Microsoft Excel formatted (.xls)</span>
+                        </div>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
