@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { apiCall } from '../api/client';
 import CustomSelect from '../components/CustomSelect';
 import { toast } from 'react-hot-toast';
+import { exportToCSV, exportToExcel } from '../utils/exportImportUtils';
 
 const PAGE_SIZE = 6;
 
@@ -15,6 +16,14 @@ const SearchIcon = () => (
 const FilterIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+  </svg>
+);
+
+const DownloadIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
   </svg>
 );
 
@@ -90,6 +99,16 @@ const SORT_OPTIONS = [
   { value: 'ward_name-desc', label: 'Ward (Z–A)' },
 ];
 
+const EXPORT_COLUMNS = [
+  { label: 'S.No', key: (_, index) => index + 1 },
+  { label: 'Candidate Name', key: 'candidate_name' },
+  { label: 'Party Name', key: 'party_name' },
+  { label: 'Party Code', key: 'party_code' },
+  { label: 'Contested Ward', key: 'ward_name' },
+  { label: 'LGA', key: 'lga_name' },
+  { label: 'State', key: 'state_name' },
+];
+
 export default function CandidateManagement() {
   const [candidates, setCandidates] = useState([]);
   const [parties, setParties] = useState([]);
@@ -104,6 +123,8 @@ export default function CandidateManagement() {
   // Toolbar toggles
   const [searchOpen, setSearchOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportMenuRef = useRef(null);
 
   // Filter & search state
   const [filterState, setFilterState] = useState('');
@@ -114,6 +135,21 @@ export default function CandidateManagement() {
 
   const [sortKey, setSortKey] = useState('candidate_name-asc');
   const [deletingCandidate, setDeletingCandidate] = useState(null);
+
+  // Close export dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target)) {
+        setExportOpen(false);
+      }
+    };
+    if (exportOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [exportOpen]);
 
   const fetchData = async () => {
     try { 
@@ -233,6 +269,42 @@ export default function CandidateManagement() {
     return sortDir === 'desc' ? -cmp : cmp;
   });
 
+  const handleExport = (format) => {
+    if (!sortedCandidates || sortedCandidates.length === 0) {
+      toast.error('No candidates available to export');
+      return;
+    }
+
+    try {
+      const filename = 'candidates_list';
+      const title = 'Contesting Candidates List';
+
+      if (format === 'csv') {
+        exportToCSV({
+          data: sortedCandidates,
+          columns: EXPORT_COLUMNS,
+          filename,
+          title,
+        });
+        toast.success(`Exported ${sortedCandidates.length} candidates as CSV!`);
+      } else if (format === 'excel') {
+        exportToExcel({
+          data: sortedCandidates,
+          columns: EXPORT_COLUMNS,
+          filename,
+          sheetName: 'Candidates',
+          title,
+        });
+        toast.success(`Exported ${sortedCandidates.length} candidates as Excel!`);
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export candidates data');
+    } finally {
+      setExportOpen(false);
+    }
+  };
+
   const totalPages = Math.max(1, Math.ceil(sortedCandidates.length / PAGE_SIZE));
   const pageCandidates = sortedCandidates.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
@@ -302,17 +374,59 @@ export default function CandidateManagement() {
                 <button
                   type="button" title="Search" aria-label="Toggle search"
                   style={iconBtnStyle(searchOpen)}
-                  onClick={() => { setSearchOpen(o => !o); if (filterOpen) setFilterOpen(false); }}
+                  onClick={() => { setSearchOpen(o => !o); if (filterOpen) setFilterOpen(false); setExportOpen(false); }}
                 >
                   <SearchIcon />
                 </button>
                 <button
                   type="button" title="Filter" aria-label="Toggle filter"
                   style={iconBtnStyle(filterOpen || hasActiveFilters)}
-                  onClick={() => { setFilterOpen(o => !o); if (searchOpen) setSearchOpen(false); }}
+                  onClick={() => { setFilterOpen(o => !o); if (searchOpen) setSearchOpen(false); setExportOpen(false); }}
                 >
                   <FilterIcon />
                 </button>
+                <div className="export-menu-container" ref={exportMenuRef}>
+                  <button
+                    type="button"
+                    title="Export List (CSV / Excel)"
+                    aria-label="Export candidates list"
+                    aria-expanded={exportOpen}
+                    style={iconBtnStyle(exportOpen)}
+                    onClick={() => { setExportOpen(o => !o); if (searchOpen) setSearchOpen(false); if (filterOpen) setFilterOpen(false); }}
+                  >
+                    <DownloadIcon />
+                  </button>
+                  {exportOpen && (
+                    <div className="export-dropdown-menu">
+                      <div className="export-dropdown-header">
+                        <span>Export Options</span>
+                        <span className="export-badge">{sortedCandidates.length} records</span>
+                      </div>
+                      <button
+                        type="button"
+                        className="export-dropdown-item"
+                        onClick={() => handleExport('csv')}
+                      >
+                        <div className="export-format-badge csv">CSV</div>
+                        <div className="export-item-info">
+                          <span className="export-item-title">Export as CSV</span>
+                          <span className="export-item-desc">Comma-separated values (.csv)</span>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        className="export-dropdown-item"
+                        onClick={() => handleExport('excel')}
+                      >
+                        <div className="export-format-badge excel">XLS</div>
+                        <div className="export-item-info">
+                          <span className="export-item-title">Export as Excel</span>
+                          <span className="export-item-desc">Microsoft Excel formatted (.xls)</span>
+                        </div>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -476,7 +590,7 @@ export default function CandidateManagement() {
         </div>
       )}
 
-      
+    
     </div>
   );
 }

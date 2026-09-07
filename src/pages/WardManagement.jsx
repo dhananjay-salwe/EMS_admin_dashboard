@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { apiCall } from '../api/client';
 import CustomSelect from '../components/CustomSelect';
 import { toast } from 'react-hot-toast';
+import { exportToCSV, exportToExcel } from '../utils/exportImportUtils';
 
 const PAGE_SIZE = 8;
 
@@ -94,6 +95,14 @@ const FilterIcon = () => (
   </svg>
 );
 
+const DownloadIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
+  </svg>
+);
+
 const DeleteIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="3 6 5 6 21 6" />
@@ -159,6 +168,13 @@ const SORT_OPTIONS = [
   { value: 'lga_name-desc', label: 'LGA (Z–A)' },
 ];
 
+const EXPORT_COLUMNS = [
+  { label: 'S.No', key: (_, index) => index + 1 },
+  { label: 'State', key: 'state_name' },
+  { label: 'LGA', key: 'lga_name' },
+  { label: 'Ward Name', key: 'ward_name' },
+];
+
 export default function WardManagement() {
   const [locations, setLocations] = useState([]);
   const [formData, setFormData] = useState({ state_name: '', lga_name: '', ward_name: '' });
@@ -168,6 +184,7 @@ export default function WardManagement() {
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterState, setFilterState] = useState('');
   const [filterLga, setFilterLga] = useState('');
@@ -175,7 +192,23 @@ export default function WardManagement() {
   const [currentPage, setCurrentPage] = useState(1);
 
   const searchInputRef = useRef(null);
+  const exportMenuRef = useRef(null);
   const [deletingWard, setDeletingWard] = useState(null);
+
+  // Close export dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target)) {
+        setExportOpen(false);
+      }
+    };
+    if (exportOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [exportOpen]);
 
   const fetchLocations = async () => {
     try {
@@ -243,6 +276,42 @@ export default function WardManagement() {
     return sortDir === 'desc' ? -cmp : cmp;
   });
 
+  const handleExport = (format) => {
+    if (!sortedWards || sortedWards.length === 0) {
+      toast.error('No electoral wards available to export');
+      return;
+    }
+
+    try {
+      const filename = 'electoral_wards_list';
+      const title = 'Registered Electoral Wards List';
+
+      if (format === 'csv') {
+        exportToCSV({
+          data: sortedWards,
+          columns: EXPORT_COLUMNS,
+          filename,
+          title,
+        });
+        toast.success(`Exported ${sortedWards.length} electoral wards as CSV!`);
+      } else if (format === 'excel') {
+        exportToExcel({
+          data: sortedWards,
+          columns: EXPORT_COLUMNS,
+          filename,
+          sheetName: 'Electoral Wards',
+          title,
+        });
+        toast.success(`Exported ${sortedWards.length} electoral wards as Excel!`);
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export electoral wards data');
+    } finally {
+      setExportOpen(false);
+    }
+  };
+
   const totalPages = Math.max(1, Math.ceil(sortedWards.length / PAGE_SIZE));
   const pageWards = sortedWards.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
@@ -283,11 +352,13 @@ export default function WardManagement() {
   const toggleSearch = () => {
     setSearchOpen(o => !o);
     setFilterOpen(false);
+    setExportOpen(false);
   };
 
   const toggleFilter = () => {
     setFilterOpen(o => !o);
     setSearchOpen(false);
+    setExportOpen(false);
   };
 
   return (
@@ -371,6 +442,48 @@ export default function WardManagement() {
               >
                 <FilterIcon />
               </button>
+              <div className="export-menu-container" ref={exportMenuRef}>
+                <button
+                  type="button"
+                  title="Export List (CSV / Excel)"
+                  aria-label="Export electoral wards list"
+                  aria-expanded={exportOpen}
+                  style={iconBtnStyle(exportOpen)}
+                  onClick={() => { setExportOpen(o => !o); setSearchOpen(false); setFilterOpen(false); }}
+                >
+                  <DownloadIcon />
+                </button>
+                {exportOpen && (
+                  <div className="export-dropdown-menu">
+                    <div className="export-dropdown-header">
+                      <span>Export Options</span>
+                      <span className="export-badge">{sortedWards.length} records</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="export-dropdown-item"
+                      onClick={() => handleExport('csv')}
+                    >
+                      <div className="export-format-badge csv">CSV</div>
+                      <div className="export-item-info">
+                        <span className="export-item-title">Export as CSV</span>
+                        <span className="export-item-desc">Comma-separated values (.csv)</span>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      className="export-dropdown-item"
+                      onClick={() => handleExport('excel')}
+                    >
+                      <div className="export-format-badge excel">XLS</div>
+                      <div className="export-item-info">
+                        <span className="export-item-title">Export as Excel</span>
+                        <span className="export-item-desc">Microsoft Excel formatted (.xls)</span>
+                      </div>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
