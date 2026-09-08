@@ -75,6 +75,7 @@ export default function App() {
     setAdmin(null);
     localStorage.removeItem('ems_admin_user');
     localStorage.removeItem('ems_active_tab');
+    localStorage.removeItem('token');
   };
 
   if (!admin) {

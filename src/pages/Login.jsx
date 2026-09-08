@@ -10,7 +10,7 @@ const IconBolt = (props) => (
 );
 
 export default function Login({ onLoginSuccess }) {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   
@@ -22,16 +22,19 @@ export default function Login({ onLoginSuccess }) {
     setSubmitting(true);
     const data = await apiCall('/auth/admin/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ username, password })
     });
     setSubmitting(false);
 
     if (data.success) {
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
       // 3. Trigger the visual success state
       setLoginSuccess(true);
       
 // 4. Fire the welcome toast notification
-      toast.success(`Welcome back, ${data.admin?.email || 'Admin'}!`, {
+      toast.success(`Welcome back, ${data.admin?.username || 'Admin'}!`, {
         icon: '👋',
         style: {
           borderRadius: '8px',
@@ -74,13 +77,13 @@ export default function Login({ onLoginSuccess }) {
 
         <form onSubmit={handleSubmit} className="auth-form" autoComplete="off">
           <div className="form-group">
-            <label className="form-label">Email</label>
+            <label className="form-label">Username</label>
             <input
               type="text"
               className="form-control"
-              placeholder="Enter your email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
+              placeholder="Enter your username"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
               required
               disabled={loginSuccess} // Lock input during success delay
             />

@@ -7,12 +7,15 @@ const API_BASE_URL = 'https://ems-backend-55q1.onrender.com/api';
 export const apiCall = async (endpoint, options = {}) => {
   try {
     const isFormData = options.body instanceof FormData;
+    const token = localStorage.getItem('token');
 
     // FormData needs the browser to set its own multipart boundary header —
     // sending a hardcoded 'application/json' here would break file uploads.
-    const headers = isFormData
-      ? { ...options.headers }
-      : { 'Content-Type': 'application/json', ...options.headers };
+    const headers = {
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers,
+    };
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
