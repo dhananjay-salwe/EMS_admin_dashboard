@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { apiCall } from '../api/client';
 import CustomSelect from '../components/CustomSelect';
 import { toast } from 'react-hot-toast';
+import { exportToCSV, exportToExcel } from '../utils/exportImportUtils';
 
 // --- Icons & Helper Components ---
 const EditIcon = (props) => (
@@ -32,17 +33,26 @@ const actionIconStyle = (variant = 'primary') => ({
   flexShrink: 0,
 });
 
-const iconBtnStyle = (active) => ({
+const DownloadIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
+  </svg>
+);
+
+const iconBtnStyle = (active, disabled = false) => ({
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
   width: 36,
   height: 36,
   borderRadius: '50%',
-  border: '1px solid ' + (active ? 'var(--bs-primary, #556ee6)' : '#e2e5f1'),
-  background: active ? 'var(--bs-primary, #556ee6)' : '#fff',
-  color: active ? '#fff' : '#556ee6',
-  cursor: 'pointer',
+  border: '1px solid ' + (disabled ? '#e2e5f1' : active ? 'var(--bs-primary, #556ee6)' : '#e2e5f1'),
+  background: disabled ? '#f8f9fa' : active ? 'var(--bs-primary, #556ee6)' : '#fff',
+  color: disabled ? '#b0b5c1' : active ? '#fff' : '#556ee6',
+  cursor: disabled ? 'not-allowed' : 'pointer',
+  opacity: disabled ? 0.55 : 1,
   flexShrink: 0,
   padding: 0,
   boxSizing: 'border-box',
@@ -95,6 +105,25 @@ export default function WardReport() {
   const [counts, setCounts] = useState({});
   const [selectedWinner, setSelectedWinner] = useState(null);
   const [saving, setSaving] = useState(false);
+
+  // Export dropdown state
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportMenuRef = useRef(null);
+
+  // Close export dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target)) {
+        setExportOpen(false);
+      }
+    };
+    if (exportOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [exportOpen]);
 
   // Fetch Ward Reports from Backend
   const fetchWardReports = async (page = 1) => {
@@ -278,6 +307,51 @@ export default function WardReport() {
   };
 
   const hasActiveFilters = Boolean(filterState || filterLga);
+  // Dropdown-dependent export: disabled when no LGA selected or no wards in table
+  const isExportDisabled = !filterLga || wards.length === 0;
+
+  const handleExport = (format) => {
+    if (isExportDisabled) {
+      toast.error('Please select State and LGA with records to export');
+      return;
+    }
+
+    try {
+      const filename = `ward_reports_${filterLga.toLowerCase().replace(/[^a-z0-9_]/g, '_')}`;
+      const title = `Ward Reports - ${filterLga}, ${filterState} (${wards.length} Wards)`;
+
+      const columns = [
+        { label: 'S.No', key: (_, index) => index + 1 },
+        { label: 'Ward Name', key: 'ward_name' },
+        { label: 'LGA', key: (w) => w.lga_name || filterLga },
+        { label: 'State', key: (w) => w.state_name || filterState || 'N/A' },
+      ];
+
+      if (format === 'csv') {
+        exportToCSV({
+          data: wards,
+          columns,
+          filename,
+          title,
+        });
+        toast.success(`Exported ${wards.length} ward reports as CSV!`);
+      } else if (format === 'excel') {
+        exportToExcel({
+          data: wards,
+          columns,
+          filename,
+          sheetName: 'Ward Reports',
+          title,
+        });
+        toast.success(`Exported ${wards.length} ward reports as Excel!`);
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export ward reports');
+    } finally {
+      setExportOpen(false);
+    }
+  };
 
   return (
     <div>
@@ -323,6 +397,50 @@ export default function WardReport() {
                 Clear
               </button>
             )}
+
+            <div className="export-menu-container" ref={exportMenuRef}>
+              <button
+                type="button"
+                title={isExportDisabled ? "Select State and LGA to export ward reports" : "Export List (CSV / Excel)"}
+                aria-label="Export ward reports list"
+                aria-expanded={exportOpen}
+                disabled={isExportDisabled}
+                style={iconBtnStyle(exportOpen, isExportDisabled)}
+                onClick={() => !isExportDisabled && setExportOpen(o => !o)}
+              >
+                <DownloadIcon />
+              </button>
+              {exportOpen && !isExportDisabled && (
+                <div className="export-dropdown-menu">
+                  <div className="export-dropdown-header">
+                    <span>Export Options</span>
+                    <span className="export-badge">{wards.length} records</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="export-dropdown-item"
+                    onClick={() => handleExport('csv')}
+                  >
+                    <div className="export-format-badge csv">CSV</div>
+                    <div className="export-item-info">
+                      <span className="export-item-title">Export as CSV</span>
+                      <span className="export-item-desc">Comma-separated values (.csv)</span>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    className="export-dropdown-item"
+                    onClick={() => handleExport('excel')}
+                  >
+                    <div className="export-format-badge excel">XLS</div>
+                    <div className="export-item-info">
+                      <span className="export-item-title">Export as Excel</span>
+                      <span className="export-item-desc">Microsoft Excel formatted (.xls)</span>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

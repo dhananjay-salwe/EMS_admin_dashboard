@@ -22,7 +22,8 @@ export default function App() {
   const [admin, setAdmin] = useState(() => {
     try {
       const savedAdmin = localStorage.getItem('ems_admin_user');
-      return savedAdmin ? JSON.parse(savedAdmin) : null;
+      const savedToken = localStorage.getItem('token');
+      return (savedAdmin && savedToken) ? JSON.parse(savedAdmin) : null;
     } catch {
       return null;
     }

@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { apiCall } from '../api/client';
 import CustomSelect from '../components/CustomSelect';
 import { toast } from 'react-hot-toast';
+import { exportToCSV, exportToExcel } from '../utils/exportImportUtils';
 
 const IconFileText = (props) => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -36,6 +37,14 @@ const EditIcon = (props) => (
   </svg>
 );
 
+const DownloadIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
+  </svg>
+);
+
 const actionIconStyle = (variant = 'primary') => ({
   display: 'inline-flex',
   alignItems: 'center',
@@ -49,6 +58,23 @@ const actionIconStyle = (variant = 'primary') => ({
   cursor: 'pointer',
   padding: 0,
   flexShrink: 0,
+});
+
+const iconBtnStyle = (active, disabled = false) => ({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: 36,
+  height: 36,
+  borderRadius: '50%',
+  border: '1px solid ' + (disabled ? '#e2e5f1' : active ? 'var(--bs-primary, #556ee6)' : '#e2e5f1'),
+  background: disabled ? '#f8f9fa' : active ? 'var(--bs-primary, #556ee6)' : '#fff',
+  color: disabled ? '#b0b5c1' : active ? '#fff' : '#556ee6',
+  cursor: disabled ? 'not-allowed' : 'pointer',
+  opacity: disabled ? 0.55 : 1,
+  flexShrink: 0,
+  padding: 0,
+  boxSizing: 'border-box',
 });
 
 const PAGE_SIZE = 8;
@@ -78,6 +104,25 @@ export default function BoothReport() {
   const [verifyingReport, setVerifyingReport] = useState(null);
   const [verifiedCounts, setVerifiedCounts] = useState({});
   const [verifying, setVerifying] = useState(false);
+
+  // Export dropdown state
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportMenuRef = useRef(null);
+
+  // Close export dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target)) {
+        setExportOpen(false);
+      }
+    };
+    if (exportOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [exportOpen]);
 
   const openVerifyModal = async (report) => {
     let breakdown = report.votes_breakdown || [];
@@ -249,6 +294,56 @@ export default function BoothReport() {
 
   const hasActiveFilters = Boolean(filterState || filterLga || filterWard);
 
+  // Dropdown-dependent export: disabled when no Ward selected or no submissions in table
+  const isExportDisabled = !filterWard || submissions.length === 0;
+
+  const handleExport = (format) => {
+    if (isExportDisabled) {
+      toast.error('Please select State, LGA, and Ward with records to export');
+      return;
+    }
+
+    try {
+      const filename = `booth_audit_reports_${filterWard.toLowerCase().replace(/[^a-z0-9_]/g, '_')}`;
+      const title = `Booth Audit Reports - Ward: ${filterWard}, LGA: ${filterLga}, State: ${filterState} (${submissions.length} Booths)`;
+
+      const columns = [
+        { label: 'S.No', key: (_, index) => index + 1 },
+        { label: 'Booth Officer', key: (sub) => sub.operator_name || 'Not assigned' },
+        { label: 'Unique Booth Code', key: 'unique_booth_code' },
+        { label: 'Polling Unit / Booth Name', key: 'booth_name' },
+        { label: 'Ward', key: (sub) => sub.ward_name || filterWard },
+        { label: 'LGA', key: (sub) => sub.lga_name || filterLga },
+        { label: 'State', key: (sub) => sub.state_name || filterState },
+        { label: 'Time Submitted', key: (sub) => sub.created_at ? new Date(sub.created_at).toLocaleString() : 'Awaiting App Sync' },
+      ];
+
+      if (format === 'csv') {
+        exportToCSV({
+          data: submissions,
+          columns,
+          filename,
+          title,
+        });
+        toast.success(`Exported ${submissions.length} booth audit records as CSV!`);
+      } else if (format === 'excel') {
+        exportToExcel({
+          data: submissions,
+          columns,
+          filename,
+          sheetName: 'Booth Audit',
+          title,
+        });
+        toast.success(`Exported ${submissions.length} booth audit records as Excel!`);
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export booth audit reports');
+    } finally {
+      setExportOpen(false);
+    }
+  };
+
   const pageSubmissions = submissions;
   const totalSubmissions = totalRecords;
 
@@ -326,6 +421,50 @@ export default function BoothReport() {
                 Clear
               </button>
             )}
+
+            <div className="export-menu-container" ref={exportMenuRef}>
+              <button
+                type="button"
+                title={isExportDisabled ? "Select State, LGA, and Ward to export booth reports" : "Export List (CSV / Excel)"}
+                aria-label="Export booth reports list"
+                aria-expanded={exportOpen}
+                disabled={isExportDisabled}
+                style={iconBtnStyle(exportOpen, isExportDisabled)}
+                onClick={() => !isExportDisabled && setExportOpen(o => !o)}
+              >
+                <DownloadIcon />
+              </button>
+              {exportOpen && !isExportDisabled && (
+                <div className="export-dropdown-menu">
+                  <div className="export-dropdown-header">
+                    <span>Export Options</span>
+                    <span className="export-badge">{submissions.length} records</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="export-dropdown-item"
+                    onClick={() => handleExport('csv')}
+                  >
+                    <div className="export-format-badge csv">CSV</div>
+                    <div className="export-item-info">
+                      <span className="export-item-title">Export as CSV</span>
+                      <span className="export-item-desc">Comma-separated values (.csv)</span>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    className="export-dropdown-item"
+                    onClick={() => handleExport('excel')}
+                  >
+                    <div className="export-format-badge excel">XLS</div>
+                    <div className="export-item-info">
+                      <span className="export-item-title">Export as Excel</span>
+                      <span className="export-item-desc">Microsoft Excel formatted (.xls)</span>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -373,7 +512,7 @@ export default function BoothReport() {
                       {sub.created_at ? (
                         new Date(sub.created_at).toLocaleString()
                       ) : (
-                        <span className="muted" style={{ fontSize: 12 }}></span>
+                        <span className="muted" style={{ fontSize: 12 }}>Awaiting App Sync</span>
                       )}
                     </td>
                     <td>
@@ -389,7 +528,7 @@ export default function BoothReport() {
                           <IconFileText />
                         </button>
                       ) : (
-                        <span className="muted" style={{ fontSize: 12 }}></span>
+                        <span className="muted" style={{ fontSize: 12 }}>Awaiting App Sync</span>
                       )}
                     </td>
                     <td>
@@ -429,7 +568,7 @@ export default function BoothReport() {
                           )}
                         </div>
                       ) : (
-                        <span className="muted" style={{ fontSize: 12 }}></span>
+                        <span className="muted" style={{ fontSize: 12 }}>Awaiting App Sync</span>
                       )}
                     </td>
                     <td>

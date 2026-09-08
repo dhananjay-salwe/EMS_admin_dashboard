@@ -21,6 +21,13 @@ export const apiCall = async (endpoint, options = {}) => {
       ...options,
       headers,
     });
+
+    if (response.status === 401 && !endpoint.includes('/auth/')) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('ems_admin_user');
+      window.location.reload();
+    }
+
     return await response.json();
   } catch (error) {
     console.error('API Error:', error);

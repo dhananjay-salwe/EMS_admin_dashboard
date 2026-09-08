@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { apiCall } from '../api/client';
 import CustomSelect from '../components/CustomSelect';
-import {toast} from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
+import { exportToCSV, exportToExcel } from '../utils/exportImportUtils';
 
 const EditIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -62,17 +63,28 @@ const SORT_OPTIONS = [
   { value: 'desc', label: 'Name (Z–A)' },
 ];
 
-const iconBtnStyle = (active) => ({
+const DownloadIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
+  </svg>
+);
+
+const PAGE_SIZE = 8;
+
+const iconBtnStyle = (active, disabled = false) => ({
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
   width: 36,
   height: 36,
   borderRadius: '50%',
-  border: '1px solid ' + (active ? 'var(--bs-primary, #556ee6)' : '#e2e5f1'),
-  background: active ? 'var(--bs-primary, #556ee6)' : '#fff',
-  color: active ? '#fff' : '#556ee6',
-  cursor: 'pointer',
+  border: '1px solid ' + (disabled ? '#e2e5f1' : active ? 'var(--bs-primary, #556ee6)' : '#e2e5f1'),
+  background: disabled ? '#f8f9fa' : active ? 'var(--bs-primary, #556ee6)' : '#fff',
+  color: disabled ? '#b0b5c1' : active ? '#fff' : '#556ee6',
+  cursor: disabled ? 'not-allowed' : 'pointer',
+  opacity: disabled ? 0.55 : 1,
   flexShrink: 0,
   padding: 0,
   boxSizing: 'border-box'
@@ -93,6 +105,31 @@ export default function AdminManagement({ currentAdminRole }) {
   const [sortConfig, setSortConfig] = useState({ key: 'full_name', direction: 'asc' });
   const [filterRole, setFilterRole] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Dropdown-dependent export state
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportMenuRef = useRef(null);
+
+  // Close export dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target)) {
+        setExportOpen(false);
+      }
+    };
+    if (exportOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [exportOpen]);
+
+  // Reset pagination to first page when search, filter or sort changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterRole, sortConfig]);
   
   const [submitting, setSubmitting] = useState(false);
 
@@ -292,6 +329,67 @@ export default function AdminManagement({ currentAdminRole }) {
       return sortConfig.direction === 'desc' ? -cmp : cmp;
     });
 
+  // Pagination calculations
+  const totalPages = Math.max(1, Math.ceil(filteredAndSortedUsers.length / PAGE_SIZE));
+  const pageUsers = filteredAndSortedUsers.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  // Ensure current page does not exceed total pages after filtering or deletion
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+
+  // Dropdown-dependent export: disabled when no Role selected from dropdown or no matching users
+  const isExportDisabled = !filterRole || filteredAndSortedUsers.length === 0;
+
+  const handleExport = (format) => {
+    if (isExportDisabled) {
+      toast.error('Please select a role from the filter dropdown to export user accounts');
+      return;
+    }
+
+    try {
+      const filename = `admin_users_${filterRole.toLowerCase().replace(/[^a-z0-9_]/g, '_')}`;
+      const title = `System Users - Role: ${filterRole} (${filteredAndSortedUsers.length} Users)`;
+
+      const columns = [
+        { label: 'S.No', key: (_, index) => index + 1 },
+        { label: 'Full Name', key: (u) => u.full_name || '-' },
+        { label: 'Email', key: (u) => u.email || '-' },
+        { label: 'Contact Number', key: (u) => u.contact_number || '-' },
+        { label: 'Role', key: (u) => u.role || '-' },
+        ...(filterRole === 'LGA Officer' || filteredAndSortedUsers.some(u => u.lga_id) ? [
+          { label: 'Assigned LGA', key: (u) => lgas.find(l => String(l.id) === String(u.lga_id))?.lga_name || 'Not assigned' }
+        ] : [])
+      ];
+
+      if (format === 'csv') {
+        exportToCSV({
+          data: filteredAndSortedUsers,
+          columns,
+          filename,
+          title,
+        });
+        toast.success(`Exported ${filteredAndSortedUsers.length} user records as CSV!`);
+      } else if (format === 'excel') {
+        exportToExcel({
+          data: filteredAndSortedUsers,
+          columns,
+          filename,
+          sheetName: 'System Users',
+          title,
+        });
+        toast.success(`Exported ${filteredAndSortedUsers.length} user records as Excel!`);
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export user records');
+    } finally {
+      setExportOpen(false);
+    }
+  };
+
   if (currentAdminRole !== 'SuperAdmin') {
     return (
       <div>
@@ -482,6 +580,49 @@ export default function AdminManagement({ currentAdminRole }) {
                 >
                   <FilterIcon />
                 </button>
+                <div className="export-menu-container" ref={exportMenuRef}>
+                  <button
+                    type="button"
+                    title={isExportDisabled ? "Select a role from the filter dropdown to export user accounts" : "Export List (CSV / Excel)"}
+                    aria-label="Export user accounts list"
+                    aria-expanded={exportOpen}
+                    disabled={isExportDisabled}
+                    style={iconBtnStyle(exportOpen, isExportDisabled)}
+                    onClick={() => !isExportDisabled && setExportOpen(o => !o)}
+                  >
+                    <DownloadIcon />
+                  </button>
+                  {exportOpen && !isExportDisabled && (
+                    <div className="export-dropdown-menu">
+                      <div className="export-dropdown-header">
+                        <span>Export Options</span>
+                        <span className="export-badge">{filteredAndSortedUsers.length} records</span>
+                      </div>
+                      <button
+                        type="button"
+                        className="export-dropdown-item"
+                        onClick={() => handleExport('csv')}
+                      >
+                        <div className="export-format-badge csv">CSV</div>
+                        <div className="export-item-info">
+                          <span className="export-item-title">Export as CSV</span>
+                          <span className="export-item-desc">Comma-separated values (.csv)</span>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        className="export-dropdown-item"
+                        onClick={() => handleExport('excel')}
+                      >
+                        <div className="export-format-badge excel">XLS</div>
+                        <div className="export-item-info">
+                          <span className="export-item-title">Export as Excel</span>
+                          <span className="export-item-desc">Excel Spreadsheet (.xlsx)</span>
+                        </div>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -547,9 +688,9 @@ export default function AdminManagement({ currentAdminRole }) {
                     </tr>
                   ))
                 ) : (
-                  filteredAndSortedUsers.map((adm, index) => (
+                  pageUsers.map((adm, index) => (
                     <tr key={adm.id}>
-                      <td>{index + 1}</td>
+                      <td>{(currentPage - 1) * PAGE_SIZE + index + 1}</td>
                       <td>{adm.full_name || '-'}</td>
                       <td>{adm.email || '-'}</td>
                       <td>{adm.contact_number || '-'}</td>
@@ -593,6 +734,28 @@ export default function AdminManagement({ currentAdminRole }) {
               </tbody>
             </table>
           </div>
+
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, padding: '16px 0 4px' }}>
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              >
+                Prev
+              </button>
+              <span className="muted">Page {currentPage} of {totalPages}</span>
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

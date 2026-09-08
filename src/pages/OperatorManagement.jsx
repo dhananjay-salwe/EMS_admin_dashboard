@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { apiCall } from '../api/client';
 import CustomSelect from '../components/CustomSelect';
 import { toast } from 'react-hot-toast';
+import { exportToCSV, exportToExcel } from '../utils/exportImportUtils';
 
 const PAGE_SIZE = 6;
 
@@ -15,6 +16,14 @@ const SearchIcon = () => (
 const FilterIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+  </svg>
+);
+
+const DownloadIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
   </svg>
 );
 
@@ -179,6 +188,8 @@ export default function OperatorManagement() {
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportMenuRef = useRef(null);
 
   const [filterState, setFilterState] = useState('');
   const [filterLga, setFilterLga] = useState('');
@@ -188,6 +199,21 @@ export default function OperatorManagement() {
 
   const [sortKey, setSortKey] = useState('full_name-asc');
   const [deletingOperator, setDeletingOperator] = useState(null);
+
+  // Close export dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target)) {
+        setExportOpen(false);
+      }
+    };
+    if (exportOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [exportOpen]);
 
   const fetchData = async () => {
     try { 
@@ -315,6 +341,58 @@ const handleSubmit = async (e) => {
     return sortDir === 'desc' ? -cmp : cmp;
   });
 
+  // Dynamic data export: full list if unfiltered, constrained list if filtered
+  const isFiltered = Boolean(hasActiveFilters || (searchTerm && searchTerm.trim()));
+  const dataToExport = isFiltered ? sortedOperators : operators;
+
+  const handleExport = (format) => {
+    if (!dataToExport || dataToExport.length === 0) {
+      toast.error('No booth officers available to export');
+      return;
+    }
+
+    try {
+      const filename = isFiltered ? 'booth_officers_filtered' : 'booth_officers_all';
+      const title = isFiltered 
+        ? `Booth Officers List (Filtered - ${dataToExport.length} Records)` 
+        : `Registered Booth Officers List (All - ${dataToExport.length} Records)`;
+
+      const columns = [
+        { label: 'S.No', key: (_, index) => index + 1 },
+        { label: 'Full Name', key: 'full_name' },
+        { label: 'App Username', key: 'username' },
+        { label: 'Assigned Booth Code', key: (op) => op.unique_booth_code || boothById[op.assigned_booth_id]?.unique_booth_code || 'Unassigned' },
+        { label: 'Polling Unit / Booth Name', key: (op) => op.booth_name || boothById[op.assigned_booth_id]?.booth_name || 'Unassigned' },
+        { label: 'Ward', key: (op) => op.ward_name || boothById[op.assigned_booth_id]?.ward_name || 'N/A' },
+        { label: 'LGA', key: (op) => op.lga_name || boothById[op.assigned_booth_id]?.lga_name || 'N/A' },
+        { label: 'State', key: (op) => op.state_name || boothById[op.assigned_booth_id]?.state_name || 'N/A' },
+      ];
+
+      if (format === 'csv') {
+        exportToCSV({
+          data: dataToExport,
+          columns,
+          filename,
+          title,
+        });
+        toast.success(`Exported ${dataToExport.length} booth officers as CSV!`);
+      } else if (format === 'excel') {
+        exportToExcel({
+          data: dataToExport,
+          columns,
+          filename,
+          sheetName: 'Booth Officers',
+          title,
+        });
+        toast.success(`Exported ${dataToExport.length} booth officers as Excel!`);
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export booth officers data');
+    } finally {
+      setExportOpen(false);
+    }
+  };
 
   const totalPages = Math.max(1, Math.ceil(sortedOperators.length / PAGE_SIZE));
   const pageOperators = sortedOperators.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -400,17 +478,61 @@ const handleSubmit = async (e) => {
                 <button
                   type="button" title="Search" aria-label="Toggle search"
                   style={iconBtnStyle(searchOpen)}
-                  onClick={() => { setSearchOpen(o => !o); if (filterOpen) setFilterOpen(false); }}
+                  onClick={() => { setSearchOpen(o => !o); if (filterOpen) setFilterOpen(false); setExportOpen(false); }}
                 >
                   <SearchIcon />
                 </button>
                 <button
                   type="button" title="Filter" aria-label="Toggle filter"
                   style={iconBtnStyle(filterOpen || hasActiveFilters)}
-                  onClick={() => { setFilterOpen(o => !o); if (searchOpen) setSearchOpen(false); }}
+                  onClick={() => { setFilterOpen(o => !o); if (searchOpen) setSearchOpen(false); setExportOpen(false); }}
                 >
                   <FilterIcon />
                 </button>
+                <div className="export-menu-container" ref={exportMenuRef}>
+                  <button
+                    type="button"
+                    title="Export List (CSV / Excel)"
+                    aria-label="Export booth officers list"
+                    aria-expanded={exportOpen}
+                    style={iconBtnStyle(exportOpen)}
+                    onClick={() => { setExportOpen(o => !o); if (searchOpen) setSearchOpen(false); if (filterOpen) setFilterOpen(false); }}
+                  >
+                    <DownloadIcon />
+                  </button>
+                  {exportOpen && (
+                    <div className="export-dropdown-menu">
+                      <div className="export-dropdown-header">
+                        <span>Export Options</span>
+                        <span className="export-badge">
+                          {isFiltered ? `${dataToExport.length} filtered` : `${dataToExport.length} total`}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className="export-dropdown-item"
+                        onClick={() => handleExport('csv')}
+                      >
+                        <div className="export-format-badge csv">CSV</div>
+                        <div className="export-item-info">
+                          <span className="export-item-title">Export as CSV</span>
+                          <span className="export-item-desc">Comma-separated values (.csv)</span>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        className="export-dropdown-item"
+                        onClick={() => handleExport('excel')}
+                      >
+                        <div className="export-format-badge excel">XLS</div>
+                        <div className="export-item-info">
+                          <span className="export-item-title">Export as Excel</span>
+                          <span className="export-item-desc">Microsoft Excel formatted (.xls)</span>
+                        </div>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
