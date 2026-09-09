@@ -785,14 +785,17 @@ export default function AdminManagement({ currentAdminRole }) {
       {/* FEATURE: Edit User Modal */}
       {editingUser && (
         <div className="modal-overlay" onClick={() => setEditingUser(null)}>
-          <div className="modal-box" onClick={e => e.stopPropagation()} style={{ overflow: 'visible' }}>
-            <div className="modal-header">
-              <h3>Edit User Details</h3>
+          <div className="admin-edit-modal-box" onClick={e => e.stopPropagation()}>
+            <div className="admin-edit-modal-header">
+              <div>
+                <h3 className="admin-edit-modal-title">Edit User Details</h3>
+                <p className="admin-edit-modal-subtitle">Update administrator credentials and assigned role</p>
+              </div>
               <button className="modal-close" onClick={() => setEditingUser(null)}>&times;</button>
             </div>
-            <form onSubmit={handleEditSubmit}>
-              <div className="modal-body" style={{ overflow: 'visible' }}>
-                <div className="form-group">
+            <form onSubmit={handleEditSubmit} className="admin-edit-modal-form">
+              <div className="admin-edit-modal-body">
+                <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label">Full Name</label>
                   <input
                     type="text" required className="form-control"
@@ -800,7 +803,7 @@ export default function AdminManagement({ currentAdminRole }) {
                     onChange={e => setEditingUser({ ...editingUser, full_name: e.target.value })}
                   />
                 </div>
-                <div className="form-group">
+                <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label">Email</label>
                   <input
                     type="email" required className="form-control"
@@ -808,7 +811,7 @@ export default function AdminManagement({ currentAdminRole }) {
                     onChange={e => setEditingUser({ ...editingUser, email: e.target.value})}
                   />
                 </div>
-                <div className="form-group">
+                <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label">Contact Number</label>
                   <div style={{ display: 'flex' }}>
                     <span style={{
@@ -845,7 +848,7 @@ export default function AdminManagement({ currentAdminRole }) {
                 </div>
 
                 {/* FEATURE: Password field in Edit Modal with Auto-Generate and Helper text */}
-                <div className="form-group">
+                <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label">Password</label>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <input
@@ -870,7 +873,7 @@ export default function AdminManagement({ currentAdminRole }) {
                   </small>
                 </div>
 
-                <div className="form-group">
+                <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label">Role</label>
                   <CustomSelect
                     value={editingUser.role}
@@ -881,7 +884,7 @@ export default function AdminManagement({ currentAdminRole }) {
                 
                 {/* FIX: Add relative positioning with high z-index stacking context to Edit Modal LGA dropdown wrapper to prevent clipping */}
                 {editingUser.role === 'LGA Officer' && (
-                  <div className="form-group" style={{ position: 'relative', zIndex: 999 }}>
+                  <div className="form-group" style={{ position: 'relative', zIndex: 999, margin: 0 }}>
                     <label className="form-label">LGA</label>
                     <CustomSelect
                       value={editingUser.lga_id || ''}
@@ -914,7 +917,7 @@ export default function AdminManagement({ currentAdminRole }) {
                   </div>
                 )}
               </div>
-              <div className="modal-footer">
+              <div className="admin-edit-modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setEditingUser(null)}>Cancel</button>
                 <button type="submit" className="btn btn-primary">Save Changes</button>
               </div>

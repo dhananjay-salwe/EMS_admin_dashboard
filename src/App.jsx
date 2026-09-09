@@ -72,6 +72,12 @@ export default function App() {
     localStorage.setItem('ems_admin_user', JSON.stringify(adminData));
   };
 
+  const handleUpdateAdmin = (updatedAdmin) => {
+    const merged = { ...admin, ...updatedAdmin };
+    setAdmin(merged);
+    localStorage.setItem('ems_admin_user', JSON.stringify(merged));
+  };
+
   const handleLogout = () => {
     setAdmin(null);
     localStorage.removeItem('ems_admin_user');
@@ -102,6 +108,7 @@ export default function App() {
         mobileOpen={mobileOpen}
         onToggleSidebar={handleToggleSidebar}
         onLogout={handleLogout}
+        onUpdateAdmin={handleUpdateAdmin}
       />
 
       <div className="app-main">

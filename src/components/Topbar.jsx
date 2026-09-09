@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import ProfileModal, { getProfilePictureUrl } from './ProfileModal';
 
 const IconMenu = (props) => (
   <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" {...props}>
@@ -22,6 +23,12 @@ const IconChevron = (props) => (
     <path d="m6 9 6 6 6-6" />
   </svg>
 );
+const IconUser = (props) => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </svg>
+);
 const IconLogout = (props) => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -30,8 +37,9 @@ const IconLogout = (props) => (
   </svg>
 );
 
-export default function Topbar({ admin, collapsed, mobileOpen, onToggleSidebar, onLogout }) {
+export default function Topbar({ admin, collapsed, mobileOpen, onToggleSidebar, onLogout, onUpdateAdmin }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const menuRef = useRef(null);
   const sidebarIsOpen = mobileOpen || !collapsed;
 
@@ -43,44 +51,75 @@ export default function Topbar({ admin, collapsed, mobileOpen, onToggleSidebar, 
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-// FIX: Pull the first letter of the full name instead of username
-  // const initial = admin?.full_name ? admin.full_name.charAt(0).toUpperCase() : '?';
   // First, determine what name we are actually displaying
   const displayName = admin?.full_name || 'Admin';
   
   // Then, safely grab the first letter of that display name
   const initial = displayName.charAt(0).toUpperCase();
 
+  const profilePicUrl = getProfilePictureUrl(admin?.profile_picture);
+
   return (
-    <header className="app-topbar">
-      <div className="topbar-left">
-        <button className="topbar-toggle" onClick={onToggleSidebar} aria-label={sidebarIsOpen ? 'Collapse sidebar' : 'Expand sidebar'}>
-          <IconMenu />
-        </button>
-      </div>
-
-      <div className="topbar-right">
-        <div className="profile-menu" ref={menuRef}>
-          <button className="profile-trigger" onClick={() => setMenuOpen(o => !o)}>
-            <span className="profile-avatar">{initial}</span>
-            <span className="profile-info">
-              {/* <span className="profile-name">{admin?.full_name}</span> */}
-              <span className="profile-name" style={{ fontWeight: 700 }}>
-                {admin?.full_name || 'Admin'}
-              </span>
-            </span>
-            <IconChevron />
+    <>
+      <header className="app-topbar">
+        <div className="topbar-left">
+          <button className="topbar-toggle" onClick={onToggleSidebar} aria-label={sidebarIsOpen ? 'Collapse sidebar' : 'Expand sidebar'}>
+            <IconMenu />
           </button>
-
-          {menuOpen && (
-            <div className="profile-dropdown">
-              <button className="danger" onClick={onLogout}>
-                <IconLogout /> Logout
-              </button>
-            </div>
-          )}
         </div>
-      </div>
-    </header>
+
+        <div className="topbar-right">
+          <div className="profile-menu" ref={menuRef}>
+            <button className="profile-trigger" onClick={() => setMenuOpen(o => !o)}>
+              {profilePicUrl ? (
+                <img
+                  src={profilePicUrl}
+                  alt={displayName}
+                  className="profile-avatar"
+                />
+              ) : (
+                <span className="profile-avatar">{initial}</span>
+              )}
+              <span className="profile-info">
+                <span className="profile-name">
+                  {displayName}
+                </span>
+                {/* {admin?.role && (
+                  <span className="profile-role">
+                    {admin.role}
+                  </span>
+                )} */}
+              </span>
+              <IconChevron />
+            </button>
+
+            {menuOpen && (
+              <div className="profile-dropdown">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setIsProfileModalOpen(true);
+                  }}
+                >
+                  <IconUser /> Edit Profile
+                </button>
+                <div className="profile-dropdown-divider" />
+                <button type="button" className="danger" onClick={onLogout}>
+                  <IconLogout /> Logout
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <ProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        user={admin}
+        onProfileUpdated={onUpdateAdmin}
+      />
+    </>
   );
 }
