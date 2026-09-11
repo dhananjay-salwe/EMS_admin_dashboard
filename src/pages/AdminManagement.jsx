@@ -21,6 +21,13 @@ const DeleteIcon = () => (
   </svg>
 );
 
+const PlusIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19" />
+    <line x1="5" y1="12" x2="19" y2="12" />
+  </svg>
+);
+
 const actionIconStyle = (variant) => ({
   display: 'inline-flex',
   alignItems: 'center',
@@ -99,6 +106,12 @@ export default function AdminManagement({ currentAdminRole }) {
   // FEATURE: New states for LGAs list and current user under edit modal
   const [lgas, setLgas] = useState([]);
   const [editingUser, setEditingUser] = useState(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  const handleCloseCreateModal = () => {
+    setFormData({ full_name: '', email: '', contact_number: '+234', password: '', role: 'State Headquarter Officer', lga_id: '' });
+    setIsCreateModalOpen(false);
+  };
   
   // FEATURE: Search, Sort & Filter states replicated from AuditSubmissions.jsx
   const [searchTerm, setSearchTerm] = useState('');
@@ -230,6 +243,7 @@ export default function AdminManagement({ currentAdminRole }) {
     if (res.success) {
       toast.success('User account created successfully!');
       setFormData({ full_name: '', email: '', contact_number: '+234', password: '', role: 'State Headquarter Officer', lga_id: '' });
+      setIsCreateModalOpen(false);
       fetchAdmins();
     } else {
       toast.error(res.message || 'Failed to create user.');
@@ -410,145 +424,8 @@ export default function AdminManagement({ currentAdminRole }) {
   return (
     <div>
 
-      {/* FEATURE: Applied overflow visible style to ensure LGA dropdown is not clipped */}
-      <div className="two-col-grid two-col-grid--form-table" style={{ overflow: 'visible' }}>
-        <div className="card" style={{ overflow: 'visible' }}>
-          <div className="card-header"><h2>Create User Account</h2></div>
-          <div className="card-body" style={{ overflow: 'visible' }}>
-            
-            {/* FIX: Form containing required input indicators, read-only contact code prefix display, and drop-down clipping overrides */}
-            <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label className="form-label">Role</label>
-                <CustomSelect
-                  value={formData.role}
-                  options={hasSuperAdmin ? ['State Headquarter Officer', 'General Collation Center Administrator', 'LGA Officer'] : ['State Headquarter Officer', 'General Collation Center Administrator', 'LGA Officer', 'SuperAdmin']}
-                  onChange={e => setFormData({ ...formData, role: e.target.value })}
-                />
-                {hasSuperAdmin && formData.role === 'SuperAdmin' && (
-                  <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
-                    A SuperAdmin account already exists — only one is allowed.
-                  </div>
-                )}
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Full Name</label>
-                <input
-                  type="text" required className="form-control"
-                  value={formData.full_name}
-                  onChange={e => setFormData({ ...formData, full_name: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Email</label>
-                <input
-                  type="email" required className="form-control"
-                  value={formData.email}
-                  onChange={e => setFormData({ ...formData, email: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Contact Number</label>
-                <div style={{ display: 'flex' }}>
-                  <span style={{
-                    background: '#f1f2f6',
-                    border: '1px solid #ced4da',
-                    borderRight: 'none',
-                    borderRadius: '6px 0 0 6px',
-                    padding: '8px 12px',
-                    color: '#495057',
-                    display: 'flex',
-                    alignItems: 'center',
-                    userSelect: 'none',
-                    fontSize: '14px',
-                    fontWeight: '500'
-                  }}>
-                    +234
-                  </span>
-                  <input
-                    type="text"
-                    required
-                    className="form-control"
-                    style={{
-                      borderRadius: '0 6px 6px 0',
-                      flex: 1
-                    }}
-                    placeholder="e.g. 8031234567"
-                    value={formData.contact_number.startsWith('+234') ? formData.contact_number.slice(4) : formData.contact_number}
-                    onChange={e => {
-                      const cleanVal = e.target.value.replace(/\D/g, '');
-                      setFormData({ ...formData, contact_number: `+234${cleanVal}` });
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Password</label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input
-                    type="text" required className="form-control"
-                    value={formData.password}
-                    onChange={e => setFormData({ ...formData, password: e.target.value })}
-                    style={{ flex: 1 }}
-                  />
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={generatePassword}
-                    style={{ whiteSpace: 'nowrap' }}
-                  >
-                    Auto-Generate
-                  </button>
-                </div>
-              </div>
-
-              {/* FIX: Add relative positioning with high z-index stacking context to LGA dropdown wrapper to prevent clipping */}
-              {formData.role === 'LGA Officer' && (
-                <div className="form-group" style={{ position: 'relative', zIndex: 999 }}>
-                  <label className="form-label">LGA</label>
-                  <CustomSelect
-                    value={formData.lga_id}
-                    options={lgas.map(lga => ({ value: lga.id, label: lga.lga_name }))}
-                    onChange={e => setFormData({ ...formData, lga_id: e.target.value })}
-                    placeholder="Select LGA..."
-                    style={{ width: '100%' }}
-                    dropdownStyle={{
-                      position: 'absolute',
-                      bottom: '100%',
-                      top: 'auto',
-                      zIndex: 9999,
-                      maxHeight: '200px',
-                      overflowY: 'auto',
-                      width: '100%',
-                      left: 0,
-                      right: 0,
-                      boxSizing: 'border-box',
-                      marginTop: '0px',
-                      marginBottom: '4px'
-                    }}
-                  />
-                  <input
-                    type="text"
-                    required
-                    value={formData.lga_id || ''}
-                    onChange={() => {}}
-                    style={{ position: 'absolute', opacity: 0, width: 0, height: 0, pointerEvents: 'none', bottom: 0 }}
-                  />
-                </div>
-              )}
-
-              <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
-                {submitting ? 'Creating…' : 'Create Admin'}
-              </button>
-            </form>
-          </div>
-        </div>
-
-        <div className="card" style={{ overflow: 'visible' }}>
+      {/* FEATURE: Full-width System Users table */}
+      <div className="card" style={{ overflow: 'visible' }}>
           {/* FIX: Render general System Users list table with search input, sort selectors, filter toolbar, and full profile column definitions */}
           <div className="card-header responsive-header" style={{ overflow: 'visible' }}>
             <div className="header-title-group">
@@ -623,6 +500,14 @@ export default function AdminManagement({ currentAdminRole }) {
                     </div>
                   )}
                 </div>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-add-user"
+                  onClick={() => setIsCreateModalOpen(true)}
+                >
+                  <PlusIcon />
+                  <span>Add User</span>
+                </button>
               </div>
             </div>
           </div>
@@ -757,7 +642,6 @@ export default function AdminManagement({ currentAdminRole }) {
             </div>
           )}
         </div>
-      </div>
 
 {/* FEATURE: Custom Delete Confirmation Modal */}
       {deletingUser && (
@@ -795,7 +679,7 @@ export default function AdminManagement({ currentAdminRole }) {
             </div>
             <form onSubmit={handleEditSubmit} className="admin-edit-modal-form">
               <div className="admin-edit-modal-body">
-                <div className="form-group" style={{ margin: 0 }}>
+                <div className="form-group admin-modal-form-group">
                   <label className="form-label">Full Name</label>
                   <input
                     type="text" required className="form-control"
@@ -803,7 +687,7 @@ export default function AdminManagement({ currentAdminRole }) {
                     onChange={e => setEditingUser({ ...editingUser, full_name: e.target.value })}
                   />
                 </div>
-                <div className="form-group" style={{ margin: 0 }}>
+                <div className="form-group admin-modal-form-group">
                   <label className="form-label">Email</label>
                   <input
                     type="email" required className="form-control"
@@ -811,32 +695,16 @@ export default function AdminManagement({ currentAdminRole }) {
                     onChange={e => setEditingUser({ ...editingUser, email: e.target.value})}
                   />
                 </div>
-                <div className="form-group" style={{ margin: 0 }}>
+                <div className="form-group admin-modal-form-group">
                   <label className="form-label">Contact Number</label>
-                  <div style={{ display: 'flex' }}>
-                    <span style={{
-                      background: '#f1f2f6',
-                      border: '1px solid #ced4da',
-                      borderRight: 'none',
-                      borderRadius: '6px 0 0 6px',
-                      padding: '8px 12px',
-                      color: '#495057',
-                      display: 'flex',
-                      alignItems: 'center',
-                      userSelect: 'none',
-                      fontSize: '14px',
-                      fontWeight: '500'
-                    }}>
+                  <div className="admin-contact-input-group">
+                    <span className="admin-contact-prefix">
                       +234
                     </span>
                     <input
                       type="text"
                       required
-                      className="form-control"
-                      style={{
-                        borderRadius: '0 6px 6px 0',
-                        flex: 1
-                      }}
+                      className="form-control admin-contact-input"
                       placeholder="e.g. 8031234567"
                       value={(editingUser.contact_number || '').startsWith('+234') ? editingUser.contact_number.slice(4) : editingUser.contact_number}
                       onChange={e => {
@@ -848,32 +716,30 @@ export default function AdminManagement({ currentAdminRole }) {
                 </div>
 
                 {/* FEATURE: Password field in Edit Modal with Auto-Generate and Helper text */}
-                <div className="form-group" style={{ margin: 0 }}>
+                <div className="form-group admin-modal-form-group">
                   <label className="form-label">Password</label>
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  <div className="admin-password-group">
                     <input
                       type="text"
-                      className="form-control"
+                      className="form-control admin-password-input"
                       placeholder="Enter new password"
                       value={editingUser.password || ''}
                       onChange={e => setEditingUser({ ...editingUser, password: e.target.value })}
-                      style={{ flex: 1 }}
                     />
                     <button
                       type="button"
-                      className="btn btn-secondary"
+                      className="btn btn-secondary admin-btn-generate"
                       onClick={generateEditPassword}
-                      style={{ whiteSpace: 'nowrap' }}
                     >
                       Auto-Generate
                     </button>
                   </div>
-                  <small style={{ display: 'block', color: 'var(--text-muted)', marginTop: '4px', fontSize: '11.5px' }}>
+                  <small className="admin-field-hint">
                     Leave blank to keep the current password.
                   </small>
                 </div>
 
-                <div className="form-group" style={{ margin: 0 }}>
+                <div className="form-group admin-modal-form-group">
                   <label className="form-label">Role</label>
                   <CustomSelect
                     value={editingUser.role}
@@ -884,7 +750,7 @@ export default function AdminManagement({ currentAdminRole }) {
                 
                 {/* FIX: Add relative positioning with high z-index stacking context to Edit Modal LGA dropdown wrapper to prevent clipping */}
                 {editingUser.role === 'LGA Officer' && (
-                  <div className="form-group" style={{ position: 'relative', zIndex: 999, margin: 0 }}>
+                  <div className="form-group admin-modal-lga-group">
                     <label className="form-label">LGA</label>
                     <CustomSelect
                       value={editingUser.lga_id || ''}
@@ -912,7 +778,7 @@ export default function AdminManagement({ currentAdminRole }) {
                       required
                       value={editingUser.lga_id || ''}
                       onChange={() => {}}
-                      style={{ position: 'absolute', opacity: 0, width: 0, height: 0, pointerEvents: 'none', bottom: 0 }}
+                      className="admin-hidden-input"
                     />
                   </div>
                 )}
@@ -920,6 +786,134 @@ export default function AdminManagement({ currentAdminRole }) {
               <div className="admin-edit-modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setEditingUser(null)}>Cancel</button>
                 <button type="submit" className="btn btn-primary">Save Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* FEATURE: Create User Modal */}
+      {isCreateModalOpen && (
+        <div className="modal-overlay" onClick={handleCloseCreateModal}>
+          <div className="admin-edit-modal-box" onClick={e => e.stopPropagation()}>
+            <div className="admin-edit-modal-header">
+              <div>
+                <h3 className="admin-edit-modal-title">Create User Account</h3>
+                <p className="admin-edit-modal-subtitle">Register a new administrator and assign credentials</p>
+              </div>
+              <button className="modal-close" onClick={handleCloseCreateModal}>&times;</button>
+            </div>
+            <form onSubmit={handleSubmit} className="admin-edit-modal-form">
+              <div className="admin-edit-modal-body">
+                <div className="form-group admin-modal-form-group">
+                  <label className="form-label">Role</label>
+                  <CustomSelect
+                    value={formData.role}
+                    options={hasSuperAdmin ? ['State Headquarter Officer', 'General Collation Center Administrator', 'LGA Officer'] : ['State Headquarter Officer', 'General Collation Center Administrator', 'LGA Officer', 'SuperAdmin']}
+                    onChange={e => setFormData({ ...formData, role: e.target.value })}
+                  />
+                  {hasSuperAdmin && formData.role === 'SuperAdmin' && (
+                    <div className="muted admin-superadmin-notice">
+                      A SuperAdmin account already exists — only one is allowed.
+                    </div>
+                  )}
+                </div>
+
+                <div className="form-group admin-modal-form-group">
+                  <label className="form-label">Full Name</label>
+                  <input
+                    type="text" required className="form-control"
+                    value={formData.full_name}
+                    onChange={e => setFormData({ ...formData, full_name: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group admin-modal-form-group">
+                  <label className="form-label">Email</label>
+                  <input
+                    type="email" required className="form-control"
+                    value={formData.email}
+                    onChange={e => setFormData({ ...formData, email: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group admin-modal-form-group">
+                  <label className="form-label">Contact Number</label>
+                  <div className="admin-contact-input-group">
+                    <span className="admin-contact-prefix">
+                      +234
+                    </span>
+                    <input
+                      type="text"
+                      required
+                      className="form-control admin-contact-input"
+                      placeholder="e.g. 8031234567"
+                      value={formData.contact_number.startsWith('+234') ? formData.contact_number.slice(4) : formData.contact_number}
+                      onChange={e => {
+                        const cleanVal = e.target.value.replace(/\D/g, '');
+                        setFormData({ ...formData, contact_number: `+234${cleanVal}` });
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group admin-modal-form-group">
+                  <label className="form-label">Password</label>
+                  <div className="admin-password-group">
+                    <input
+                      type="text" required className="form-control admin-password-input"
+                      value={formData.password}
+                      onChange={e => setFormData({ ...formData, password: e.target.value })}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-secondary admin-btn-generate"
+                      onClick={generatePassword}
+                    >
+                      Auto-Generate
+                    </button>
+                  </div>
+                </div>
+
+                {/* FIX: Add relative positioning with high z-index stacking context to LGA dropdown wrapper to prevent clipping */}
+                {formData.role === 'LGA Officer' && (
+                  <div className="form-group admin-modal-lga-group">
+                    <label className="form-label">LGA</label>
+                    <CustomSelect
+                      value={formData.lga_id}
+                      options={lgas.map(lga => ({ value: lga.id, label: lga.lga_name }))}
+                      onChange={e => setFormData({ ...formData, lga_id: e.target.value })}
+                      placeholder="Select LGA..."
+                      style={{ width: '100%' }}
+                      dropdownStyle={{
+                        position: 'absolute',
+                        bottom: '100%',
+                        top: 'auto',
+                        zIndex: 9999,
+                        maxHeight: '200px',
+                        overflowY: 'auto',
+                        width: '100%',
+                        left: 0,
+                        right: 0,
+                        boxSizing: 'border-box',
+                        marginTop: '0px',
+                        marginBottom: '4px'
+                      }}
+                    />
+                    <input
+                      type="text"
+                      required
+                      value={formData.lga_id || ''}
+                      onChange={() => {}}
+                      className="admin-hidden-input"
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="admin-edit-modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={handleCloseCreateModal}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={submitting}>
+                  {submitting ? 'Creating…' : 'Create Admin'}
+                </button>
               </div>
             </form>
           </div>
