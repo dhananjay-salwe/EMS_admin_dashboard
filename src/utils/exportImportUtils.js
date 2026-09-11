@@ -63,8 +63,9 @@ const getCellValue = (item, col, index) => {
  * @param {Array} options.columns - Array of column definitions: [{ key: 'state_name' | (row, idx) => ..., label: 'State' }]
  * @param {string} [options.filename] - Base filename without extension
  * @param {string} [options.title] - Optional title header in CSV
+ * @param {Array<string>} [options.metadataRows] - Optional metadata rows between title and table
  */
-export const exportToCSV = ({ data = [], columns = [], filename = 'export', title = '' }) => {
+export const exportToCSV = ({ data = [], columns = [], filename = 'export', title = '', metadataRows = [] }) => {
   if (!data || data.length === 0) {
     throw new Error('No data available to export');
   }
@@ -74,7 +75,13 @@ export const exportToCSV = ({ data = [], columns = [], filename = 'export', titl
   // Optional title header
   if (title) {
     rows.push(`"${title.replace(/"/g, '""')}"`);
-    rows.push(`"Generated on: ${new Date().toLocaleString()}"`);
+    if (metadataRows && metadataRows.length > 0) {
+      metadataRows.forEach(meta => {
+        rows.push(`"${String(meta).replace(/"/g, '""')}"`);
+      });
+    } else {
+      rows.push(`"Generated on: ${new Date().toLocaleString()}"`);
+    }
     rows.push(''); // blank line
   }
 
@@ -110,8 +117,9 @@ export const exportToCSV = ({ data = [], columns = [], filename = 'export', titl
  * @param {string} [options.filename] - Base filename without extension
  * @param {string} [options.sheetName] - Worksheet title
  * @param {string} [options.title] - Top title in the spreadsheet
+ * @param {Array<string>} [options.metadataRows] - Optional metadata rows between title and table
  */
-export const exportToExcel = ({ data = [], columns = [], filename = 'export', sheetName = 'Sheet1', title = '' }) => {
+export const exportToExcel = ({ data = [], columns = [], filename = 'export', sheetName = 'Sheet1', title = '', metadataRows = [] }) => {
   if (!data || data.length === 0) {
     throw new Error('No data available to export');
   }
@@ -126,13 +134,27 @@ export const exportToExcel = ({ data = [], columns = [], filename = 'export', sh
           ${title}
         </th>
       </tr>
-      <tr>
-        <td colspan="${columns.length}" style="color: #666666; font-size: 11px; padding: 6px; font-style: italic;">
-          Generated on: ${new Date().toLocaleString()} | Total Records: ${data.length}
-        </td>
-      </tr>
-      <tr><td colspan="${columns.length}" style="height: 10px;"></td></tr>
     `);
+    if (metadataRows && metadataRows.length > 0) {
+      metadataRows.forEach(meta => {
+        tableRows.push(`
+          <tr>
+            <td colspan="${columns.length}" style="color: #334155; font-size: 11px; padding: 6px 12px; font-weight: 500; background-color: #f8fafc; border: 1px solid #e2e8f0;">
+              ${String(meta).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+            </td>
+          </tr>
+        `);
+      });
+    } else {
+      tableRows.push(`
+        <tr>
+          <td colspan="${columns.length}" style="color: #666666; font-size: 11px; padding: 6px; font-style: italic;">
+            Generated on: ${new Date().toLocaleString()} | Total Records: ${data.length}
+          </td>
+        </tr>
+      `);
+    }
+    tableRows.push(`<tr><td colspan="${columns.length}" style="height: 10px;"></td></tr>`);
   }
 
   // Header row

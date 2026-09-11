@@ -252,7 +252,10 @@ export default function WardReport() {
         let winnerId = null;
 
         fetchedCandidates.forEach(c => {
-          initialCounts[c.id] = c.total_votes !== undefined && c.total_votes !== null ? c.total_votes : 0;
+          const voteVal = (c.total_votes !== undefined && c.total_votes !== null && c.total_votes !== 0) 
+            ? c.total_votes 
+            : '';
+          initialCounts[c.id] = voteVal;
           if (c.is_winner) {
             winnerId = c.id;
           }
@@ -340,7 +343,18 @@ export default function WardReport() {
 
       const candidateList = res.candidates;
       const filename = `ward_audit_${(ward.ward_name || 'ward').toLowerCase().replace(/[^a-z0-9_]/g, '_')}`;
-      const title = `Ward Audit Report - ${ward.ward_name} | LGA: ${ward.lga_name || filterLga}, State: ${ward.state_name || filterState || 'N/A'}`;
+      const title = `Ward Audit Report - ${ward.ward_name}`;
+
+      const auditorName = candidateList[0]?.updated_by_name || ward.updated_by_name || 'Moderator';
+      const auditorRole = candidateList[0]?.updated_by_role || ward.updated_by_role || 'Admin';
+      const auditDate = (candidateList[0]?.updated_at || ward.updated_at) 
+        ? new Date(candidateList[0]?.updated_at || ward.updated_at).toLocaleString() 
+        : 'N/A';
+
+      const metadataRows = [
+        `State: ${ward.state_name || filterState || 'N/A'} | LGA: ${ward.lga_name || filterLga || 'N/A'} | Ward: ${ward.ward_name}`,
+        `Audited By: ${auditorName} (${auditorRole}) | Audit Date: ${auditDate}`
+      ];
 
       const columns = [
         { label: 'S.No', key: (_, index) => index + 1 },
@@ -363,18 +377,7 @@ export default function WardReport() {
             return diff > 0 ? `+${diff}` : `${diff}`;
           } 
         },
-        { label: 'Outcome', key: (c) => (c.is_winner ? 'Winner' : '-') },
-        { label: 'Ward Name', key: () => ward.ward_name },
-        { label: 'LGA', key: () => ward.lga_name || filterLga },
-        { label: 'State', key: () => ward.state_name || filterState || 'N/A' },
-        { 
-          label: 'Audited / Updated Time', 
-          key: (c) => {
-            const ts = c.updated_at || ward.updated_at;
-            return ts ? new Date(ts).toLocaleString() : 'N/A';
-          } 
-        },
-        { label: 'Audit Status', key: () => 'Verified by Moderator' }
+        { label: 'Outcome', key: (c) => (c.is_winner ? 'Winner' : '-') }
       ];
 
       if (format === 'excel') {
@@ -384,6 +387,7 @@ export default function WardReport() {
           filename,
           sheetName: 'Ward Audit',
           title,
+          metadataRows,
         });
         toast.success(`Exported audit report for ${ward.ward_name} as Excel!`, { id: 'ward-export' });
       } else {
@@ -392,6 +396,7 @@ export default function WardReport() {
           columns,
           filename,
           title,
+          metadataRows,
         });
         toast.success(`Exported audit report for ${ward.ward_name} as CSV!`, { id: 'ward-export' });
       }

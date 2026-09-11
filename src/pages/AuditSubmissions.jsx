@@ -305,7 +305,12 @@ export default function BoothReport() {
       }
 
       const filename = `booth_audit_${(sub.unique_booth_code || 'booth').toLowerCase().replace(/[^a-z0-9_]/g, '_')}`;
-      const title = `Polling Unit Audit Report - ${sub.unique_booth_code} (${sub.booth_name}) | Ward: ${sub.ward_name || filterWard}, LGA: ${sub.lga_name || filterLga}, State: ${sub.state_name || filterState}`;
+      const title = `Polling Unit Audit Report - ${sub.booth_name || 'Polling Unit'} (${sub.unique_booth_code || ''})`;
+
+      const metadataRows = [
+        `State: ${sub.state_name || filterState || 'N/A'} | LGA: ${sub.lga_name || filterLga || 'N/A'} | Ward: ${sub.ward_name || filterWard || 'N/A'} | Polling Unit: ${sub.booth_name || 'N/A'} (${sub.unique_booth_code || 'N/A'})`,
+        `Booth Officer: ${sub.operator_name || 'Not assigned'} | Submitted: ${sub.created_at ? new Date(sub.created_at).toLocaleString() : 'N/A'} | Audited By: ${sub.updated_by_name || 'Moderator'} (${sub.updated_by_role || 'Admin'}) | Audit Date: ${sub.updated_at ? new Date(sub.updated_at).toLocaleString() : 'N/A'}`
+      ];
 
       const columns = [
         { label: 'S.No', key: (_, index) => index + 1 },
@@ -328,15 +333,7 @@ export default function BoothReport() {
             }
             return '0';
           } 
-        },
-        { label: 'Polling Unit Code', key: () => sub.unique_booth_code },
-        { label: 'Polling Unit Name', key: () => sub.booth_name },
-        { label: 'Ward', key: () => sub.ward_name || filterWard },
-        { label: 'LGA', key: () => sub.lga_name || filterLga },
-        { label: 'State', key: () => sub.state_name || filterState },
-        { label: 'Booth Officer', key: () => sub.operator_name || 'Not assigned' },
-        { label: 'Submission Time', key: () => sub.created_at ? new Date(sub.created_at).toLocaleString() : 'N/A' },
-        { label: 'Audit Status', key: () => 'Verified by Moderator' }
+        }
       ];
 
       if (format === 'excel') {
@@ -346,6 +343,7 @@ export default function BoothReport() {
           filename,
           sheetName: 'Booth Audit',
           title,
+          metadataRows,
         });
         toast.success(`Exported audit report for ${sub.unique_booth_code} as Excel!`);
       } else {
@@ -354,6 +352,7 @@ export default function BoothReport() {
           columns,
           filename,
           title,
+          metadataRows,
         });
         toast.success(`Exported audit report for ${sub.unique_booth_code} as CSV!`);
       }
