@@ -105,24 +105,25 @@ export default function BoothReport() {
   const [verifiedCounts, setVerifiedCounts] = useState({});
   const [verifying, setVerifying] = useState(false);
 
-  // Export dropdown state
-  const [exportOpen, setExportOpen] = useState(false);
-  const exportMenuRef = useRef(null);
+  // Row export dropdown state
+  const [openRowExportId, setOpenRowExportId] = useState(null);
 
-  // Close export dropdown when clicking outside
+  // Close row export dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target)) {
-        setExportOpen(false);
+    const handleOutside = (e) => {
+      if (!e.target.closest('.row-export-container')) {
+        setOpenRowExportId(null);
       }
     };
-    if (exportOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+    if (openRowExportId) {
+      document.addEventListener('mousedown', handleOutside);
+      document.addEventListener('touchstart', handleOutside);
     }
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('touchstart', handleOutside);
     };
-  }, [exportOpen]);
+  }, [openRowExportId]);
 
   const openVerifyModal = async (report) => {
     let breakdown = report.votes_breakdown || [];
@@ -294,53 +295,71 @@ export default function BoothReport() {
 
   const hasActiveFilters = Boolean(filterState || filterLga || filterWard);
 
-  // Dropdown-dependent export: disabled when no Ward selected or no submissions in table
-  const isExportDisabled = !filterWard || submissions.length === 0;
-
-  const handleExport = (format) => {
-    if (isExportDisabled) {
-      toast.error('Please select State, LGA, and Ward with records to export');
-      return;
-    }
-
+  // Row-level export for a single moderator-verified booth report with format selection (CSV / Excel)
+  const handleRowExport = (sub, format = 'csv') => {
     try {
-      const filename = `booth_audit_reports_${filterWard.toLowerCase().replace(/[^a-z0-9_]/g, '_')}`;
-      const title = `Booth Audit Reports - Ward: ${filterWard}, LGA: ${filterLga}, State: ${filterState} (${submissions.length} Booths)`;
+      const breakdown = sub.votes_breakdown || [];
+      if (breakdown.length === 0) {
+        toast.error('No candidate vote details recorded for this booth');
+        return;
+      }
+
+      const filename = `booth_audit_${(sub.unique_booth_code || 'booth').toLowerCase().replace(/[^a-z0-9_]/g, '_')}`;
+      const title = `Polling Unit Audit Report - ${sub.unique_booth_code} (${sub.booth_name}) | Ward: ${sub.ward_name || filterWard}, LGA: ${sub.lga_name || filterLga}, State: ${sub.state_name || filterState}`;
 
       const columns = [
         { label: 'S.No', key: (_, index) => index + 1 },
-        { label: 'Booth Officer', key: (sub) => sub.operator_name || 'Not assigned' },
-        { label: 'Unique Booth Code', key: 'unique_booth_code' },
-        { label: 'Polling Unit / Booth Name', key: 'booth_name' },
-        { label: 'Ward', key: (sub) => sub.ward_name || filterWard },
-        { label: 'LGA', key: (sub) => sub.lga_name || filterLga },
-        { label: 'State', key: (sub) => sub.state_name || filterState },
-        { label: 'Time Submitted', key: (sub) => sub.created_at ? new Date(sub.created_at).toLocaleString() : 'Awaiting App Sync' },
+        { label: 'Candidate Name', key: 'candidate_name' },
+        { label: 'Party', key: (item) => `${item.party_name} (${item.party_code || ''})` },
+        { 
+          label: 'Original Count (Booth App)', 
+          key: (item) => (item.vote_count !== null && item.vote_count !== undefined ? item.vote_count : 0) 
+        },
+        { 
+          label: 'Audited Count (Moderator)', 
+          key: (item) => (item.moderator_vote_count !== null && item.moderator_vote_count !== undefined ? item.moderator_vote_count : 'N/A') 
+        },
+        { 
+          label: 'Variance / Difference', 
+          key: (item) => {
+            if (item.moderator_vote_count !== null && item.moderator_vote_count !== undefined) {
+              const diff = item.moderator_vote_count - (item.vote_count || 0);
+              return diff > 0 ? `+${diff}` : `${diff}`;
+            }
+            return '0';
+          } 
+        },
+        { label: 'Polling Unit Code', key: () => sub.unique_booth_code },
+        { label: 'Polling Unit Name', key: () => sub.booth_name },
+        { label: 'Ward', key: () => sub.ward_name || filterWard },
+        { label: 'LGA', key: () => sub.lga_name || filterLga },
+        { label: 'State', key: () => sub.state_name || filterState },
+        { label: 'Booth Officer', key: () => sub.operator_name || 'Not assigned' },
+        { label: 'Submission Time', key: () => sub.created_at ? new Date(sub.created_at).toLocaleString() : 'N/A' },
+        { label: 'Audit Status', key: () => 'Verified by Moderator' }
       ];
 
-      if (format === 'csv') {
-        exportToCSV({
-          data: submissions,
-          columns,
-          filename,
-          title,
-        });
-        toast.success(`Exported ${submissions.length} booth audit records as CSV!`);
-      } else if (format === 'excel') {
+      if (format === 'excel') {
         exportToExcel({
-          data: submissions,
+          data: breakdown,
           columns,
           filename,
           sheetName: 'Booth Audit',
           title,
         });
-        toast.success(`Exported ${submissions.length} booth audit records as Excel!`);
+        toast.success(`Exported audit report for ${sub.unique_booth_code} as Excel!`);
+      } else {
+        exportToCSV({
+          data: breakdown,
+          columns,
+          filename,
+          title,
+        });
+        toast.success(`Exported audit report for ${sub.unique_booth_code} as CSV!`);
       }
-    } catch (error) {
-      console.error('Export error:', error);
-      toast.error('Failed to export booth audit reports');
-    } finally {
-      setExportOpen(false);
+    } catch (err) {
+      console.error('Row export error:', err);
+      toast.error('Failed to export row audit report');
     }
   };
 
@@ -421,54 +440,10 @@ export default function BoothReport() {
                 Clear
               </button>
             )}
-
-            <div className="export-menu-container" ref={exportMenuRef}>
-              <button
-                type="button"
-                title={isExportDisabled ? "Select State, LGA, and Ward to export booth reports" : "Export List (CSV / Excel)"}
-                aria-label="Export booth reports list"
-                aria-expanded={exportOpen}
-                disabled={isExportDisabled}
-                style={iconBtnStyle(exportOpen, isExportDisabled)}
-                onClick={() => !isExportDisabled && setExportOpen(o => !o)}
-              >
-                <DownloadIcon />
-              </button>
-              {exportOpen && !isExportDisabled && (
-                <div className="export-dropdown-menu">
-                  <div className="export-dropdown-header">
-                    <span>Export Options</span>
-                    <span className="export-badge">{submissions.length} records</span>
-                  </div>
-                  <button
-                    type="button"
-                    className="export-dropdown-item"
-                    onClick={() => handleExport('csv')}
-                  >
-                    <div className="export-format-badge csv">CSV</div>
-                    <div className="export-item-info">
-                      <span className="export-item-title">Export as CSV</span>
-                      <span className="export-item-desc">Comma-separated values (.csv)</span>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    className="export-dropdown-item"
-                    onClick={() => handleExport('excel')}
-                  >
-                    <div className="export-format-badge excel">XLS</div>
-                    <div className="export-item-info">
-                      <span className="export-item-title">Export as Excel</span>
-                      <span className="export-item-desc">Microsoft Excel formatted (.xls)</span>
-                    </div>
-                  </button>
-                </div>
-              )}
-            </div>
           </div>
         </div>
 
-        <div className="table-wrap">
+        <div className={`table-wrap table-wrap-min-height ${openRowExportId ? 'table-overflow-visible' : ''}`}>
           <table className="data-table">
             <thead>
               <tr>
@@ -572,11 +547,10 @@ export default function BoothReport() {
                       )}
                     </td>
                     <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div className="row-actions-group">
                         <button
                           type="button"
-                          className="btn-icon"
-                          style={actionIconStyle('primary')}
+                          className="btn-row-action"
                           title="Edit / Verify Count"
                           aria-label="Edit / Verify Count"
                           onClick={() => openVerifyModal(sub)}
@@ -584,7 +558,58 @@ export default function BoothReport() {
                           <EditIcon />
                         </button>
                         {sub.votes_breakdown?.some(v => v.moderator_vote_count !== null && v.moderator_vote_count !== undefined) && (
-                          <span className="badge badge-soft-success">Verified</span>
+                          <>
+                            <div className="row-export-container">
+                              <button
+                                type="button"
+                                className="btn-row-action btn-row-export"
+                                title="Export Audited Booth Report"
+                                aria-label={`Export audit report for ${sub.unique_booth_code}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenRowExportId(prev => (prev === (sub.booth_id || sub.id) ? null : (sub.booth_id || sub.id)));
+                                }}
+                              >
+                                <DownloadIcon />
+                              </button>
+                              {openRowExportId === (sub.booth_id || sub.id) && (
+                                <div className="row-export-menu" onClick={e => e.stopPropagation()}>
+                                  <div className="export-dropdown-header">
+                                    <span>Export Options</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    className="export-dropdown-item"
+                                    onClick={() => {
+                                      handleRowExport(sub, 'csv');
+                                      setOpenRowExportId(null);
+                                    }}
+                                  >
+                                    <div className="export-format-badge csv">CSV</div>
+                                    <div className="export-item-info">
+                                      <span className="export-item-title">Export as CSV</span>
+                                      <span className="export-item-desc">Comma-separated values (.csv)</span>
+                                    </div>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="export-dropdown-item"
+                                    onClick={() => {
+                                      handleRowExport(sub, 'excel');
+                                      setOpenRowExportId(null);
+                                    }}
+                                  >
+                                    <div className="export-format-badge excel">XLS</div>
+                                    <div className="export-item-info">
+                                      <span className="export-item-title">Export as Excel</span>
+                                      <span className="export-item-desc">Microsoft Excel formatted (.xls)</span>
+                                    </div>
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                            <span className="badge badge-soft-success">Verified</span>
+                          </>
                         )}
                       </div>
                     </td>

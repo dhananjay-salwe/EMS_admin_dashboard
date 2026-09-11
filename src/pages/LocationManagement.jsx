@@ -44,6 +44,13 @@ const DeleteIcon = () => (
   </svg>
 );
 
+const PlusIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19" />
+    <line x1="5" y1="12" x2="19" y2="12" />
+  </svg>
+);
+
 const actionIconStyle = (variant) => ({
   display: 'inline-flex',
   alignItems: 'center',
@@ -120,7 +127,23 @@ export default function LocationManagement() {
     booth_name: '',
     unique_booth_code: ''
   });
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const resetForm = () => {
+    setFormData({
+      state_name: '',
+      lga_name: '',
+      ward_name: '',
+      booth_name: '',
+      unique_booth_code: ''
+    });
+  };
+
+  const handleCloseModal = () => {
+    resetForm();
+    setIsCreateModalOpen(false);
+  };
 
   const [loading, setLoading] =  useState(true);
 
@@ -178,7 +201,8 @@ export default function LocationManagement() {
 
     if (res.success) {
       toast.success('Polling unit registered successfully!');
-      setFormData({ state_name: '', lga_name: '', ward_name: '', booth_name: '', unique_booth_code: '' });
+      resetForm();
+      setIsCreateModalOpen(false);
       fetchLocations();
     } else {
       toast.error(res.message || 'Failed to register polling unit.');
@@ -288,102 +312,7 @@ export default function LocationManagement() {
   return (
     <div>
 
-      <div className="two-col-grid two-col-grid--form-table">
-        <div className="card">
-          <div className="card-header"><h2>Add geographic polling unit</h2></div>
-          <div className="card-body">
-<form onSubmit={handleSubmit}>
-  {/* 1. SELECT STATE */}
-  <div className="form-group">
-    <label className="form-label">1. Select State</label>
-    <CustomSelect
-      value={formData.state_name}
-      placeholder="-- Choose State --"
-      options={stateOptions}
-      onChange={e => setFormData({
-        ...formData,
-        state_name: e.target.value,
-        lga_name: '',
-        ward_name: ''
-      })}
-    />
-  </div>
-
-  {/* 2. SELECT LGA (Filtered by selected State) */}
-  <div className="form-group">
-    <label className="form-label">2. Select LGA</label>
-    <CustomSelect
-      disabled={!formData.state_name}
-      value={formData.lga_name}
-      placeholder={formData.state_name ? '-- Choose LGA --' : '-- First Select State --'}
-      options={[...new Set(
-        locations
-          .filter(l => l.state_name === formData.state_name)
-          .map(l => l.lga_name)
-          .filter(Boolean)
-      )].sort()}
-      onChange={e => setFormData({
-        ...formData,
-        lga_name: e.target.value,
-        ward_name: ''
-      })}
-    />
-  </div>
-
-  {/* 3. SELECT WARD (Filtered by selected LGA) */}
-  <div className="form-group">
-    <label className="form-label">3. Select Electoral Ward</label>
-    <CustomSelect
-      disabled={!formData.lga_name}
-      value={formData.ward_name}
-      placeholder={formData.lga_name ? '-- Choose Ward --' : '-- First Select LGA --'}
-      options={[...new Set(
-        locations
-          .filter(l => l.state_name === formData.state_name && l.lga_name === formData.lga_name)
-          .map(l => l.ward_name)
-          .filter(Boolean)
-      )].sort()}
-      onChange={e => setFormData({
-        ...formData,
-        ward_name: e.target.value
-      })}
-    />
-  </div>
-
-  {/* 4. ENTER POLLING UNIT NAME */}
-  <div className="form-group">
-    <label className="form-label">4. Polling Unit Name (Booth)</label>
-    <input
-      type="text"
-      required
-      className="form-control"
-      placeholder="e.g. National Stadium Unit"
-      value={formData.booth_name}
-      onChange={e => setFormData({ ...formData, booth_name: e.target.value })}
-    />
-  </div>
-
-  {/* 5. ENTER BOOTH CODE */}
-  <div className="form-group">
-    <label className="form-label">5. Unique Booth Code</label>
-    <input
-      type="text"
-      required
-      className="form-control"
-      placeholder="e.g. BOOTH-SUR-05"
-      value={formData.unique_booth_code}
-      onChange={e => setFormData({ ...formData, unique_booth_code: e.target.value })}
-    />
-  </div>
-
-  <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
-    {submitting ? 'Registering Booth…' : 'Register Polling Booth'}
-  </button>
-</form>
-          </div>
-        </div>
-
-        <div className="card">
+      <div className="card">
           <div className="card-header responsive-header">
             <div className="header-title-group">
               <h2>Registered polling units</h2>
@@ -456,6 +385,14 @@ export default function LocationManagement() {
                     </div>
                   )}
                 </div>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-add-entity"
+                  onClick={() => { resetForm(); setIsCreateModalOpen(true); }}
+                >
+                  <PlusIcon />
+                  <span>Add Polling Unit</span>
+                </button>
               </div>
             </div>
           </div>
@@ -579,7 +516,6 @@ export default function LocationManagement() {
             </div>
           )}
         </div>
-      </div>
       {/* FEATURE: Custom Delete Confirmation Modal */}
       {deletingBooth && (
         <div className="modal-overlay" onClick={() => setDeletingBooth(null)}>
@@ -598,6 +534,113 @@ export default function LocationManagement() {
                 Yes, Delete
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* FEATURE: Floating Location Create Modal */}
+      {isCreateModalOpen && (
+        <div className="modal-overlay" onClick={handleCloseModal}>
+          <div className="admin-edit-modal-box" onClick={e => e.stopPropagation()}>
+            <div className="admin-edit-modal-header">
+              <div>
+                <h3 className="admin-edit-modal-title">Add Geographic Polling Unit</h3>
+                <p className="admin-edit-modal-subtitle">Register a new polling booth under state, LGA, and ward</p>
+              </div>
+              <button className="modal-close" onClick={handleCloseModal}>&times;</button>
+            </div>
+            <form onSubmit={handleSubmit} className="admin-edit-modal-form">
+              <div className="admin-edit-modal-body">
+                {/* 1. SELECT STATE */}
+                <div className="form-group admin-modal-form-group">
+                  <label className="form-label">1. Select State</label>
+                  <CustomSelect
+                    value={formData.state_name}
+                    placeholder="-- Choose State --"
+                    options={stateOptions}
+                    onChange={e => setFormData({
+                      ...formData,
+                      state_name: e.target.value,
+                      lga_name: '',
+                      ward_name: ''
+                    })}
+                  />
+                </div>
+
+                {/* 2. SELECT LGA (Filtered by selected State) */}
+                <div className="form-group admin-modal-form-group">
+                  <label className="form-label">2. Select LGA</label>
+                  <CustomSelect
+                    disabled={!formData.state_name}
+                    value={formData.lga_name}
+                    placeholder={formData.state_name ? '-- Choose LGA --' : '-- First Select State --'}
+                    options={[...new Set(
+                      locations
+                        .filter(l => l.state_name === formData.state_name)
+                        .map(l => l.lga_name)
+                        .filter(Boolean)
+                    )].sort()}
+                    onChange={e => setFormData({
+                      ...formData,
+                      lga_name: e.target.value,
+                      ward_name: ''
+                    })}
+                  />
+                </div>
+
+                {/* 3. SELECT WARD (Filtered by selected LGA) */}
+                <div className="form-group admin-modal-form-group">
+                  <label className="form-label">3. Select Electoral Ward</label>
+                  <CustomSelect
+                    disabled={!formData.lga_name}
+                    value={formData.ward_name}
+                    placeholder={formData.lga_name ? '-- Choose Ward --' : '-- First Select LGA --'}
+                    options={[...new Set(
+                      locations
+                        .filter(l => l.state_name === formData.state_name && l.lga_name === formData.lga_name)
+                        .map(l => l.ward_name)
+                        .filter(Boolean)
+                    )].sort()}
+                    onChange={e => setFormData({
+                      ...formData,
+                      ward_name: e.target.value
+                    })}
+                  />
+                </div>
+
+                {/* 4. ENTER POLLING UNIT NAME */}
+                <div className="form-group admin-modal-form-group">
+                  <label className="form-label">4. Polling Unit Name (Booth)</label>
+                  <input
+                    type="text"
+                    required
+                    className="form-control"
+                    placeholder="e.g. National Stadium Unit"
+                    value={formData.booth_name}
+                    onChange={e => setFormData({ ...formData, booth_name: e.target.value })}
+                  />
+                </div>
+
+                {/* 5. ENTER BOOTH CODE */}
+                <div className="form-group admin-modal-form-group">
+                  <label className="form-label">5. Unique Booth Code</label>
+                  <input
+                    type="text"
+                    required
+                    className="form-control"
+                    placeholder="e.g. BOOTH-SUR-05"
+                    value={formData.unique_booth_code}
+                    onChange={e => setFormData({ ...formData, unique_booth_code: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="admin-edit-modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={submitting}>
+                  {submitting ? 'Registering Booth…' : 'Register Polling Booth'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

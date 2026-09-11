@@ -44,6 +44,13 @@ const DeleteIcon = () => (
   </svg>
 );
 
+const PlusIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19" />
+    <line x1="5" y1="12" x2="19" y2="12" />
+  </svg>
+);
+
 const actionIconStyle = (variant) => ({
   display: 'inline-flex',
   alignItems: 'center',
@@ -182,6 +189,7 @@ export default function OperatorManagement() {
   const [booths, setBooths] = useState([]);
   const [formData, setFormData] = useState({ full_name: '', username: '', password: '', assigned_booth_id: '' });
   const [editingId, setEditingId] = useState(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const [loading, setLoading] = useState(true);
@@ -243,6 +251,11 @@ export default function OperatorManagement() {
     setFormData({ full_name: '', username: '', password: '', assigned_booth_id: '' });
   };
 
+  const handleCloseModal = () => {
+    resetForm();
+    setIsCreateModalOpen(false);
+  };
+
 const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -259,6 +272,7 @@ const handleSubmit = async (e) => {
     if (res.success) {
       toast.success(editingId ? 'Booth officer updated successfully!' : 'Booth officer registered successfully!');
       resetForm();
+      setIsCreateModalOpen(false);
       fetchData();
     } else {
       toast.error(res.message || 'Failed to save booth officer.');
@@ -268,6 +282,7 @@ const handleSubmit = async (e) => {
   const handleEdit = (op) => {
     setEditingId(op.id);
     setFormData({ full_name: op.full_name, username: op.username, password: '', assigned_booth_id: op.assigned_booth_id || '' });
+    setIsCreateModalOpen(true);
   };
 
 // 1. Opens the modal and sets the target operator
@@ -400,65 +415,7 @@ const handleSubmit = async (e) => {
   return (
     <div>
 
-      <div className="two-col-grid two-col-grid--form-table">
-        <div className="card">
-          <div className="card-header"><h2>{editingId ? 'Edit booth officer' : 'Register booth officer'}</h2></div>
-          <div className="card-body">
-            <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label className="form-label">Full Name</label>
-                <input
-                  type="text" required className="form-control"
-                  value={formData.full_name}
-                  onChange={e => setFormData({ ...formData, full_name: e.target.value })}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">App Username</label>
-                <input
-                  type="text" required className="form-control"
-                  value={formData.username}
-                  onChange={e => setFormData({ ...formData, username: e.target.value })}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">
-                  {editingId ? 'Password (leave blank to keep current)' : 'Password'}
-                </label>
-                <input
-                  type="password" required={!editingId} className="form-control"
-                  value={formData.password}
-                  onChange={e => setFormData({ ...formData, password: e.target.value })}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Assign Polling Unit / Booth</label>
-                <SearchableSelect
-                  placeholder="Search booth by code, name, or ward…"
-                  value={formData.assigned_booth_id}
-                  onChange={val => setFormData({ ...formData, assigned_booth_id: val })}
-                  options={[
-                    { value: '', label: '-- No assigned booth (operator picks dynamic) --' },
-                    ...booths.map(b => ({
-                      value: b.booth_id,
-                      label: `${b.unique_booth_code} — ${b.booth_name} (${b.ward_name})`,
-                    })),
-                  ]}
-                />
-              </div>
-              <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
-                {submitting ? 'Saving…' : editingId ? 'Update Booth Officer' : 'Create Booth Officer'}
-              </button>
-              {editingId && (
-                <button type="button" className="btn btn-secondary btn-block" style={{ marginTop: 8 }} onClick={resetForm}>
-                  Cancel
-                </button>
-              )}
-            </form>
-          </div>
-        </div>
-
-        <div className="card">
+      <div className="card">
           <div className="card-header responsive-header">
             <div className="header-title-group">
               <h2>Registered booth officers</h2>
@@ -533,6 +490,14 @@ const handleSubmit = async (e) => {
                     </div>
                   )}
                 </div>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-add-entity"
+                  onClick={() => { resetForm(); setIsCreateModalOpen(true); }}
+                >
+                  <PlusIcon />
+                  <span>Add Officer</span>
+                </button>
               </div>
             </div>
           </div>
@@ -675,7 +640,6 @@ const handleSubmit = async (e) => {
             </div>
           )}
         </div>
-      </div>
 
 
       {/* FEATURE: Custom Delete Confirmation Modal */}
@@ -700,6 +664,71 @@ const handleSubmit = async (e) => {
         </div>
       )}
 
+      {/* FEATURE: Floating Operator Create/Edit Modal */}
+      {isCreateModalOpen && (
+        <div className="modal-overlay" onClick={handleCloseModal}>
+          <div className="admin-edit-modal-box" onClick={e => e.stopPropagation()}>
+            <div className="admin-edit-modal-header">
+              <div>
+                <h3 className="admin-edit-modal-title">{editingId ? 'Edit Booth Officer' : 'Register Booth Officer'}</h3>
+                <p className="admin-edit-modal-subtitle">{editingId ? 'Update assigned booth and login credentials' : 'Register a new polling unit booth operator'}</p>
+              </div>
+              <button className="modal-close" onClick={handleCloseModal}>&times;</button>
+            </div>
+            <form onSubmit={handleSubmit} className="admin-edit-modal-form">
+              <div className="admin-edit-modal-body">
+                <div className="form-group admin-modal-form-group">
+                  <label className="form-label">Full Name</label>
+                  <input
+                    type="text" required className="form-control"
+                    value={formData.full_name}
+                    onChange={e => setFormData({ ...formData, full_name: e.target.value })}
+                  />
+                </div>
+                <div className="form-group admin-modal-form-group">
+                  <label className="form-label">App Username</label>
+                  <input
+                    type="text" required className="form-control"
+                    value={formData.username}
+                    onChange={e => setFormData({ ...formData, username: e.target.value })}
+                  />
+                </div>
+                <div className="form-group admin-modal-form-group">
+                  <label className="form-label">
+                    {editingId ? 'Password (leave blank to keep current)' : 'Password'}
+                  </label>
+                  <input
+                    type="password" required={!editingId} className="form-control"
+                    value={formData.password}
+                    onChange={e => setFormData({ ...formData, password: e.target.value })}
+                  />
+                </div>
+                <div className="form-group admin-modal-lga-group">
+                  <label className="form-label">Assign Polling Unit / Booth</label>
+                  <SearchableSelect
+                    placeholder="Search booth by code, name, or ward…"
+                    value={formData.assigned_booth_id}
+                    onChange={val => setFormData({ ...formData, assigned_booth_id: val })}
+                    options={[
+                      { value: '', label: '-- No assigned booth (operator picks dynamic) --' },
+                      ...booths.map(b => ({
+                        value: b.booth_id,
+                        label: `${b.unique_booth_code} — ${b.booth_name} (${b.ward_name})`,
+                      })),
+                    ]}
+                  />
+                </div>
+              </div>
+              <div className="admin-edit-modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={submitting}>
+                  {submitting ? 'Saving…' : editingId ? 'Update Booth Officer' : 'Create Booth Officer'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       
     </div>
   );

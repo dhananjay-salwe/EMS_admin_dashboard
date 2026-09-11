@@ -1683,7 +1683,6 @@ table.data-table {
   }
 }
 
-
 /* Responsive Grid for the new Ward View and the charts */
 .ward-analysis-grid {
   display: grid;
@@ -1760,9 +1759,22 @@ table.data-table {
 }
 
 /* FEATURE: Video upload media elements and layout custom styling */
-.media-actions-cell { display: flex; align-items: center; gap: 8px; }
-.btn-icon { border: none; background: transparent; padding: 0; }
-.video-player-preview { width: 100%; max-height: 65vh; border-radius: 6px; background-color: #000; }
+.media-actions-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-icon {
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+.video-player-preview {
+  width: 100%;
+  max-height: 65vh;
+  border-radius: 6px;
+  background-color: #000;
+}
 
 /* FEATURE: Custom table styling for AdminManagement to prevent horizontal overflow and hide scrollbar */
 .table-wrap-no-scrollbar {
@@ -1794,9 +1806,6 @@ table.data-table {
   height: 0 !important;
 }
 
-
-
-
 /* ============================================================
    Skeleton Screen Pulse Animations (Network Latency UX)
    ============================================================ */
@@ -1825,7 +1834,6 @@ table.data-table {
   border-radius: 50%;
 }
 
-
 /* Media Viewer Modals */
 .media-preview-container {
   display: flex;
@@ -1842,7 +1850,7 @@ table.data-table {
   max-height: 100%;
   object-fit: contain;
   border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
   transition: transform 0.2s ease-in-out; /* Smooth zooming */
 }
 
@@ -1873,8 +1881,6 @@ table.data-table {
   background: #f8fafc;
   border-color: #cbd5e1;
 }
-
-
 
 /* ============================================================
    WARD REPORT & MODAL STYLING
@@ -1949,7 +1955,9 @@ table.data-table {
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 6px;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
 .modal-close:hover {
@@ -1989,7 +1997,9 @@ table.data-table {
   font-family: inherit;
   color: var(--text-dark, #343a40);
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .form-control:focus {
@@ -2092,7 +2102,9 @@ table.data-table {
   background: #ffffff;
   border: 1px solid var(--border-color, #eef0f4);
   border-radius: 10px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.12),
+    0 4px 8px rgba(0, 0, 0, 0.04);
   padding: 8px 0;
   z-index: 1050;
   animation: exportDropdownFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
@@ -2145,7 +2157,9 @@ table.data-table {
   background: transparent;
   text-align: left;
   cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    transform 0.15s ease;
   font-family: inherit;
 }
 
@@ -2339,7 +2353,9 @@ table.data-table {
   place-items: center;
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  transition: transform 0.15s ease, background 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease;
 }
 
 .profile-avatar-badge:hover {
@@ -2478,11 +2494,11 @@ table.data-table {
   flex-direction: column;
   gap: 16px;
   -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none;    /* Firefox */
+  scrollbar-width: none; /* Firefox */
 }
 
 .admin-edit-modal-body::-webkit-scrollbar {
-  display: none;            /* Chrome, Safari, Opera */
+  display: none; /* Chrome, Safari, Opera */
   width: 0;
   height: 0;
 }
@@ -2573,5 +2589,159 @@ table.data-table {
   bottom: 0;
 }
 
+/* General Add Entity Toolbar Button */
+.btn-add-entity {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
 
+/* ================= TOAST NOTIFICATIONS STYLES ================= */
 
+/* Toast Container: Render safely below the top header bar (top: 80px) */
+[data-rht-toaster],
+.Toastify__toast-container,
+.app-toast-container {
+  top: 80px !important;
+  z-index: 99999 !important;
+}
+
+/* Toast Item Transitions & Smooth Exit */
+[data-rht-toaster] > div {
+  transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+[data-rht-toaster] [role="status"] {
+  animation-duration: 300ms !important;
+}
+
+/* Smooth exit animation for dismissed toasts */
+@keyframes toastFadeExit {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, -16px, 0) scale(0.96);
+  }
+}
+
+.Toastify__toast--exit,
+.toast-exit {
+  animation: toastFadeExit 300ms cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+/* ================= ROW ACTIONS & INLINE EXPORT STYLES ================= */
+.row-actions-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.btn-row-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #e2e5f1);
+  background: #ffffff;
+  color: var(--primary, #556ee6);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+.btn-row-action:hover:not(:disabled) {
+  background: var(--primary-soft, #edf0fd);
+  border-color: var(--primary, #556ee6);
+  color: var(--primary, #556ee6);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(85, 110, 230, 0.15);
+}
+
+.btn-row-action.btn-row-export {
+  color: #10b981;
+  border-color: #a7f3d0;
+  background: #f0fdf4;
+}
+
+.btn-row-action.btn-row-export:hover:not(:disabled) {
+  background: #dcfce7;
+  border-color: #10b981;
+  color: #047857;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.2);
+}
+
+.btn-row-action:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Row-level export dropdown menu (opens downwards) */
+.row-export-container {
+  position: relative;
+  display: inline-flex;
+}
+
+.row-export-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  bottom: auto;
+  right: 0;
+  min-width: 220px;
+  background: #ffffff;
+  border: 1px solid var(--border-color, #eef0f4);
+  border-radius: 8px;
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.14),
+    0 4px 10px rgba(0, 0, 0, 0.05);
+  padding: 6px 0;
+  z-index: 1050;
+  animation: exportDropdownFadeIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: top right;
+  text-align: left;
+}
+
+@keyframes exportDropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.row-export-menu .export-dropdown-item {
+  padding: 8px 12px;
+}
+
+.row-export-menu .export-dropdown-header {
+  padding: 6px 12px 6px;
+}
+
+/* Ensure table containers do not clip downward dropdowns or trigger vertical scrollbars */
+.table-wrap {
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.table-wrap:has(.row-export-menu),
+.table-responsive:has(.row-export-menu),
+.table-overflow-visible {
+  overflow: visible !important;
+}
+
+.table-wrap-min-height {
+  min-height: 180px;
+}

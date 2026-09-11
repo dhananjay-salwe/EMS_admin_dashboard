@@ -10,20 +10,28 @@ import OperatorManagement from './pages/OperatorManagement';
 import AuditSubmissions from './pages/AuditSubmissions';
 import AdminManagement from './pages/AdminManagement';
 import Login from './pages/Login';
-import {Toaster} from 'react-hot-toast';
+import { Toaster, toast } from 'react-hot-toast';
 import WardReport from './pages/WardReport';
-
 import WardManagement from './pages/WardManagement';
+import { isTokenValid } from './utils/authUtils';
 
 const MOBILE_BREAKPOINT = 780; // keep in sync with the @media max-width in App.css
 
 export default function App() {
-  // Initialize state directly from localStorage so page refreshes persist the session
+  // Initialize state directly from localStorage after validating token validity and expiration
   const [admin, setAdmin] = useState(() => {
     try {
       const savedAdmin = localStorage.getItem('ems_admin_user');
       const savedToken = localStorage.getItem('token');
-      return (savedAdmin && savedToken) ? JSON.parse(savedAdmin) : null;
+      if (savedAdmin && savedToken && isTokenValid(savedToken)) {
+        return JSON.parse(savedAdmin);
+      }
+      // If token exists but is expired or invalid, purge stale credentials
+      if (savedToken && !isTokenValid(savedToken)) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('ems_admin_user');
+      }
+      return null;
     } catch {
       return null;
     }
@@ -67,6 +75,20 @@ export default function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Listen for global session expiration events dispatched by apiCall
+  useEffect(() => {
+    const handleSessionExpired = (e) => {
+      setAdmin(null);
+      toast.error(e.detail?.message || 'Your session has expired. Please log in again.', {
+        id: 'session-expired-toast', // Prevents duplicate toasts when multiple concurrent requests fail
+        duration: 4000,
+      });
+    };
+
+    window.addEventListener('ems:session-expired', handleSessionExpired);
+    return () => window.removeEventListener('ems:session-expired', handleSessionExpired);
+  }, []);
+
   const handleLoginSuccess = (adminData) => {
     setAdmin(adminData);
     localStorage.setItem('ems_admin_user', JSON.stringify(adminData));
@@ -86,7 +108,15 @@ export default function App() {
   };
 
   if (!admin) {
-    return <Login onLoginSuccess={handleLoginSuccess} />;
+    return (
+      <>
+        <Toaster 
+          position="top-right" 
+          toastOptions={{ duration: 3000 }} 
+        />
+        <Login onLoginSuccess={handleLoginSuccess} />
+      </>
+    );
   }
 
   return (

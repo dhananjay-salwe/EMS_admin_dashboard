@@ -21,6 +21,13 @@ const DeleteIcon = () => (
   </svg>
 );
 
+const PlusIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19" />
+    <line x1="5" y1="12" x2="19" y2="12" />
+  </svg>
+);
+
 const actionIconStyle = (variant) => ({
   display: 'inline-flex',
   alignItems: 'center',
@@ -46,6 +53,7 @@ export default function PartyManagement() {
   const [formData, setFormData] = useState({ party_name: '', party_code: '', party_icon_url: '' });
   const [iconFile, setIconFile] = useState(null); // State for direct file upload
   const [editingId, setEditingId] = useState(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [imageErrors, setImageErrors] = useState({}); // Track broken image links
   const [fileInputKey, setFileInputKey] = useState(0); // Bump to force the file input to visually clear
@@ -82,6 +90,11 @@ export default function PartyManagement() {
     setFileInputKey(k => k + 1);
   };
 
+  const handleCloseModal = () => {
+    resetForm();
+    setIsCreateModalOpen(false);
+  };
+
   const handleImageError = (id) => {
     setImageErrors(prev => ({ ...prev, [id]: true }));
   };
@@ -110,6 +123,7 @@ const handleSubmit = async (e) => {
     if (res.success) {
       toast.success(editingId ? 'Political party updated successfully!' : 'Political party added successfully!');
       resetForm();
+      setIsCreateModalOpen(false);
       fetchParties();
     } else {
       toast.error(res.message || 'Failed to save political party.');
@@ -121,6 +135,7 @@ const handleSubmit = async (e) => {
     setFormData({ party_name: p.party_name, party_code: p.party_code, party_icon_url: p.party_icon_url || '' });
     setIconFile(null);
     setFileInputKey(k => k + 1);
+    setIsCreateModalOpen(true);
   };
 
 // 1. Opens the modal and sets the target party
@@ -145,56 +160,7 @@ const handleSubmit = async (e) => {
   return (
     <div>
 
-      <div className="two-col-grid two-col-grid--form-table">
-        <div className="card">
-          <div className="card-header"><h2>{editingId ? 'Edit political party' : 'Add political party'}</h2></div>
-          <div className="card-body">
-            <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label className="form-label">Party Name</label>
-                <input
-                  type="text" required className="form-control"
-                  value={formData.party_name}
-                  onChange={e => setFormData({ ...formData, party_name: e.target.value })}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Party Code / Abbreviation (e.g. APC)</label>
-                <input
-                  type="text" required className="form-control"
-                  value={formData.party_code}
-                  onChange={e => setFormData({ ...formData, party_code: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Upload Party Image from device</label>
-                <input
-                  key={fileInputKey}
-                  type="file" accept="image/*" className="form-control"
-                  onChange={e => setIconFile(e.target.files[0] || null)}
-                />
-                {iconFile && (
-                  <div className="file-preview">
-                    <img src={URL.createObjectURL(iconFile)} alt="" />
-                    <span>{iconFile.name}</span>
-                  </div>
-                )}
-              </div>
-
-              <button type="submit" className="btn btn-primary btn-block" disabled={submitting} style={{ marginTop: 20 }}>
-                {submitting ? 'Saving…' : editingId ? 'Update Party' : 'Create Party'}
-              </button>
-              {editingId && (
-                <button type="button" className="btn btn-secondary btn-block" style={{ marginTop: 8 }} onClick={resetForm}>
-                  Cancel
-                </button>
-              )}
-            </form>
-          </div>
-        </div>
-
-        <div className="card">
+      <div className="card">
           <div className="card-header responsive-header">
             <div className="header-title-group">
               <h2>Registered political parties</h2>
@@ -211,6 +177,14 @@ const handleSubmit = async (e) => {
                   options={SORT_OPTIONS}
                   onChange={e => setSortKey(e.target.value)}
                 />
+                <button
+                  type="button"
+                  className="btn btn-primary btn-add-entity"
+                  onClick={() => { resetForm(); setIsCreateModalOpen(true); }}
+                >
+                  <PlusIcon />
+                  <span>Add Party</span>
+                </button>
               </div>
             </div>
           </div>
@@ -275,7 +249,6 @@ const handleSubmit = async (e) => {
             </table>
           </div>
         </div>
-      </div>
 
       {/* FEATURE: Custom Delete Confirmation Modal */}
       {deletingParty && (
@@ -297,6 +270,62 @@ const handleSubmit = async (e) => {
                 Yes, Delete
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* FEATURE: Floating Party Create/Edit Modal */}
+      {isCreateModalOpen && (
+        <div className="modal-overlay" onClick={handleCloseModal}>
+          <div className="admin-edit-modal-box" onClick={e => e.stopPropagation()}>
+            <div className="admin-edit-modal-header">
+              <div>
+                <h3 className="admin-edit-modal-title">{editingId ? 'Edit Political Party' : 'Add Political Party'}</h3>
+                <p className="admin-edit-modal-subtitle">{editingId ? 'Update party credentials and symbol' : 'Register a new political party'}</p>
+              </div>
+              <button className="modal-close" onClick={handleCloseModal}>&times;</button>
+            </div>
+            <form onSubmit={handleSubmit} className="admin-edit-modal-form">
+              <div className="admin-edit-modal-body">
+                <div className="form-group admin-modal-form-group">
+                  <label className="form-label">Party Name</label>
+                  <input
+                    type="text" required className="form-control"
+                    value={formData.party_name}
+                    onChange={e => setFormData({ ...formData, party_name: e.target.value })}
+                  />
+                </div>
+                <div className="form-group admin-modal-form-group">
+                  <label className="form-label">Party Code / Abbreviation (e.g. APC)</label>
+                  <input
+                    type="text" required className="form-control"
+                    value={formData.party_code}
+                    onChange={e => setFormData({ ...formData, party_code: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group admin-modal-form-group">
+                  <label className="form-label">Upload Party Image from device</label>
+                  <input
+                    key={fileInputKey}
+                    type="file" accept="image/*" className="form-control"
+                    onChange={e => setIconFile(e.target.files[0] || null)}
+                  />
+                  {iconFile && (
+                    <div className="file-preview">
+                      <img src={URL.createObjectURL(iconFile)} alt="" />
+                      <span>{iconFile.name}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="admin-edit-modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={submitting}>
+                  {submitting ? 'Saving…' : editingId ? 'Update Party' : 'Create Party'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

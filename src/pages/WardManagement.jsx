@@ -113,6 +113,13 @@ const DeleteIcon = () => (
   </svg>
 );
 
+const PlusIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19" />
+    <line x1="5" y1="12" x2="19" y2="12" />
+  </svg>
+);
+
 const actionIconStyle = (variant) => ({
   display: 'inline-flex',
   alignItems: 'center',
@@ -178,7 +185,17 @@ const EXPORT_COLUMNS = [
 export default function WardManagement() {
   const [locations, setLocations] = useState([]);
   const [formData, setFormData] = useState({ state_name: '', lga_name: '', ward_name: '' });
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const resetForm = () => {
+    setFormData({ state_name: '', lga_name: '', ward_name: '' });
+  };
+
+  const handleCloseModal = () => {
+    resetForm();
+    setIsCreateModalOpen(false);
+  };
 
   const [loading, setLoading] = useState(true);
 
@@ -323,7 +340,8 @@ export default function WardManagement() {
 
     if (res.success) {
       toast.success('Electoral ward created successfully!');
-      setFormData({ state_name: '', lga_name: '', ward_name: '' });
+      resetForm();
+      setIsCreateModalOpen(false);
       fetchLocations();
     } else {
       toast.error(res.message || 'Failed to create electoral ward.');
@@ -362,53 +380,7 @@ export default function WardManagement() {
   };
 
   return (
-    <div className="two-col-grid two-col-grid--form-table">
-      <div className="card">
-        <div className="card-header"><h2>Create Electoral Ward</h2></div>
-        <div className="card-body">
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label className="form-label">State</label>
-              <Combobox
-                required
-                options={stateOptions}
-                placeholder="Select or enter State"
-                value={formData.state_name}
-                onChange={val => setFormData({ ...formData, state_name: val, lga_name: '' })}
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">LGA (Local Government Area)</label>
-              <Combobox
-                required
-                options={lgaOptionsForForm}
-                placeholder="Select or enter LGA"
-                disabled={!formData.state_name}
-                value={formData.lga_name}
-                onChange={val => setFormData({ ...formData, lga_name: val })}
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Ward Name</label>
-              <input
-                type="text"
-                required
-                className="form-control"
-                placeholder="e.g. Ward 01 / Central Ward"
-                value={formData.ward_name}
-                onChange={e => setFormData({ ...formData, ward_name: e.target.value })}
-              />
-            </div>
-
-            <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
-              {submitting ? 'Saving Ward…' : 'Save Ward'}
-            </button>
-          </form>
-        </div>
-      </div>
-
+    <div>
       <div className="card">
         <div className="card-header responsive-header">
           <div className="header-title-group">
@@ -484,6 +456,14 @@ export default function WardManagement() {
                   </div>
                 )}
               </div>
+              <button
+                type="button"
+                className="btn btn-primary btn-add-entity"
+                onClick={() => { resetForm(); setIsCreateModalOpen(true); }}
+              >
+                <PlusIcon />
+                <span>Add Ward</span>
+              </button>
             </div>
           </div>
         </div>
@@ -626,6 +606,65 @@ export default function WardManagement() {
                 Yes, Delete
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* FEATURE: Floating Ward Create Modal */}
+      {isCreateModalOpen && (
+        <div className="modal-overlay" onClick={handleCloseModal}>
+          <div className="admin-edit-modal-box" onClick={e => e.stopPropagation()}>
+            <div className="admin-edit-modal-header">
+              <div>
+                <h3 className="admin-edit-modal-title">Create Electoral Ward</h3>
+                <p className="admin-edit-modal-subtitle">Define a new electoral ward under a state and LGA</p>
+              </div>
+              <button className="modal-close" onClick={handleCloseModal}>&times;</button>
+            </div>
+            <form onSubmit={handleSubmit} className="admin-edit-modal-form">
+              <div className="admin-edit-modal-body">
+                <div className="form-group admin-modal-form-group">
+                  <label className="form-label">State</label>
+                  <Combobox
+                    required
+                    options={stateOptions}
+                    placeholder="Select or enter State"
+                    value={formData.state_name}
+                    onChange={val => setFormData({ ...formData, state_name: val, lga_name: '' })}
+                  />
+                </div>
+
+                <div className="form-group admin-modal-form-group">
+                  <label className="form-label">LGA (Local Government Area)</label>
+                  <Combobox
+                    required
+                    options={lgaOptionsForForm}
+                    placeholder="Select or enter LGA"
+                    disabled={!formData.state_name}
+                    value={formData.lga_name}
+                    onChange={val => setFormData({ ...formData, lga_name: val })}
+                  />
+                </div>
+
+                <div className="form-group admin-modal-form-group">
+                  <label className="form-label">Ward Name</label>
+                  <input
+                    type="text"
+                    required
+                    className="form-control"
+                    placeholder="e.g. Ward 01 / Central Ward"
+                    value={formData.ward_name}
+                    onChange={e => setFormData({ ...formData, ward_name: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="admin-edit-modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={submitting}>
+                  {submitting ? 'Saving Ward…' : 'Save Ward'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

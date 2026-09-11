@@ -106,24 +106,25 @@ export default function WardReport() {
   const [selectedWinner, setSelectedWinner] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  // Export dropdown state
-  const [exportOpen, setExportOpen] = useState(false);
-  const exportMenuRef = useRef(null);
+  // Row export dropdown state
+  const [openRowExportId, setOpenRowExportId] = useState(null);
 
-  // Close export dropdown when clicking outside
+  // Close row export dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target)) {
-        setExportOpen(false);
+    const handleOutside = (e) => {
+      if (!e.target.closest('.row-export-container')) {
+        setOpenRowExportId(null);
       }
     };
-    if (exportOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+    if (openRowExportId) {
+      document.addEventListener('mousedown', handleOutside);
+      document.addEventListener('touchstart', handleOutside);
     }
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('touchstart', handleOutside);
     };
-  }, [exportOpen]);
+  }, [openRowExportId]);
 
   // Fetch Ward Reports from Backend
   const fetchWardReports = async (page = 1) => {
@@ -148,7 +149,25 @@ export default function WardReport() {
 
       const res = await apiCall(`/ward-reports?${query}`);
       if (res.success) {
-        setWards(res.wards || []);
+        const fetchedWards = res.wards || [];
+        // Ensure verification status: if backend query has not yet reloaded or is_verified is falsy,
+        // perform candidate check fallback for the active page's wards
+        const verifiedWards = await Promise.all(
+          fetchedWards.map(async (w) => {
+            if (w.is_verified) {
+              return w;
+            }
+            try {
+              const cRes = await apiCall(`/ward-reports/candidates?ward_id=${w.id}`);
+              const hasVotes = cRes.success && cRes.candidates?.some(c => (c.total_votes > 0 || c.is_winner));
+              return { ...w, is_verified: Boolean(hasVotes) };
+            } catch {
+              return w;
+            }
+          })
+        );
+
+        setWards(verifiedWards);
         setTotalPages(res.pagination?.totalPages || 1);
         setTotalRecords(res.pagination?.totalRecords || 0);
       } else {
@@ -307,49 +326,78 @@ export default function WardReport() {
   };
 
   const hasActiveFilters = Boolean(filterState || filterLga);
-  // Dropdown-dependent export: disabled when no LGA selected or no wards in table
-  const isExportDisabled = !filterLga || wards.length === 0;
 
-  const handleExport = (format) => {
-    if (isExportDisabled) {
-      toast.error('Please select State and LGA with records to export');
-      return;
-    }
-
+  // Row-level export for a single moderator-verified ward report with format selection (CSV / Excel)
+  const handleRowExport = async (ward, format = 'csv') => {
     try {
-      const filename = `ward_reports_${filterLga.toLowerCase().replace(/[^a-z0-9_]/g, '_')}`;
-      const title = `Ward Reports - ${filterLga}, ${filterState} (${wards.length} Wards)`;
+      toast.loading(`Preparing report for ${ward.ward_name}...`, { id: 'ward-export' });
+      const res = await apiCall(`/ward-reports/candidates?ward_id=${ward.id}`);
+      
+      if (!res.success || !res.candidates || res.candidates.length === 0) {
+        toast.error('No candidate vote details found for this ward', { id: 'ward-export' });
+        return;
+      }
+
+      const candidateList = res.candidates;
+      const filename = `ward_audit_${(ward.ward_name || 'ward').toLowerCase().replace(/[^a-z0-9_]/g, '_')}`;
+      const title = `Ward Audit Report - ${ward.ward_name} | LGA: ${ward.lga_name || filterLga}, State: ${ward.state_name || filterState || 'N/A'}`;
 
       const columns = [
         { label: 'S.No', key: (_, index) => index + 1 },
-        { label: 'Ward Name', key: 'ward_name' },
-        { label: 'LGA', key: (w) => w.lga_name || filterLga },
-        { label: 'State', key: (w) => w.state_name || filterState || 'N/A' },
+        { label: 'Candidate Name', key: 'candidate_name' },
+        { label: 'Party', key: (c) => `${c.party_name} (${c.party_code || ''})` },
+        { 
+          label: 'Original Count (Booths Total)', 
+          key: (c) => (c.original_votes !== undefined && c.original_votes !== null ? c.original_votes : 0) 
+        },
+        { 
+          label: 'Audited Count (Moderator)', 
+          key: (c) => (c.total_votes !== undefined && c.total_votes !== null ? c.total_votes : 0) 
+        },
+        { 
+          label: 'Variance / Difference', 
+          key: (c) => {
+            const modVotes = c.total_votes || 0;
+            const origVotes = c.original_votes || 0;
+            const diff = modVotes - origVotes;
+            return diff > 0 ? `+${diff}` : `${diff}`;
+          } 
+        },
+        { label: 'Outcome', key: (c) => (c.is_winner ? 'Winner' : '-') },
+        { label: 'Ward Name', key: () => ward.ward_name },
+        { label: 'LGA', key: () => ward.lga_name || filterLga },
+        { label: 'State', key: () => ward.state_name || filterState || 'N/A' },
+        { 
+          label: 'Audited / Updated Time', 
+          key: (c) => {
+            const ts = c.updated_at || ward.updated_at;
+            return ts ? new Date(ts).toLocaleString() : 'N/A';
+          } 
+        },
+        { label: 'Audit Status', key: () => 'Verified by Moderator' }
       ];
 
-      if (format === 'csv') {
-        exportToCSV({
-          data: wards,
-          columns,
-          filename,
-          title,
-        });
-        toast.success(`Exported ${wards.length} ward reports as CSV!`);
-      } else if (format === 'excel') {
+      if (format === 'excel') {
         exportToExcel({
-          data: wards,
+          data: candidateList,
           columns,
           filename,
-          sheetName: 'Ward Reports',
+          sheetName: 'Ward Audit',
           title,
         });
-        toast.success(`Exported ${wards.length} ward reports as Excel!`);
+        toast.success(`Exported audit report for ${ward.ward_name} as Excel!`, { id: 'ward-export' });
+      } else {
+        exportToCSV({
+          data: candidateList,
+          columns,
+          filename,
+          title,
+        });
+        toast.success(`Exported audit report for ${ward.ward_name} as CSV!`, { id: 'ward-export' });
       }
-    } catch (error) {
-      console.error('Export error:', error);
-      toast.error('Failed to export ward reports');
-    } finally {
-      setExportOpen(false);
+    } catch (err) {
+      console.error('Row export error:', err);
+      toast.error('Failed to export ward report', { id: 'ward-export' });
     }
   };
 
@@ -397,61 +445,17 @@ export default function WardReport() {
                 Clear
               </button>
             )}
-
-            <div className="export-menu-container" ref={exportMenuRef}>
-              <button
-                type="button"
-                title={isExportDisabled ? "Select State and LGA to export ward reports" : "Export List (CSV / Excel)"}
-                aria-label="Export ward reports list"
-                aria-expanded={exportOpen}
-                disabled={isExportDisabled}
-                style={iconBtnStyle(exportOpen, isExportDisabled)}
-                onClick={() => !isExportDisabled && setExportOpen(o => !o)}
-              >
-                <DownloadIcon />
-              </button>
-              {exportOpen && !isExportDisabled && (
-                <div className="export-dropdown-menu">
-                  <div className="export-dropdown-header">
-                    <span>Export Options</span>
-                    <span className="export-badge">{wards.length} records</span>
-                  </div>
-                  <button
-                    type="button"
-                    className="export-dropdown-item"
-                    onClick={() => handleExport('csv')}
-                  >
-                    <div className="export-format-badge csv">CSV</div>
-                    <div className="export-item-info">
-                      <span className="export-item-title">Export as CSV</span>
-                      <span className="export-item-desc">Comma-separated values (.csv)</span>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    className="export-dropdown-item"
-                    onClick={() => handleExport('excel')}
-                  >
-                    <div className="export-format-badge excel">XLS</div>
-                    <div className="export-item-info">
-                      <span className="export-item-title">Export as Excel</span>
-                      <span className="export-item-desc">Microsoft Excel formatted (.xls)</span>
-                    </div>
-                  </button>
-                </div>
-              )}
-            </div>
           </div>
         </div>
 
         {/* Table Wrapper */}
-        <div className="table-wrap">
+        <div className={`table-wrap table-wrap-min-height ${openRowExportId ? 'table-overflow-visible' : ''}`}>
           <table className="data-table">
             <thead>
               <tr>
                 <th>Ward Name</th>
                 <th>LGA</th>
-                <th>Count</th>
+                <th>Moderator Count</th>
               </tr>
             </thead>
             <tbody>
@@ -480,16 +484,71 @@ export default function WardReport() {
                       <span>{ward.lga_name}</span>
                     </td>
                     <td>
-                      <button
-                        type="button"
-                        className="btn-icon"
-                        style={actionIconStyle('primary')}
-                        title="Edit Counts"
-                        aria-label={`Edit counts for ${ward.ward_name}`}
-                        onClick={() => openEditModal(ward)}
-                      >
-                        <EditIcon />
-                      </button>
+                      <div className="row-actions-group">
+                        <button
+                          type="button"
+                          className="btn-row-action"
+                          title="Edit Counts"
+                          aria-label={`Edit counts for ${ward.ward_name}`}
+                          onClick={() => openEditModal(ward)}
+                        >
+                          <EditIcon />
+                        </button>
+                        {ward.is_verified && (
+                          <>
+                            <div className="row-export-container">
+                              <button
+                                type="button"
+                                className="btn-row-action btn-row-export"
+                                title="Export Audited Ward Report"
+                                aria-label={`Export audit report for ${ward.ward_name}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenRowExportId(prev => (prev === ward.id ? null : ward.id));
+                                }}
+                              >
+                                <DownloadIcon />
+                              </button>
+                              {openRowExportId === ward.id && (
+                                <div className="row-export-menu" onClick={e => e.stopPropagation()}>
+                                  <div className="export-dropdown-header">
+                                    <span>Export Options</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    className="export-dropdown-item"
+                                    onClick={() => {
+                                      handleRowExport(ward, 'csv');
+                                      setOpenRowExportId(null);
+                                    }}
+                                  >
+                                    <div className="export-format-badge csv">CSV</div>
+                                    <div className="export-item-info">
+                                      <span className="export-item-title">Export as CSV</span>
+                                      <span className="export-item-desc">Comma-separated values (.csv)</span>
+                                    </div>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="export-dropdown-item"
+                                    onClick={() => {
+                                      handleRowExport(ward, 'excel');
+                                      setOpenRowExportId(null);
+                                    }}
+                                  >
+                                    <div className="export-format-badge excel">XLS</div>
+                                    <div className="export-item-info">
+                                      <span className="export-item-title">Export as Excel</span>
+                                      <span className="export-item-desc">Microsoft Excel formatted (.xls)</span>
+                                    </div>
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                            <span className="badge badge-soft-success">Verified</span>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))

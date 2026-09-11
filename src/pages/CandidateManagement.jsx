@@ -44,6 +44,13 @@ const DeleteIcon = () => (
   </svg>
 );
 
+const PlusIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19" />
+    <line x1="5" y1="12" x2="19" y2="12" />
+  </svg>
+);
+
 const actionIconStyle = (variant) => ({
   display: 'inline-flex',
   alignItems: 'center',
@@ -116,6 +123,7 @@ export default function CandidateManagement() {
 
   const [formData, setFormData] = useState({ candidate_name: '', party_id: '', ward_id: '' });
   const [editingId, setEditingId] = useState(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const [loading, setLoading] = useState(true);
@@ -190,6 +198,11 @@ export default function CandidateManagement() {
     setFormData({ candidate_name: '', party_id: '', ward_id: '' });
   };
 
+  const handleCloseModal = () => {
+    resetForm();
+    setIsCreateModalOpen(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -206,6 +219,7 @@ export default function CandidateManagement() {
     if (res.success) {
       toast.success(editingId ? 'Candidate updated successfully!' : 'Candidate registered successfully!');
       resetForm();
+      setIsCreateModalOpen(false);
       fetchData();
     } else {
       toast.error(res.message || 'Failed to save candidate.');
@@ -215,6 +229,7 @@ export default function CandidateManagement() {
   const handleEdit = (c) => {
     setEditingId(c.id);
     setFormData({ candidate_name: c.candidate_name, party_id: c.party_id, ward_id: c.ward_id });
+    setIsCreateModalOpen(true);
   };
 
 // 1. Opens the modal and sets the target candidate
@@ -311,50 +326,7 @@ export default function CandidateManagement() {
   return (
     <div>
 
-      <div className="two-col-grid two-col-grid--form-table">
-        <div className="card">
-          <div className="card-header"><h2>{editingId ? 'Edit candidate' : 'Register candidate'}</h2></div>
-          <div className="card-body">
-            <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label className="form-label">Candidate Full Name</label>
-                <input
-                  type="text" required className="form-control"
-                  value={formData.candidate_name}
-                  onChange={e => setFormData({ ...formData, candidate_name: e.target.value })}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Political Party</label>
-                <CustomSelect
-                  value={formData.party_id}
-                  placeholder="-- Select party --"
-                  options={parties.map(p => ({ value: p.id, label: `${p.party_name} (${p.party_code})` }))}
-                  onChange={e => setFormData({ ...formData, party_id: e.target.value })}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Contesting Ward (Constituency / Seat)</label>
-                <CustomSelect
-                  value={formData.ward_id}
-                  placeholder="-- Select ward --"
-                  options={locations.map(w => ({ value: w.ward_id, label: `${w.ward_name} (${w.lga_name}, ${w.state_name})` }))}
-                  onChange={e => setFormData({ ...formData, ward_id: e.target.value })}
-                />
-              </div>
-              <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
-                {submitting ? 'Saving…' : editingId ? 'Update Candidate' : 'Save Candidate'}
-              </button>
-              {editingId && (
-                <button type="button" className="btn btn-secondary btn-block" style={{ marginTop: 8 }} onClick={resetForm}>
-                  Cancel
-                </button>
-              )}
-            </form>
-          </div>
-        </div>
-
-        <div className="card">
+      <div className="card">
           <div className="card-header responsive-header">
             <div className="header-title-group">
               <h2>Contesting candidates by ward</h2>
@@ -427,6 +399,14 @@ export default function CandidateManagement() {
                     </div>
                   )}
                 </div>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-add-entity"
+                  onClick={() => { resetForm(); setIsCreateModalOpen(true); }}
+                >
+                  <PlusIcon />
+                  <span>Add Candidate</span>
+                </button>
               </div>
             </div>
           </div>
@@ -566,7 +546,6 @@ export default function CandidateManagement() {
             </div>
           )}
         </div>
-      </div>
 
       {/* FEATURE: Custom Delete Confirmation Modal */}
       {deletingCandidate && (
@@ -590,7 +569,57 @@ export default function CandidateManagement() {
         </div>
       )}
 
-    
+      {/* FEATURE: Floating Candidate Create/Edit Modal */}
+      {isCreateModalOpen && (
+        <div className="modal-overlay" onClick={handleCloseModal}>
+          <div className="admin-edit-modal-box" onClick={e => e.stopPropagation()}>
+            <div className="admin-edit-modal-header">
+              <div>
+                <h3 className="admin-edit-modal-title">{editingId ? 'Edit Candidate' : 'Register Candidate'}</h3>
+                <p className="admin-edit-modal-subtitle">{editingId ? 'Update candidate information and contesting ward' : 'Register a new candidate for election contest'}</p>
+              </div>
+              <button className="modal-close" onClick={handleCloseModal}>&times;</button>
+            </div>
+            <form onSubmit={handleSubmit} className="admin-edit-modal-form">
+              <div className="admin-edit-modal-body">
+                <div className="form-group admin-modal-form-group">
+                  <label className="form-label">Candidate Full Name</label>
+                  <input
+                    type="text" required className="form-control"
+                    value={formData.candidate_name}
+                    onChange={e => setFormData({ ...formData, candidate_name: e.target.value })}
+                  />
+                </div>
+                <div className="form-group admin-modal-form-group">
+                  <label className="form-label">Political Party</label>
+                  <CustomSelect
+                    value={formData.party_id}
+                    placeholder="-- Select party --"
+                    options={parties.map(p => ({ value: p.id, label: `${p.party_name} (${p.party_code})` }))}
+                    onChange={e => setFormData({ ...formData, party_id: e.target.value })}
+                  />
+                </div>
+                <div className="form-group admin-modal-lga-group">
+                  <label className="form-label">Contesting Ward (Constituency / Seat)</label>
+                  <CustomSelect
+                    value={formData.ward_id}
+                    placeholder="-- Select ward --"
+                    options={locations.map(w => ({ value: w.ward_id, label: `${w.ward_name} (${w.lga_name}, ${w.state_name})` }))}
+                    onChange={e => setFormData({ ...formData, ward_id: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="admin-edit-modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={submitting}>
+                  {submitting ? 'Saving…' : editingId ? 'Update Candidate' : 'Save Candidate'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      
     </div>
   );
 }
