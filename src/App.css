@@ -582,6 +582,47 @@ table.data-table {
   color: var(--primary);
 }
 
+.operator-table-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--border, #e2e8f0);
+}
+
+.operator-modal-avatar-frame {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 4px 0;
+}
+
+.operator-modal-avatar {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+}
+
+.operator-modal-avatar-fallback {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: var(--primary-soft, #eef1fd);
+  color: var(--primary, #556ee6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 700;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+}
+
 .badge {
   display: inline-block;
   padding: 4px 10px;
@@ -1683,6 +1724,7 @@ table.data-table {
   }
 }
 
+
 /* Responsive Grid for the new Ward View and the charts */
 .ward-analysis-grid {
   display: grid;
@@ -1759,22 +1801,9 @@ table.data-table {
 }
 
 /* FEATURE: Video upload media elements and layout custom styling */
-.media-actions-cell {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.btn-icon {
-  border: none;
-  background: transparent;
-  padding: 0;
-}
-.video-player-preview {
-  width: 100%;
-  max-height: 65vh;
-  border-radius: 6px;
-  background-color: #000;
-}
+.media-actions-cell { display: flex; align-items: center; gap: 8px; }
+.btn-icon { border: none; background: transparent; padding: 0; }
+.video-player-preview { width: 100%; max-height: 65vh; border-radius: 6px; background-color: #000; }
 
 /* FEATURE: Custom table styling for AdminManagement to prevent horizontal overflow and hide scrollbar */
 .table-wrap-no-scrollbar {
@@ -1806,6 +1835,9 @@ table.data-table {
   height: 0 !important;
 }
 
+
+
+
 /* ============================================================
    Skeleton Screen Pulse Animations (Network Latency UX)
    ============================================================ */
@@ -1834,6 +1866,7 @@ table.data-table {
   border-radius: 50%;
 }
 
+
 /* Media Viewer Modals */
 .media-preview-container {
   display: flex;
@@ -1850,7 +1883,7 @@ table.data-table {
   max-height: 100%;
   object-fit: contain;
   border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
   transition: transform 0.2s ease-in-out; /* Smooth zooming */
 }
 
@@ -1881,6 +1914,8 @@ table.data-table {
   background: #f8fafc;
   border-color: #cbd5e1;
 }
+
+
 
 /* ============================================================
    WARD REPORT & MODAL STYLING
@@ -1955,9 +1990,7 @@ table.data-table {
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 6px;
-  transition:
-    background 0.15s,
-    color 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
 
 .modal-close:hover {
@@ -1997,9 +2030,7 @@ table.data-table {
   font-family: inherit;
   color: var(--text-dark, #343a40);
   outline: none;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .form-control:focus {
@@ -2102,9 +2133,7 @@ table.data-table {
   background: #ffffff;
   border: 1px solid var(--border-color, #eef0f4);
   border-radius: 10px;
-  box-shadow:
-    0 10px 30px rgba(0, 0, 0, 0.12),
-    0 4px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.04);
   padding: 8px 0;
   z-index: 1050;
   animation: exportDropdownFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
@@ -2157,9 +2186,7 @@ table.data-table {
   background: transparent;
   text-align: left;
   cursor: pointer;
-  transition:
-    background-color 0.15s ease,
-    transform 0.15s ease;
+  transition: background-color 0.15s ease, transform 0.15s ease;
   font-family: inherit;
 }
 
@@ -2353,9 +2380,7 @@ table.data-table {
   place-items: center;
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  transition:
-    transform 0.15s ease,
-    background 0.15s ease;
+  transition: transform 0.15s ease, background 0.15s ease;
 }
 
 .profile-avatar-badge:hover {
@@ -2494,11 +2519,11 @@ table.data-table {
   flex-direction: column;
   gap: 16px;
   -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
+  scrollbar-width: none;    /* Firefox */
 }
 
 .admin-edit-modal-body::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  display: none;            /* Chrome, Safari, Opera */
   width: 0;
   height: 0;
 }
@@ -2701,9 +2726,7 @@ table.data-table {
   background: #ffffff;
   border: 1px solid var(--border-color, #eef0f4);
   border-radius: 8px;
-  box-shadow:
-    0 10px 30px rgba(0, 0, 0, 0.14),
-    0 4px 10px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.14), 0 4px 10px rgba(0, 0, 0, 0.05);
   padding: 6px 0;
   z-index: 1050;
   animation: exportDropdownFadeIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);

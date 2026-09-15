@@ -3,6 +3,7 @@ import { apiCall } from '../api/client';
 import CustomSelect from '../components/CustomSelect';
 import { toast } from 'react-hot-toast';
 import { exportToCSV, exportToExcel } from '../utils/exportImportUtils';
+import { getProfilePictureUrl } from '../components/ProfileModal';
 
 const PAGE_SIZE = 6;
 
@@ -248,7 +249,7 @@ export default function OperatorManagement() {
 
   const resetForm = () => {
     setEditingId(null);
-    setFormData({ full_name: '', username: '', password: '', assigned_booth_id: '' });
+    setFormData({ full_name: '', username: '', password: '', assigned_booth_id: '', profile_picture: null });
   };
 
   const handleCloseModal = () => {
@@ -281,7 +282,13 @@ const handleSubmit = async (e) => {
 
   const handleEdit = (op) => {
     setEditingId(op.id);
-    setFormData({ full_name: op.full_name, username: op.username, password: '', assigned_booth_id: op.assigned_booth_id || '' });
+    setFormData({ 
+      full_name: op.full_name, 
+      username: op.username, 
+      password: '', 
+      assigned_booth_id: op.assigned_booth_id || '',
+      profile_picture: op.profile_picture || null
+    });
     setIsCreateModalOpen(true);
   };
 
@@ -587,7 +594,15 @@ const handleSubmit = async (e) => {
                     <tr key={op.id}>
                       <td>
                         <div className="party-cell">
-                          <span className="avatar-title">{op.full_name?.charAt(0)}</span>
+                          {getProfilePictureUrl(op.profile_picture) ? (
+                            <img
+                              src={getProfilePictureUrl(op.profile_picture)}
+                              alt={op.full_name || 'Booth Officer'}
+                              className="operator-table-avatar"
+                            />
+                          ) : (
+                            <span className="avatar-title">{op.full_name?.charAt(0)}</span>
+                          )}
                           {op.full_name}
                         </div>
                       </td>
@@ -677,6 +692,21 @@ const handleSubmit = async (e) => {
             </div>
             <form onSubmit={handleSubmit} className="admin-edit-modal-form">
               <div className="admin-edit-modal-body">
+                {editingId && (
+                  <div className="operator-modal-avatar-frame">
+                    {getProfilePictureUrl(formData.profile_picture) ? (
+                      <img
+                        src={getProfilePictureUrl(formData.profile_picture)}
+                        alt={formData.full_name || 'Booth Officer'}
+                        className="operator-modal-avatar"
+                      />
+                    ) : (
+                      <div className="operator-modal-avatar-fallback">
+                        {(formData.full_name || 'O').charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="form-group admin-modal-form-group">
                   <label className="form-label">Full Name</label>
                   <input
