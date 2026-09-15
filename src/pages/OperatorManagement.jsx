@@ -208,6 +208,7 @@ export default function OperatorManagement() {
 
   const [sortKey, setSortKey] = useState('full_name-asc');
   const [deletingOperator, setDeletingOperator] = useState(null);
+  const [viewingAvatarUrl, setViewingAvatarUrl] = useState(null);
 
   // Close export dropdown when clicking outside
   useEffect(() => {
@@ -699,6 +700,16 @@ const handleSubmit = async (e) => {
                         src={getProfilePictureUrl(formData.profile_picture)}
                         alt={formData.full_name || 'Booth Officer'}
                         className="operator-modal-avatar"
+                        onClick={() => setViewingAvatarUrl(getProfilePictureUrl(formData.profile_picture))}
+                        title="Click to view full image"
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setViewingAvatarUrl(getProfilePictureUrl(formData.profile_picture));
+                          }
+                        }}
                       />
                     ) : (
                       <div className="operator-modal-avatar-fallback">
@@ -760,6 +771,27 @@ const handleSubmit = async (e) => {
         </div>
       )}
       
+      {/* FEATURE: Full-size Avatar Viewer Overlay */}
+      {viewingAvatarUrl && (
+        <div className="image-viewer-overlay" onClick={() => setViewingAvatarUrl(null)}>
+          <button
+            type="button"
+            className="image-viewer-close"
+            onClick={() => setViewingAvatarUrl(null)}
+            aria-label="Close image preview"
+          >
+            &times;
+          </button>
+          <div className="image-viewer-content" onClick={e => e.stopPropagation()}>
+            <img
+              src={viewingAvatarUrl}
+              alt="Booth Officer Avatar Preview"
+              className="image-viewer-img"
+            />
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

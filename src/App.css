@@ -606,6 +606,13 @@ table.data-table {
   object-fit: cover;
   border: 3px solid #fff;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.operator-modal-avatar:hover {
+  transform: scale(1.06);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
 }
 
 .operator-modal-avatar-fallback {
@@ -621,6 +628,70 @@ table.data-table {
   font-weight: 700;
   border: 3px solid #fff;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+}
+
+/* Full-Screen Image Viewer Overlay */
+.image-viewer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 24px;
+  animation: viewerFadeIn 0.2s ease-out;
+}
+
+@keyframes viewerFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.image-viewer-close {
+  position: absolute;
+  top: 24px;
+  right: 28px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: #ffffff;
+  font-size: 30px;
+  line-height: 1;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease, transform 0.2s ease;
+  z-index: 10000;
+}
+
+.image-viewer-close:hover {
+  background: rgba(255, 255, 255, 0.35);
+  transform: scale(1.08);
+}
+
+.image-viewer-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 90vw;
+  max-height: 90vh;
+}
+
+.image-viewer-img {
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
 }
 
 .badge {
@@ -2767,54 +2838,4 @@ table.data-table {
 
 .table-wrap-min-height {
   min-height: 180px;
-}
-
-/* Operator Table Avatar */
-.operator-table-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-  border: 1.5px solid #e2e5f1;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}
-
-/* Operator Edit Modal Avatar Preview */
-.operator-modal-avatar-frame {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-bottom: 20px;
-  padding: 6px 0 2px;
-}
-
-.operator-modal-avatar {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid #fff;
-  box-shadow: 0 4px 12px rgba(85, 110, 230, 0.18), 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s ease;
-}
-
-.operator-modal-avatar:hover {
-  transform: scale(1.03);
-}
-
-.operator-modal-avatar-fallback {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--primary-soft, #eef1fb);
-  color: var(--primary, #556ee6);
-  font-size: 24px;
-  font-weight: 700;
-  border: 3px solid #eef1fb;
-  text-transform: uppercase;
-  user-select: none;
 }
