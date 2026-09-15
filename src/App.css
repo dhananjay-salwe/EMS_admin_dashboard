@@ -2768,3 +2768,53 @@ table.data-table {
 .table-wrap-min-height {
   min-height: 180px;
 }
+
+/* Operator Table Avatar */
+.operator-table-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1.5px solid #e2e5f1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Operator Edit Modal Avatar Preview */
+.operator-modal-avatar-frame {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 6px 0 2px;
+}
+
+.operator-modal-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 12px rgba(85, 110, 230, 0.18), 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.operator-modal-avatar:hover {
+  transform: scale(1.03);
+}
+
+.operator-modal-avatar-fallback {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-soft, #eef1fb);
+  color: var(--primary, #556ee6);
+  font-size: 24px;
+  font-weight: 700;
+  border: 3px solid #eef1fb;
+  text-transform: uppercase;
+  user-select: none;
+}
