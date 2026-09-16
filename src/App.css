@@ -2892,3 +2892,32 @@ table.data-table {
   cursor: not-allowed;
   opacity: 0.4;
 }
+
+
+/* Logout Spinner Animation */
+.logout-spinner {
+  animation: rotate 2s linear infinite;
+  width: 15px;
+  height: 15px;
+}
+
+.logout-spinner .path {
+  stroke: currentColor;
+  stroke-linecap: round;
+  animation: dash 1.5s ease-in-out infinite;
+}
+
+.profile-dropdown button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+@keyframes rotate {
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes dash {
+  0% { stroke-dasharray: 1, 150; stroke-dashoffset: 0; }
+  50% { stroke-dasharray: 90, 150; stroke-dashoffset: -35; }
+  100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; }
+}

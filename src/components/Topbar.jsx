@@ -40,6 +40,7 @@ const IconLogout = (props) => (
 export default function Topbar({ admin, collapsed, mobileOpen, onToggleSidebar, onLogout, onUpdateAdmin }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const menuRef = useRef(null);
   const sidebarIsOpen = mobileOpen || !collapsed;
 
@@ -59,6 +60,12 @@ export default function Topbar({ admin, collapsed, mobileOpen, onToggleSidebar, 
 
   const profilePicUrl = getProfilePictureUrl(admin?.profile_picture);
 
+  const handleLogoutClick = async () => {
+    setIsLoggingOut(true);
+    await new Promise(resolve => setTimeout(resolve, 600)); // Smooth UX delay
+    onLogout();
+  };
+  
   return (
     <>
       <header className="app-topbar">
@@ -105,8 +112,21 @@ export default function Topbar({ admin, collapsed, mobileOpen, onToggleSidebar, 
                   <IconUser /> Edit Profile
                 </button>
                 <div className="profile-dropdown-divider" />
-                <button type="button" className="danger" onClick={onLogout}>
-                  <IconLogout /> Logout
+                <button 
+                  type="button" 
+                  className="danger" 
+                  onClick={handleLogoutClick}
+                  disabled={isLoggingOut}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                >
+                  {isLoggingOut ? (
+                    <svg className="logout-spinner" viewBox="0 0 50 50">
+                      <circle className="path" cx="25" cy="25" r="20" fill="none" strokeWidth="5"></circle>
+                    </svg>
+                  ) : (
+                    <IconLogout />
+                  )}
+                  {isLoggingOut ? 'Logging out...' : 'Logout'}
                 </button>
               </div>
             )}
