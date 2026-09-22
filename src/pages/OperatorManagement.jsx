@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { apiCall } from '../api/client';
 import CustomSelect from '../components/CustomSelect';
 import { toast } from 'react-hot-toast';
-import { exportToCSV, exportToExcel } from '../utils/exportImportUtils';
+// import { exportToCSV, exportToExcel } from '../utils/exportImportUtils';
+import { exportToExcel } from '../utils/exportImportUtils';
 import { getProfilePictureUrl } from '../components/ProfileModal';
 
 const PAGE_SIZE = 6;
@@ -226,20 +227,20 @@ export default function OperatorManagement() {
   }, [exportOpen]);
 
   const fetchData = async () => {
-    try { 
-    const opRes = await apiCall('/operators/all');
-    if (opRes.success) setOperators(opRes.operators);
+    try {
+      const opRes = await apiCall('/operators/all');
+      if (opRes.success) setOperators(opRes.operators);
 
-    const locRes = await apiCall('/locations/all');
-    if (locRes.success) {
-      const validBooths = locRes.locations.filter(l => l.booth_id);
-      setBooths(validBooths);
+      const locRes = await apiCall('/locations/all');
+      if (locRes.success) {
+        const validBooths = locRes.locations.filter(l => l.booth_id);
+        setBooths(validBooths);
+      }
+    } catch (err) {
+      console.error("Error fetching data:", err);
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    console.error("Error fetching data:", err);
-  } finally {
-    setLoading(false);
-  }
   };
 
   useEffect(() => { fetchData(); }, []);
@@ -258,17 +259,17 @@ export default function OperatorManagement() {
     setIsCreateModalOpen(false);
   };
 
-const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    
+
     let res;
     if (editingId) {
       res = await apiCall(`/operators/${editingId}`, { method: 'PUT', body: JSON.stringify(formData) });
     } else {
       res = await apiCall('/operators/add', { method: 'POST', body: JSON.stringify(formData) });
     }
-    
+
     setSubmitting(false);
 
     if (res.success) {
@@ -283,17 +284,17 @@ const handleSubmit = async (e) => {
 
   const handleEdit = (op) => {
     setEditingId(op.id);
-    setFormData({ 
-      full_name: op.full_name, 
-      username: op.username, 
-      password: '', 
+    setFormData({
+      full_name: op.full_name,
+      username: op.username,
+      password: '',
       assigned_booth_id: op.assigned_booth_id || '',
       profile_picture: op.profile_picture || null
     });
     setIsCreateModalOpen(true);
   };
 
-// 1. Opens the modal and sets the target operator
+  // 1. Opens the modal and sets the target operator
   const handleDeleteClick = (op) => {
     setDeletingOperator(op);
   };
@@ -301,7 +302,7 @@ const handleSubmit = async (e) => {
   // 2. Fires when the user clicks "Confirm" inside the modal
   const handleDelete = async () => {
     if (!deletingOperator) return;
-    
+
     const res = await apiCall(`/operators/${deletingOperator.id}`, { method: 'DELETE' });
     if (res.success) {
       toast.success('Booth officer deleted successfully!');
@@ -376,8 +377,8 @@ const handleSubmit = async (e) => {
 
     try {
       const filename = isFiltered ? 'booth_officers_filtered' : 'booth_officers_all';
-      const title = isFiltered 
-        ? `Booth Officers List (Filtered - ${dataToExport.length} Records)` 
+      const title = isFiltered
+        ? `Booth Officers List (Filtered - ${dataToExport.length} Records)`
         : `Registered Booth Officers List (All - ${dataToExport.length} Records)`;
 
       const columns = [
@@ -391,6 +392,7 @@ const handleSubmit = async (e) => {
         { label: 'State', key: (op) => op.state_name || boothById[op.assigned_booth_id]?.state_name || 'N/A' },
       ];
 
+      /*
       if (format === 'csv') {
         exportToCSV({
           data: dataToExport,
@@ -399,7 +401,9 @@ const handleSubmit = async (e) => {
           title,
         });
         toast.success(`Exported ${dataToExport.length} booth officers as CSV!`);
-      } else if (format === 'excel') {
+      } else
+      */
+      if (format === 'excel') {
         exportToExcel({
           data: dataToExport,
           columns,
@@ -424,238 +428,238 @@ const handleSubmit = async (e) => {
     <div>
 
       <div className="card">
-          <div className="card-header responsive-header">
-            <div className="header-title-group">
-              <h2>Registered booth officers</h2>
-              <span className="muted">{filteredOperators.length} of {operators.length} total</span>
-            </div>
-            <div className="header-controls-group">
-              <div className="sort-filter-actions">
-                <span className="sort-label-text">
-                  Sort by
-                </span>
-                <CustomSelect
-                  className="sort-select-responsive"
-                  value={sortKey}
-                  options={SORT_OPTIONS}
-                  onChange={e => setSortKey(e.target.value)}
-                />
-                <button
-                  type="button" title="Search" aria-label="Toggle search"
-                  style={iconBtnStyle(searchOpen)}
-                  onClick={() => { setSearchOpen(o => !o); if (filterOpen) setFilterOpen(false); setExportOpen(false); }}
-                >
-                  <SearchIcon />
-                </button>
-                <button
-                  type="button" title="Filter" aria-label="Toggle filter"
-                  style={iconBtnStyle(filterOpen || hasActiveFilters)}
-                  onClick={() => { setFilterOpen(o => !o); if (searchOpen) setSearchOpen(false); setExportOpen(false); }}
-                >
-                  <FilterIcon />
-                </button>
-                <div className="export-menu-container" ref={exportMenuRef}>
-                  <button
-                    type="button"
-                    title="Export List (CSV / Excel)"
-                    aria-label="Export booth officers list"
-                    aria-expanded={exportOpen}
-                    style={iconBtnStyle(exportOpen)}
-                    onClick={() => { setExportOpen(o => !o); if (searchOpen) setSearchOpen(false); if (filterOpen) setFilterOpen(false); }}
-                  >
-                    <DownloadIcon />
-                  </button>
-                  {exportOpen && (
-                    <div className="export-dropdown-menu">
-                      <div className="export-dropdown-header">
-                        <span>Export Options</span>
-                        <span className="export-badge">
-                          {isFiltered ? `${dataToExport.length} filtered` : `${dataToExport.length} total`}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        className="export-dropdown-item"
-                        onClick={() => handleExport('csv')}
-                      >
-                        <div className="export-format-badge csv">CSV</div>
-                        <div className="export-item-info">
-                          <span className="export-item-title">Export as CSV</span>
-                          <span className="export-item-desc">Comma-separated values (.csv)</span>
-                        </div>
-                      </button>
-                      <button
-                        type="button"
-                        className="export-dropdown-item"
-                        onClick={() => handleExport('excel')}
-                      >
-                        <div className="export-format-badge excel">XLS</div>
-                        <div className="export-item-info">
-                          <span className="export-item-title">Export as Excel</span>
-                          <span className="export-item-desc">Microsoft Excel formatted (.xls)</span>
-                        </div>
-                      </button>
-                    </div>
-                  )}
-                </div>
+        <div className="card-header responsive-header">
+          <div className="header-title-group">
+            <h2>Polling Unit Officers</h2>
+            <span className="muted">{filteredOperators.length} of {operators.length} total</span>
+          </div>
+          <div className="header-controls-group">
+            <div className="sort-filter-actions">
+              <span className="sort-label-text">
+                Sort by
+              </span>
+              <CustomSelect
+                className="sort-select-responsive"
+                value={sortKey}
+                options={SORT_OPTIONS}
+                onChange={e => setSortKey(e.target.value)}
+              />
+              <button
+                type="button" title="Search" aria-label="Toggle search"
+                style={iconBtnStyle(searchOpen)}
+                onClick={() => { setSearchOpen(o => !o); if (filterOpen) setFilterOpen(false); setExportOpen(false); }}
+              >
+                <SearchIcon />
+              </button>
+              <button
+                type="button" title="Filter" aria-label="Toggle filter"
+                style={iconBtnStyle(filterOpen || hasActiveFilters)}
+                onClick={() => { setFilterOpen(o => !o); if (searchOpen) setSearchOpen(false); setExportOpen(false); }}
+              >
+                <FilterIcon />
+              </button>
+              <div className="export-menu-container" ref={exportMenuRef}>
                 <button
                   type="button"
-                  className="btn btn-primary btn-add-entity"
-                  onClick={() => { resetForm(); setIsCreateModalOpen(true); }}
+                  title="Export List (CSV / Excel)"
+                  aria-label="Export booth officers list"
+                  aria-expanded={exportOpen}
+                  style={iconBtnStyle(exportOpen)}
+                  onClick={() => { setExportOpen(o => !o); if (searchOpen) setSearchOpen(false); if (filterOpen) setFilterOpen(false); }}
                 >
-                  <PlusIcon />
-                  <span>Add Officer</span>
+                  <DownloadIcon />
                 </button>
+                {exportOpen && (
+                  <div className="export-dropdown-menu">
+                    <div className="export-dropdown-header">
+                      <span>Export Options</span>
+                      <span className="export-badge">
+                        {isFiltered ? `${dataToExport.length} filtered` : `${dataToExport.length} total`}
+                      </span>
+                    </div>
+                    {/* <button
+                      type="button"
+                      className="export-dropdown-item"
+                      onClick={() => handleExport('csv')}
+                    >
+                      <div className="export-format-badge csv">CSV</div>
+                      <div className="export-item-info">
+                        <span className="export-item-title">Export as CSV</span>
+                        <span className="export-item-desc">Comma-separated values (.csv)</span>
+                      </div>
+                    </button> */}
+                    <button
+                      type="button"
+                      className="export-dropdown-item"
+                      onClick={() => handleExport('excel')}
+                    >
+                      <div className="export-format-badge excel">XLS</div>
+                      <div className="export-item-info">
+                        <span className="export-item-title">Export as Excel</span>
+                        <span className="export-item-desc">Microsoft Excel formatted (.xls)</span>
+                      </div>
+                    </button>
+                  </div>
+                )}
               </div>
-            </div>
-          </div>
-
-          {searchOpen && (
-            <div style={{ padding: '12px 20px 0', display: 'flex', justifyContent: 'flex-end' }}>
-              <input
-                type="text" className="form-control" placeholder="Type to search..."
-                value={searchTerm} onChange={e => setSearchTerm(e.target.value)} autoFocus
-                style={{ maxWidth: '240px' }}
-              />
-            </div>
-          )}
-
-          {filterOpen && (
-            <div className="filter-toolbar" style={{ padding: '12px 16px 0' }}>
-              {filterState && <Chip label={filterState} onRemove={() => { setFilterState(''); setFilterLga(''); setFilterWard(''); }} />}
-              {filterLga && <Chip label={filterLga} onRemove={() => { setFilterLga(''); setFilterWard(''); }} />}
-              {filterWard && <Chip label={filterWard} onRemove={() => setFilterWard('')} />}
-
-              {!filterState && (
-                <CustomSelect
-                  className="filter-select-responsive"
-                  value={filterState}
-                  placeholder="Select State…"
-                  options={stateOptions}
-                  onChange={e => setFilterState(e.target.value)}
-                />
-              )}
-              {filterState && !filterLga && (
-                <CustomSelect
-                  className="filter-select-responsive"
-                  value={filterLga}
-                  placeholder="Select LGA…"
-                  options={lgaOptions}
-                  onChange={e => setFilterLga(e.target.value)}
-                />
-              )}
-              {filterState && filterLga && !filterWard && (
-                <CustomSelect
-                  className="filter-select-responsive"
-                  value={filterWard}
-                  placeholder="Select Ward…"
-                  options={wardOptions}
-                  onChange={e => setFilterWard(e.target.value)}
-                />
-              )}
-              {hasActiveFilters && (
-                <button type="button" className="btn btn-secondary btn-sm filter-clear-btn" onClick={clearFilters}>Clear</button>
-              )}
-            </div>
-          )}
-
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Booth Officer</th>
-                  <th>Username</th>
-                  <th>Assigned Booth</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  // Render 4 skeleton rows while fetching
-                  [...Array(4)].map((_, i) => (
-                    <tr key={`skeleton-${i}`}>
-                      <td>
-                        <div className="party-cell">
-                          <div className="skeleton-circle" style={{ width: 32, height: 32 }} />
-                          <div className="skeleton-box" style={{ width: 120, height: 16 }} />
-                        </div>
-                      </td>
-                      <td><div className="skeleton-box" style={{ width: 100, height: 16 }} /></td>
-                      <td><div className="skeleton-box" style={{ width: 140, height: 16 }} /></td>
-                      <td>
-                        <div style={{ display: 'flex' }}>
-                          <div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6, marginRight: 8 }} />
-                          <div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6 }} />
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  pageOperators.map(op => (
-                    <tr key={op.id}>
-                      <td>
-                        <div className="party-cell">
-                          {getProfilePictureUrl(op.profile_picture) ? (
-                            <img
-                              src={getProfilePictureUrl(op.profile_picture)}
-                              alt={op.full_name || 'Booth Officer'}
-                              className="operator-table-avatar"
-                            />
-                          ) : (
-                            <span className="avatar-title">{op.full_name?.charAt(0)}</span>
-                          )}
-                          {op.full_name}
-                        </div>
-                      </td>
-                      <td>{op.username}</td>
-                      <td>
-                        {op.unique_booth_code ? (
-                          <span><strong className="text-primary">{op.unique_booth_code}</strong> ({op.booth_name})</span>
-                        ) : (
-                          <span className="badge badge-soft-warning">Unassigned</span>
-                        )}
-                      </td>
-                      <td>
-                        <button className="btn-icon" style={{ ...actionIconStyle('primary'), marginRight: 8 }} title="Edit" aria-label="Edit officer" onClick={() => handleEdit(op)}>
-                          <EditIcon />
-                        </button>
-                        <button className="btn-icon" style={actionIconStyle('danger')} title="Delete" aria-label="Delete officer" onClick={() => handleDeleteClick(op)}>
-                          <DeleteIcon />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-                {!loading && filteredOperators.length === 0 && operators.length > 0 && (
-                  <tr><td colSpan={4} className="empty-state">No booth officers match the selected filters.</td></tr>
-                )}
-                {!loading && operators.length === 0 && (
-                  <tr><td colSpan={4} className="empty-state">No booth officers registered yet.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {totalPages > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, padding: '14px 0 4px' }}>
               <button
-                type="button" className="btn btn-outline btn-sm"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                type="button"
+                className="btn btn-primary btn-add-entity"
+                onClick={() => { resetForm(); setIsCreateModalOpen(true); }}
               >
-                Prev
-              </button>
-              <span className="muted">Page {currentPage} of {totalPages}</span>
-              <button
-                type="button" className="btn btn-outline btn-sm"
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              >
-                Next
+                <PlusIcon />
+                <span>Add Officer</span>
               </button>
             </div>
-          )}
+          </div>
         </div>
+
+        {searchOpen && (
+          <div style={{ padding: '12px 20px 0', display: 'flex', justifyContent: 'flex-end' }}>
+            <input
+              type="text" className="form-control" placeholder="Type to search..."
+              value={searchTerm} onChange={e => setSearchTerm(e.target.value)} autoFocus
+              style={{ maxWidth: '240px' }}
+            />
+          </div>
+        )}
+
+        {filterOpen && (
+          <div className="filter-toolbar" style={{ padding: '12px 16px 0' }}>
+            {filterState && <Chip label={filterState} onRemove={() => { setFilterState(''); setFilterLga(''); setFilterWard(''); }} />}
+            {filterLga && <Chip label={filterLga} onRemove={() => { setFilterLga(''); setFilterWard(''); }} />}
+            {filterWard && <Chip label={filterWard} onRemove={() => setFilterWard('')} />}
+
+            {!filterState && (
+              <CustomSelect
+                className="filter-select-responsive"
+                value={filterState}
+                placeholder="Select State…"
+                options={stateOptions}
+                onChange={e => setFilterState(e.target.value)}
+              />
+            )}
+            {filterState && !filterLga && (
+              <CustomSelect
+                className="filter-select-responsive"
+                value={filterLga}
+                placeholder="Select LGA…"
+                options={lgaOptions}
+                onChange={e => setFilterLga(e.target.value)}
+              />
+            )}
+            {filterState && filterLga && !filterWard && (
+              <CustomSelect
+                className="filter-select-responsive"
+                value={filterWard}
+                placeholder="Select Ward…"
+                options={wardOptions}
+                onChange={e => setFilterWard(e.target.value)}
+              />
+            )}
+            {hasActiveFilters && (
+              <button type="button" className="btn btn-secondary btn-sm filter-clear-btn" onClick={clearFilters}>Clear</button>
+            )}
+          </div>
+        )}
+
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Booth Officer</th>
+                <th>Username</th>
+                <th>Assigned Booth</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                // Render 4 skeleton rows while fetching
+                [...Array(4)].map((_, i) => (
+                  <tr key={`skeleton-${i}`}>
+                    <td>
+                      <div className="party-cell">
+                        <div className="skeleton-circle" style={{ width: 32, height: 32 }} />
+                        <div className="skeleton-box" style={{ width: 120, height: 16 }} />
+                      </div>
+                    </td>
+                    <td><div className="skeleton-box" style={{ width: 100, height: 16 }} /></td>
+                    <td><div className="skeleton-box" style={{ width: 140, height: 16 }} /></td>
+                    <td>
+                      <div style={{ display: 'flex' }}>
+                        <div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6, marginRight: 8 }} />
+                        <div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6 }} />
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                pageOperators.map(op => (
+                  <tr key={op.id}>
+                    <td>
+                      <div className="party-cell">
+                        {getProfilePictureUrl(op.profile_picture) ? (
+                          <img
+                            src={getProfilePictureUrl(op.profile_picture)}
+                            alt={op.full_name || 'Booth Officer'}
+                            className="operator-table-avatar"
+                          />
+                        ) : (
+                          <span className="avatar-title">{op.full_name?.charAt(0)}</span>
+                        )}
+                        {op.full_name}
+                      </div>
+                    </td>
+                    <td>{op.username}</td>
+                    <td>
+                      {op.unique_booth_code ? (
+                        <span><strong className="text-primary">{op.unique_booth_code}</strong> ({op.booth_name})</span>
+                      ) : (
+                        <span className="badge badge-soft-warning">Unassigned</span>
+                      )}
+                    </td>
+                    <td>
+                      <button className="btn-icon" style={{ ...actionIconStyle('primary'), marginRight: 8 }} title="Edit" aria-label="Edit officer" onClick={() => handleEdit(op)}>
+                        <EditIcon />
+                      </button>
+                      <button className="btn-icon" style={actionIconStyle('danger')} title="Delete" aria-label="Delete officer" onClick={() => handleDeleteClick(op)}>
+                        <DeleteIcon />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+              {!loading && filteredOperators.length === 0 && operators.length > 0 && (
+                <tr><td colSpan={4} className="empty-state">No booth officers match the selected filters.</td></tr>
+              )}
+              {!loading && operators.length === 0 && (
+                <tr><td colSpan={4} className="empty-state">No booth officers registered yet.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, padding: '14px 0 4px' }}>
+            <button
+              type="button" className="btn btn-outline btn-sm"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            >
+              Prev
+            </button>
+            <span className="muted">Page {currentPage} of {totalPages}</span>
+            <button
+              type="button" className="btn btn-outline btn-sm"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </div>
 
 
       {/* FEATURE: Custom Delete Confirmation Modal */}
@@ -745,7 +749,7 @@ const handleSubmit = async (e) => {
                   />
                 </div>
                 <div className="form-group admin-modal-lga-group">
-                  <label className="form-label">Assign Polling Unit / Booth</label>
+                  <label className="form-label">Assign Polling Unit</label>
                   <SearchableSelect
                     placeholder="Search booth by code, name, or ward…"
                     value={formData.assigned_booth_id}
@@ -763,14 +767,14 @@ const handleSubmit = async (e) => {
               <div className="admin-edit-modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>Cancel</button>
                 <button type="submit" className="btn btn-primary" disabled={submitting}>
-                  {submitting ? 'Saving…' : editingId ? 'Update Booth Officer' : 'Create Booth Officer'}
+                  {submitting ? 'Saving…' : editingId ? 'Update' : 'Save'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
-      
+
       {/* FEATURE: Full-size Avatar Viewer Overlay */}
       {viewingAvatarUrl && (
         <div className="image-viewer-overlay" onClick={() => setViewingAvatarUrl(null)}>

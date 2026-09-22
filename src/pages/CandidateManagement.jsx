@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { apiCall } from '../api/client';
 import CustomSelect from '../components/CustomSelect';
 import { toast } from 'react-hot-toast';
-import { exportToCSV, exportToExcel } from '../utils/exportImportUtils';
+// import { exportToCSV, exportToExcel } from '../utils/exportImportUtils';
+import { exportToExcel } from '../utils/exportImportUtils';
 
 const PAGE_SIZE = 6;
 
@@ -160,31 +161,31 @@ export default function CandidateManagement() {
   }, [exportOpen]);
 
   const fetchData = async () => {
-    try { 
-    const candRes = await apiCall('/candidates/all');
-    if (candRes.success) setCandidates(candRes.candidates);
+    try {
+      const candRes = await apiCall('/candidates/all');
+      if (candRes.success) setCandidates(candRes.candidates);
 
-    const partyRes = await apiCall('/parties/all');
-    if (partyRes.success) setParties(partyRes.parties);
+      const partyRes = await apiCall('/parties/all');
+      if (partyRes.success) setParties(partyRes.parties);
 
-    const locRes = await apiCall('/locations/all');
-    if (locRes.success) {
-      // Get unique wards
-      const uniqueWards = [];
-      const seen = new Set();
-      locRes.locations.forEach(l => {
-        if (l.ward_id && !seen.has(l.ward_id)) {
-          seen.add(l.ward_id);
-          uniqueWards.push(l);
-        }
-      });
-      setLocations(uniqueWards);
+      const locRes = await apiCall('/locations/all');
+      if (locRes.success) {
+        // Get unique wards
+        const uniqueWards = [];
+        const seen = new Set();
+        locRes.locations.forEach(l => {
+          if (l.ward_id && !seen.has(l.ward_id)) {
+            seen.add(l.ward_id);
+            uniqueWards.push(l);
+          }
+        });
+        setLocations(uniqueWards);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error('Error fetching data:', error);
-  } finally {
-    setLoading(false);
-  }
   };
 
   useEffect(() => { fetchData(); }, []);
@@ -206,14 +207,14 @@ export default function CandidateManagement() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    
+
     let res;
     if (editingId) {
       res = await apiCall(`/candidates/${editingId}`, { method: 'PUT', body: JSON.stringify(formData) });
     } else {
       res = await apiCall('/candidates/add', { method: 'POST', body: JSON.stringify(formData) });
     }
-    
+
     setSubmitting(false);
 
     if (res.success) {
@@ -232,7 +233,7 @@ export default function CandidateManagement() {
     setIsCreateModalOpen(true);
   };
 
-// 1. Opens the modal and sets the target candidate
+  // 1. Opens the modal and sets the target candidate
   const handleDeleteClick = (candidate) => {
     setDeletingCandidate(candidate);
   };
@@ -240,7 +241,7 @@ export default function CandidateManagement() {
   // 2. Fires when the user clicks "Confirm" inside the modal
   const handleDelete = async () => {
     if (!deletingCandidate) return;
-    
+
     const res = await apiCall(`/candidates/${deletingCandidate.id}`, { method: 'DELETE' });
     if (res.success) {
       toast.success('Candidate deleted successfully!');
@@ -294,6 +295,7 @@ export default function CandidateManagement() {
       const filename = 'candidates_list';
       const title = 'Contesting Candidates List';
 
+      /*
       if (format === 'csv') {
         exportToCSV({
           data: sortedCandidates,
@@ -302,7 +304,9 @@ export default function CandidateManagement() {
           title,
         });
         toast.success(`Exported ${sortedCandidates.length} candidates as CSV!`);
-      } else if (format === 'excel') {
+      } else
+      */
+      if (format === 'excel') {
         exportToExcel({
           data: sortedCandidates,
           columns: EXPORT_COLUMNS,
@@ -327,225 +331,225 @@ export default function CandidateManagement() {
     <div>
 
       <div className="card">
-          <div className="card-header responsive-header">
-            <div className="header-title-group">
-              <h2>Contesting candidates by ward</h2>
-              <span className="muted">{filteredCandidates.length} of {candidates.length} total</span>
-            </div>
-            <div className="header-controls-group">
-              <div className="sort-filter-actions">
-                <span className="sort-label-text">
-                  Sort by
-                </span>
-                <CustomSelect
-                  className="sort-select-responsive"
-                  value={sortKey}
-                  options={SORT_OPTIONS}
-                  onChange={e => setSortKey(e.target.value)}
-                />
-                <button
-                  type="button" title="Search" aria-label="Toggle search"
-                  style={iconBtnStyle(searchOpen)}
-                  onClick={() => { setSearchOpen(o => !o); if (filterOpen) setFilterOpen(false); setExportOpen(false); }}
-                >
-                  <SearchIcon />
-                </button>
-                <button
-                  type="button" title="Filter" aria-label="Toggle filter"
-                  style={iconBtnStyle(filterOpen || hasActiveFilters)}
-                  onClick={() => { setFilterOpen(o => !o); if (searchOpen) setSearchOpen(false); setExportOpen(false); }}
-                >
-                  <FilterIcon />
-                </button>
-                <div className="export-menu-container" ref={exportMenuRef}>
-                  <button
-                    type="button"
-                    title="Export List (CSV / Excel)"
-                    aria-label="Export candidates list"
-                    aria-expanded={exportOpen}
-                    style={iconBtnStyle(exportOpen)}
-                    onClick={() => { setExportOpen(o => !o); if (searchOpen) setSearchOpen(false); if (filterOpen) setFilterOpen(false); }}
-                  >
-                    <DownloadIcon />
-                  </button>
-                  {exportOpen && (
-                    <div className="export-dropdown-menu">
-                      <div className="export-dropdown-header">
-                        <span>Export Options</span>
-                        <span className="export-badge">{sortedCandidates.length} records</span>
-                      </div>
-                      <button
-                        type="button"
-                        className="export-dropdown-item"
-                        onClick={() => handleExport('csv')}
-                      >
-                        <div className="export-format-badge csv">CSV</div>
-                        <div className="export-item-info">
-                          <span className="export-item-title">Export as CSV</span>
-                          <span className="export-item-desc">Comma-separated values (.csv)</span>
-                        </div>
-                      </button>
-                      <button
-                        type="button"
-                        className="export-dropdown-item"
-                        onClick={() => handleExport('excel')}
-                      >
-                        <div className="export-format-badge excel">XLS</div>
-                        <div className="export-item-info">
-                          <span className="export-item-title">Export as Excel</span>
-                          <span className="export-item-desc">Microsoft Excel formatted (.xls)</span>
-                        </div>
-                      </button>
-                    </div>
-                  )}
-                </div>
+        <div className="card-header responsive-header">
+          <div className="header-title-group">
+            <h2>Ballot List</h2>
+            <span className="muted">{filteredCandidates.length} of {candidates.length} total</span>
+          </div>
+          <div className="header-controls-group">
+            <div className="sort-filter-actions">
+              <span className="sort-label-text">
+                Sort by
+              </span>
+              <CustomSelect
+                className="sort-select-responsive"
+                value={sortKey}
+                options={SORT_OPTIONS}
+                onChange={e => setSortKey(e.target.value)}
+              />
+              <button
+                type="button" title="Search" aria-label="Toggle search"
+                style={iconBtnStyle(searchOpen)}
+                onClick={() => { setSearchOpen(o => !o); if (filterOpen) setFilterOpen(false); setExportOpen(false); }}
+              >
+                <SearchIcon />
+              </button>
+              <button
+                type="button" title="Filter" aria-label="Toggle filter"
+                style={iconBtnStyle(filterOpen || hasActiveFilters)}
+                onClick={() => { setFilterOpen(o => !o); if (searchOpen) setSearchOpen(false); setExportOpen(false); }}
+              >
+                <FilterIcon />
+              </button>
+              <div className="export-menu-container" ref={exportMenuRef}>
                 <button
                   type="button"
-                  className="btn btn-primary btn-add-entity"
-                  onClick={() => { resetForm(); setIsCreateModalOpen(true); }}
+                  title="Export List (CSV / Excel)"
+                  aria-label="Export candidates list"
+                  aria-expanded={exportOpen}
+                  style={iconBtnStyle(exportOpen)}
+                  onClick={() => { setExportOpen(o => !o); if (searchOpen) setSearchOpen(false); if (filterOpen) setFilterOpen(false); }}
                 >
-                  <PlusIcon />
-                  <span>Add Candidate</span>
+                  <DownloadIcon />
                 </button>
+                {exportOpen && (
+                  <div className="export-dropdown-menu">
+                    <div className="export-dropdown-header">
+                      <span>Export Options</span>
+                      <span className="export-badge">{sortedCandidates.length} records</span>
+                    </div>
+                    {/* <button
+                      type="button"
+                      className="export-dropdown-item"
+                      onClick={() => handleExport('csv')}
+                    >
+                      <div className="export-format-badge csv">CSV</div>
+                      <div className="export-item-info">
+                        <span className="export-item-title">Export as CSV</span>
+                        <span className="export-item-desc">Comma-separated values (.csv)</span>
+                      </div>
+                    </button> */}
+                    <button
+                      type="button"
+                      className="export-dropdown-item"
+                      onClick={() => handleExport('excel')}
+                    >
+                      <div className="export-format-badge excel">XLS</div>
+                      <div className="export-item-info">
+                        <span className="export-item-title">Export as Excel</span>
+                        <span className="export-item-desc">Microsoft Excel formatted (.xls)</span>
+                      </div>
+                    </button>
+                  </div>
+                )}
               </div>
-            </div>
-          </div>
-
-          {searchOpen && (
-            <div style={{ padding: '12px 20px 0', display: 'flex', justifyContent: 'flex-end' }}>
-              <input
-                type="text" className="form-control" placeholder="Type to search..."
-                value={searchTerm} onChange={e => setSearchTerm(e.target.value)} autoFocus
-                style={{ maxWidth: '240px' }}
-              />
-            </div>
-          )}
-
-          {filterOpen && (
-            <div className="filter-toolbar" style={{ padding: '12px 16px 0' }}>
-              {filterState && <Chip label={filterState} onRemove={() => { setFilterState(''); setFilterLga(''); setFilterWard(''); }} />}
-              {filterLga && <Chip label={filterLga} onRemove={() => { setFilterLga(''); setFilterWard(''); }} />}
-              {filterWard && <Chip label={filterWard} onRemove={() => setFilterWard('')} />}
-
-              {!filterState && (
-                <CustomSelect
-                  className="filter-select-responsive"
-                  value={filterState}
-                  placeholder="Select State…"
-                  options={stateOptions}
-                  onChange={e => setFilterState(e.target.value)}
-                />
-              )}
-              {filterState && !filterLga && (
-                <CustomSelect
-                  className="filter-select-responsive"
-                  value={filterLga}
-                  placeholder="Select LGA…"
-                  options={lgaOptions}
-                  onChange={e => setFilterLga(e.target.value)}
-                />
-              )}
-              {filterState && filterLga && !filterWard && (
-                <CustomSelect
-                  className="filter-select-responsive"
-                  value={filterWard}
-                  placeholder="Select Ward…"
-                  options={wardOptions.map(w => ({ value: w.ward_name, label: w.ward_name }))}
-                  onChange={e => setFilterWard(e.target.value)}
-                />
-              )}
-              {hasActiveFilters && (
-                <button type="button" className="btn btn-secondary btn-sm" onClick={clearFilters}>Clear</button>
-              )}
-            </div>
-          )}
-
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Candidate Name</th>
-                  <th>Party</th>
-                  <th>Contested Ward</th>
-                  <th>LGA / State</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  // Render 5 skeleton rows while fetching
-                  [...Array(5)].map((_, i) => (
-                    <tr key={`skeleton-${i}`}>
-                      <td><div className="skeleton-box" style={{ width: 120, height: 16 }} /></td>
-                      <td>
-                        <div className="party-cell">
-                          <div className="skeleton-circle" style={{ width: 24, height: 24 }} />
-                          <div className="skeleton-box" style={{ width: 100, height: 16 }} />
-                        </div>
-                      </td>
-                      <td><div className="skeleton-box" style={{ width: 80, height: 20, borderRadius: 12 }} /></td>
-                      <td><div className="skeleton-box" style={{ width: 140, height: 16 }} /></td>
-                      <td>
-                        <div style={{ display: 'flex' }}>
-                          <div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6, marginRight: 8 }} />
-                          <div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6 }} />
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  pageCandidates.map(c => (
-                    <tr key={c.id}>
-                      <td><strong>{c.candidate_name}</strong></td>
-                      <td>
-                        <div className="party-cell">
-                          {c.party_icon_url && <img src={c.party_icon_url} alt="" className="avatar-xs" />}
-                          {c.party_name} ({c.party_code})
-                        </div>
-                      </td>
-                      <td><span className="badge badge-soft-info">{c.ward_name}</span></td>
-                      <td>{c.lga_name}, {c.state_name}</td>
-                      <td>
-                        <button className="btn-icon" style={{ ...actionIconStyle('primary'), marginRight: 8 }} title="Edit" aria-label="Edit candidate" onClick={() => handleEdit(c)}>
-                          <EditIcon />
-                        </button>
-                        <button className="btn-icon" style={actionIconStyle('danger')} title="Delete" aria-label="Delete candidate" onClick={() => handleDeleteClick(c)}>
-                          <DeleteIcon />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-                {!loading && filteredCandidates.length === 0 && candidates.length > 0 && (
-                  <tr><td colSpan={5} className="empty-state">No candidates match the selected filters.</td></tr>
-                )}
-                {!loading && candidates.length === 0 && (
-                  <tr><td colSpan={5} className="empty-state">No candidates registered yet.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {totalPages > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, padding: '14px 0 4px' }}>
               <button
-                type="button" className="btn btn-outline btn-sm"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                type="button"
+                className="btn btn-primary btn-add-entity"
+                onClick={() => { resetForm(); setIsCreateModalOpen(true); }}
               >
-                Prev
-              </button>
-              <span className="muted">Page {currentPage} of {totalPages}</span>
-              <button
-                type="button" className="btn btn-outline btn-sm"
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              >
-                Next
+                <PlusIcon />
+                <span>Add Candidate</span>
               </button>
             </div>
-          )}
+          </div>
         </div>
+
+        {searchOpen && (
+          <div style={{ padding: '12px 20px 0', display: 'flex', justifyContent: 'flex-end' }}>
+            <input
+              type="text" className="form-control" placeholder="Type to search..."
+              value={searchTerm} onChange={e => setSearchTerm(e.target.value)} autoFocus
+              style={{ maxWidth: '240px' }}
+            />
+          </div>
+        )}
+
+        {filterOpen && (
+          <div className="filter-toolbar" style={{ padding: '12px 16px 0' }}>
+            {filterState && <Chip label={filterState} onRemove={() => { setFilterState(''); setFilterLga(''); setFilterWard(''); }} />}
+            {filterLga && <Chip label={filterLga} onRemove={() => { setFilterLga(''); setFilterWard(''); }} />}
+            {filterWard && <Chip label={filterWard} onRemove={() => setFilterWard('')} />}
+
+            {!filterState && (
+              <CustomSelect
+                className="filter-select-responsive"
+                value={filterState}
+                placeholder="Select State…"
+                options={stateOptions}
+                onChange={e => setFilterState(e.target.value)}
+              />
+            )}
+            {filterState && !filterLga && (
+              <CustomSelect
+                className="filter-select-responsive"
+                value={filterLga}
+                placeholder="Select LGA…"
+                options={lgaOptions}
+                onChange={e => setFilterLga(e.target.value)}
+              />
+            )}
+            {filterState && filterLga && !filterWard && (
+              <CustomSelect
+                className="filter-select-responsive"
+                value={filterWard}
+                placeholder="Select Ward…"
+                options={wardOptions.map(w => ({ value: w.ward_name, label: w.ward_name }))}
+                onChange={e => setFilterWard(e.target.value)}
+              />
+            )}
+            {hasActiveFilters && (
+              <button type="button" className="btn btn-secondary btn-sm" onClick={clearFilters}>Clear</button>
+            )}
+          </div>
+        )}
+
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Candidate Name</th>
+                <th>Party</th>
+                <th>Contested Ward</th>
+                <th>LGA / State</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                // Render 5 skeleton rows while fetching
+                [...Array(5)].map((_, i) => (
+                  <tr key={`skeleton-${i}`}>
+                    <td><div className="skeleton-box" style={{ width: 120, height: 16 }} /></td>
+                    <td>
+                      <div className="party-cell">
+                        <div className="skeleton-circle" style={{ width: 24, height: 24 }} />
+                        <div className="skeleton-box" style={{ width: 100, height: 16 }} />
+                      </div>
+                    </td>
+                    <td><div className="skeleton-box" style={{ width: 80, height: 20, borderRadius: 12 }} /></td>
+                    <td><div className="skeleton-box" style={{ width: 140, height: 16 }} /></td>
+                    <td>
+                      <div style={{ display: 'flex' }}>
+                        <div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6, marginRight: 8 }} />
+                        <div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6 }} />
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                pageCandidates.map(c => (
+                  <tr key={c.id}>
+                    <td><strong>{c.candidate_name}</strong></td>
+                    <td>
+                      <div className="party-cell">
+                        {c.party_icon_url && <img src={c.party_icon_url} alt="" className="avatar-xs" />}
+                        {c.party_name} ({c.party_code})
+                      </div>
+                    </td>
+                    <td><span className="badge badge-soft-info">{c.ward_name}</span></td>
+                    <td>{c.lga_name}, {c.state_name}</td>
+                    <td>
+                      <button className="btn-icon" style={{ ...actionIconStyle('primary'), marginRight: 8 }} title="Edit" aria-label="Edit candidate" onClick={() => handleEdit(c)}>
+                        <EditIcon />
+                      </button>
+                      <button className="btn-icon" style={actionIconStyle('danger')} title="Delete" aria-label="Delete candidate" onClick={() => handleDeleteClick(c)}>
+                        <DeleteIcon />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+              {!loading && filteredCandidates.length === 0 && candidates.length > 0 && (
+                <tr><td colSpan={5} className="empty-state">No candidates match the selected filters.</td></tr>
+              )}
+              {!loading && candidates.length === 0 && (
+                <tr><td colSpan={5} className="empty-state">No candidates registered yet.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, padding: '14px 0 4px' }}>
+            <button
+              type="button" className="btn btn-outline btn-sm"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            >
+              Prev
+            </button>
+            <span className="muted">Page {currentPage} of {totalPages}</span>
+            <button
+              type="button" className="btn btn-outline btn-sm"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* FEATURE: Custom Delete Confirmation Modal */}
       {deletingCandidate && (
@@ -600,7 +604,7 @@ export default function CandidateManagement() {
                   />
                 </div>
                 <div className="form-group admin-modal-lga-group">
-                  <label className="form-label">Contesting Ward (Constituency / Seat)</label>
+                  <label className="form-label">Select Ward</label>
                   <CustomSelect
                     value={formData.ward_id}
                     placeholder="-- Select ward --"
@@ -612,14 +616,14 @@ export default function CandidateManagement() {
               <div className="admin-edit-modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>Cancel</button>
                 <button type="submit" className="btn btn-primary" disabled={submitting}>
-                  {submitting ? 'Saving…' : editingId ? 'Update Candidate' : 'Save Candidate'}
+                  {submitting ? 'Saving…' : editingId ? 'Update' : 'Save'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
-      
+
     </div>
   );
 }

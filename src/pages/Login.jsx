@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { apiCall } from '../api/client';
 import logoIcon from '../assets/icon.png';
-import { toast } from 'react-hot-toast'; 
+import { toast } from 'react-hot-toast';
 
 const IconBolt = (props) => (
   <svg width="26" height="26" viewBox="0 0 24 24" fill="none" {...props}>
@@ -13,7 +13,7 @@ export default function Login({ onLoginSuccess }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  
+
   // 2. Add a new state to track the visual success delay
   const [loginSuccess, setLoginSuccess] = useState(false);
 
@@ -34,8 +34,8 @@ export default function Login({ onLoginSuccess }) {
       }
       // 3. Trigger the visual success state
       setLoginSuccess(true);
-      
-// 4. Fire the welcome toast notification
+
+      // 4. Fire the welcome toast notification
       toast.success(`Welcome back, ${data.admin?.username || 'Admin'}!`, {
         icon: '👋',
         style: {
@@ -50,7 +50,7 @@ export default function Login({ onLoginSuccess }) {
       setTimeout(() => {
         onLoginSuccess(data.admin);
       }, 800);
-      
+
     } else {
       // Bonus: Replace the ugly browser alert with a clean error toast!
       toast.error(data.message || 'Invalid credentials');
@@ -58,8 +58,8 @@ export default function Login({ onLoginSuccess }) {
   };
 
   // Dynamic button styling for the success state
-  const buttonStyle = loginSuccess 
-    ? { backgroundColor: '#34c38f', borderColor: '#34c38f', color: '#fff' } 
+  const buttonStyle = loginSuccess
+    ? { backgroundColor: '#34c38f', borderColor: '#34c38f', color: '#fff' }
     : {};
 
   return (
@@ -70,10 +70,10 @@ export default function Login({ onLoginSuccess }) {
           <p>Sign in to EMS to continue</p>
         </div>
         <div className="auth-logo">
-          <img 
-            src={logoIcon} 
-            alt="EMS Logo" 
-            style={{ width: 50, height: 50, objectFit: 'contain' }} 
+          <img
+            src={logoIcon}
+            alt="EMS Logo"
+            style={{ width: 50, height: 50, objectFit: 'contain' }}
           />
         </div>
 
@@ -127,9 +127,9 @@ export default function Login({ onLoginSuccess }) {
               </button>
             </div>
           </div>
-          <button 
-            type="submit" 
-            className="btn btn-primary btn-block" 
+          <button
+            type="submit"
+            className="btn btn-primary btn-block"
             disabled={submitting || loginSuccess}
             style={buttonStyle}
           >

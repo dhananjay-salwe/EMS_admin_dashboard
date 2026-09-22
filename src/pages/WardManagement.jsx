@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { apiCall } from '../api/client';
 import CustomSelect from '../components/CustomSelect';
 import { toast } from 'react-hot-toast';
-import { exportToCSV, exportToExcel } from '../utils/exportImportUtils';
+// import { exportToCSV, exportToExcel } from '../utils/exportImportUtils';
+import { exportToExcel } from '../utils/exportImportUtils';
 
 const PAGE_SIZE = 8;
 
@@ -303,6 +304,7 @@ export default function WardManagement() {
       const filename = 'electoral_wards_list';
       const title = 'Registered Electoral Wards List';
 
+      /*
       if (format === 'csv') {
         exportToCSV({
           data: sortedWards,
@@ -311,7 +313,9 @@ export default function WardManagement() {
           title,
         });
         toast.success(`Exported ${sortedWards.length} electoral wards as CSV!`);
-      } else if (format === 'excel') {
+      } else
+      */
+      if (format === 'excel') {
         exportToExcel({
           data: sortedWards,
           columns: EXPORT_COLUMNS,
@@ -348,7 +352,7 @@ export default function WardManagement() {
     }
   };
 
-// 1. Opens the modal and sets the target ward
+  // 1. Opens the modal and sets the target ward
   const handleDeleteClick = (ward) => {
     setDeletingWard(ward);
   };
@@ -356,7 +360,7 @@ export default function WardManagement() {
   // 2. Fires when the user clicks "Confirm" inside the modal
   const handleDelete = async () => {
     if (!deletingWard) return;
-    
+
     const res = await apiCall(`/locations/ward/${deletingWard.ward_id}`, { method: 'DELETE' });
     if (res.success) {
       toast.success('Electoral ward deleted successfully!');
@@ -384,7 +388,7 @@ export default function WardManagement() {
       <div className="card">
         <div className="card-header responsive-header">
           <div className="header-title-group">
-            <h2>Electoral Wards</h2>
+            <h2>Wards</h2>
             <span className="muted">{sortedWards.length} of {uniqueWards.length} total</span>
           </div>
 
@@ -431,7 +435,7 @@ export default function WardManagement() {
                       <span>Export Options</span>
                       <span className="export-badge">{sortedWards.length} records</span>
                     </div>
-                    <button
+                    {/* <button
                       type="button"
                       className="export-dropdown-item"
                       onClick={() => handleExport('csv')}
@@ -441,7 +445,7 @@ export default function WardManagement() {
                         <span className="export-item-title">Export as CSV</span>
                         <span className="export-item-desc">Comma-separated values (.csv)</span>
                       </div>
-                    </button>
+                    </button> */}
                     <button
                       type="button"
                       className="export-dropdown-item"
@@ -661,14 +665,14 @@ export default function WardManagement() {
               <div className="admin-edit-modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>Cancel</button>
                 <button type="submit" className="btn btn-primary" disabled={submitting}>
-                  {submitting ? 'Saving Ward…' : 'Save Ward'}
+                  {submitting ? 'Saving Ward…' : 'Save'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
-      
+
     </div>
   );
 }

@@ -65,9 +65,9 @@ export default function PartyManagement() {
   const [deletingParty, setDeletingParty] = useState(null);
 
   const fetchParties = async () => {
-    try { 
-    const data = await apiCall('/parties/all');
-    if (data.success) setParties(data.parties);
+    try {
+      const data = await apiCall('/parties/all');
+      if (data.success) setParties(data.parties);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -99,7 +99,7 @@ export default function PartyManagement() {
     setImageErrors(prev => ({ ...prev, [id]: true }));
   };
 
-const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
 
@@ -117,7 +117,7 @@ const handleSubmit = async (e) => {
     } else {
       res = await apiCall('/parties/add', { method: 'POST', body: payload });
     }
-    
+
     setSubmitting(false);
 
     if (res.success) {
@@ -138,7 +138,7 @@ const handleSubmit = async (e) => {
     setIsCreateModalOpen(true);
   };
 
-// 1. Opens the modal and sets the target party
+  // 1. Opens the modal and sets the target party
   const handleDelete = (party) => {
     setDeletingParty(party);
   };
@@ -146,7 +146,7 @@ const handleSubmit = async (e) => {
   // 2. Fires when the user clicks "Confirm" inside the modal
   const confirmDelete = async () => {
     if (!deletingParty) return;
-    
+
     const res = await apiCall(`/parties/${deletingParty.id}`, { method: 'DELETE' });
     if (res.success) {
       toast.success('Political party deleted successfully!');
@@ -161,94 +161,94 @@ const handleSubmit = async (e) => {
     <div>
 
       <div className="card">
-          <div className="card-header responsive-header">
-            <div className="header-title-group">
-              <h2>Registered political parties</h2>
-              <span className="muted">{parties.length} total</span>
-            </div>
-            <div className="header-controls-group">
-              <div className="sort-filter-actions">
-                <span className="sort-label-text">
-                  Sort by
-                </span>
-                <CustomSelect
-                  className="sort-select-responsive"
-                  value={sortKey}
-                  options={SORT_OPTIONS}
-                  onChange={e => setSortKey(e.target.value)}
-                />
-                <button
-                  type="button"
-                  className="btn btn-primary btn-add-entity"
-                  onClick={() => { resetForm(); setIsCreateModalOpen(true); }}
-                >
-                  <PlusIcon />
-                  <span>Add Party</span>
-                </button>
-              </div>
-            </div>
+        <div className="card-header responsive-header">
+          <div className="header-title-group">
+            <h2>Political Parties</h2>
+            <span className="muted">{parties.length} total</span>
           </div>
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Icon</th>
-                  <th>Party Name</th>
-                  <th>Code</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-<tbody>
-                {loading ? (
-                  // Render 4 skeleton rows while fetching
-                  [...Array(4)].map((_, i) => (
-                    <tr key={`skeleton-${i}`}>
-                      <td><div className="skeleton-circle" style={{ width: 32, height: 32 }} /></td>
-                      <td><div className="skeleton-box" style={{ width: 120, height: 16 }} /></td>
-                      <td><div className="skeleton-box" style={{ width: 60, height: 20, borderRadius: 12 }} /></td>
-                      <td>
-                        <div style={{ display: 'flex' }}>
-                          <div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6, marginRight: 8 }} />
-                          <div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6 }} />
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  sortedParties.map(p => (
-                    <tr key={p.id}>
-                      <td>
-                        {p.party_icon_url && !imageErrors[p.id] ? (
-                          <img
-                            src={p.party_icon_url}
-                            alt=""
-                            className="avatar-xs"
-                            onError={() => handleImageError(p.id)}
-                          />
-                        ) : (
-                          <span className="avatar-title">{p.party_name?.charAt(0)}</span>
-                        )}
-                      </td>
-                      <td><strong>{p.party_name}</strong></td>
-                      <td><span className="badge badge-soft-secondary">{p.party_code}</span></td>
-                      <td>
-                        <button className="btn-icon" style={{ ...actionIconStyle('primary'), marginRight: 8 }} title="Edit" aria-label="Edit party" onClick={() => handleEdit(p)}>
-                          <EditIcon />
-                        </button>
-                        <button className="btn-icon" style={actionIconStyle('danger')} title="Delete" aria-label="Delete party" onClick={() => handleDelete(p)}>
-                          <DeleteIcon />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-                {!loading && parties.length === 0 && (
-                  <tr><td colSpan={4} className="empty-state">No parties registered yet.</td></tr>
-                )}
-              </tbody>
-            </table>
+          <div className="header-controls-group">
+            <div className="sort-filter-actions">
+              <span className="sort-label-text">
+                Sort by
+              </span>
+              <CustomSelect
+                className="sort-select-responsive"
+                value={sortKey}
+                options={SORT_OPTIONS}
+                onChange={e => setSortKey(e.target.value)}
+              />
+              <button
+                type="button"
+                className="btn btn-primary btn-add-entity"
+                onClick={() => { resetForm(); setIsCreateModalOpen(true); }}
+              >
+                <PlusIcon />
+                <span>Add Party</span>
+              </button>
+            </div>
           </div>
         </div>
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Icon</th>
+                <th>Party Name</th>
+                <th>Code</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                // Render 4 skeleton rows while fetching
+                [...Array(4)].map((_, i) => (
+                  <tr key={`skeleton-${i}`}>
+                    <td><div className="skeleton-circle" style={{ width: 32, height: 32 }} /></td>
+                    <td><div className="skeleton-box" style={{ width: 120, height: 16 }} /></td>
+                    <td><div className="skeleton-box" style={{ width: 60, height: 20, borderRadius: 12 }} /></td>
+                    <td>
+                      <div style={{ display: 'flex' }}>
+                        <div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6, marginRight: 8 }} />
+                        <div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6 }} />
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                sortedParties.map(p => (
+                  <tr key={p.id}>
+                    <td>
+                      {p.party_icon_url && !imageErrors[p.id] ? (
+                        <img
+                          src={p.party_icon_url}
+                          alt=""
+                          className="avatar-xs"
+                          onError={() => handleImageError(p.id)}
+                        />
+                      ) : (
+                        <span className="avatar-title">{p.party_name?.charAt(0)}</span>
+                      )}
+                    </td>
+                    <td><strong>{p.party_name}</strong></td>
+                    <td><span className="badge badge-soft-secondary">{p.party_code}</span></td>
+                    <td>
+                      <button className="btn-icon" style={{ ...actionIconStyle('primary'), marginRight: 8 }} title="Edit" aria-label="Edit party" onClick={() => handleEdit(p)}>
+                        <EditIcon />
+                      </button>
+                      <button className="btn-icon" style={actionIconStyle('danger')} title="Delete" aria-label="Delete party" onClick={() => handleDelete(p)}>
+                        <DeleteIcon />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+              {!loading && parties.length === 0 && (
+                <tr><td colSpan={4} className="empty-state">No parties registered yet.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {/* FEATURE: Custom Delete Confirmation Modal */}
       {deletingParty && (
@@ -322,14 +322,14 @@ const handleSubmit = async (e) => {
               <div className="admin-edit-modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>Cancel</button>
                 <button type="submit" className="btn btn-primary" disabled={submitting}>
-                  {submitting ? 'Saving…' : editingId ? 'Update Party' : 'Create Party'}
+                  {submitting ? 'Saving…' : editingId ? 'Update' : 'Save'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
-      
+
     </div>
   );
 }

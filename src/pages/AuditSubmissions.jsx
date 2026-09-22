@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { apiCall } from '../api/client';
 import CustomSelect from '../components/CustomSelect';
 import { toast } from 'react-hot-toast';
-import { exportToCSV, exportToExcel } from '../utils/exportImportUtils';
+// import { exportToCSV, exportToExcel } from '../utils/exportImportUtils';
+import { exportToExcel } from '../utils/exportImportUtils';
 
 const IconFileText = (props) => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -162,7 +163,7 @@ export default function BoothReport() {
   const handleVerifySubmit = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     setVerifying(true);
-    
+
     const payload = (verifyingReport.votes_breakdown || []).map(item => ({
       candidate_id: item.candidate_id,
       count: parseInt(verifiedCounts[item.candidate_id], 10) || 0
@@ -170,12 +171,12 @@ export default function BoothReport() {
 
     try {
       const targetId = verifyingReport.id || 0;
-      const res = await apiCall(`/audit/verify/${targetId}`, { 
-        method: 'PUT', 
-        body: JSON.stringify({ 
+      const res = await apiCall(`/audit/verify/${targetId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
           booth_id: verifyingReport.booth_id,
-          verified_votes: payload 
-        }) 
+          verified_votes: payload
+        })
       });
 
       if (res.success) {
@@ -199,13 +200,13 @@ export default function BoothReport() {
       const response = await fetch(fileUrl);
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
-      
+
       const link = document.createElement('a');
       link.href = blobUrl;
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
-      
+
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
       toast.success('Download complete!', { id: 'download-toast' });
@@ -276,14 +277,14 @@ export default function BoothReport() {
 
   const lgaOptions = filterState
     ? [...new Set(
-        locations.filter(l => l.state_name === filterState).map(l => l.lga_name).filter(Boolean)
-      )].sort()
+      locations.filter(l => l.state_name === filterState).map(l => l.lga_name).filter(Boolean)
+    )].sort()
     : [];
 
   const wardOptions = filterState && filterLga
     ? [...new Set(
-        locations.filter(l => l.state_name === filterState && l.lga_name === filterLga).map(l => l.ward_name).filter(Boolean)
-      )].sort()
+      locations.filter(l => l.state_name === filterState && l.lga_name === filterLga).map(l => l.ward_name).filter(Boolean)
+    )].sort()
     : [];
 
   const clearFilters = () => {
@@ -316,23 +317,23 @@ export default function BoothReport() {
         { label: 'S.No', key: (_, index) => index + 1 },
         { label: 'Candidate Name', key: 'candidate_name' },
         { label: 'Party', key: (item) => `${item.party_name} (${item.party_code || ''})` },
-        { 
-          label: 'Original Count (Booth App)', 
-          key: (item) => (item.vote_count !== null && item.vote_count !== undefined ? item.vote_count : 0) 
+        {
+          label: 'Original Count (Booth App)',
+          key: (item) => (item.vote_count !== null && item.vote_count !== undefined ? item.vote_count : 0)
         },
-        { 
-          label: 'Audited Count (Moderator)', 
-          key: (item) => (item.moderator_vote_count !== null && item.moderator_vote_count !== undefined ? item.moderator_vote_count : 'N/A') 
+        {
+          label: 'Audited Count (Moderator)',
+          key: (item) => (item.moderator_vote_count !== null && item.moderator_vote_count !== undefined ? item.moderator_vote_count : 'N/A')
         },
-        { 
-          label: 'Variance / Difference', 
+        {
+          label: 'Variance / Difference',
           key: (item) => {
             if (item.moderator_vote_count !== null && item.moderator_vote_count !== undefined) {
               const diff = item.moderator_vote_count - (item.vote_count || 0);
               return diff > 0 ? `+${diff}` : `${diff}`;
             }
             return '0';
-          } 
+          }
         }
       ];
 
@@ -346,7 +347,9 @@ export default function BoothReport() {
           metadataRows,
         });
         toast.success(`Exported audit report for ${sub.unique_booth_code} as Excel!`);
-      } else {
+      }
+      /*
+      else {
         exportToCSV({
           data: breakdown,
           columns,
@@ -356,6 +359,7 @@ export default function BoothReport() {
         });
         toast.success(`Exported audit report for ${sub.unique_booth_code} as CSV!`);
       }
+      */
     } catch (err) {
       console.error('Row export error:', err);
       toast.error('Failed to export row audit report');
@@ -377,8 +381,8 @@ export default function BoothReport() {
       <div className="card">
         <div className="card-header responsive-header">
           <div className="header-title-group">
-            <h2>Booth Reports</h2>
-            <span className="muted">{totalSubmissions} submissions found</span>
+            <h2>Polling Unit Reports</h2>
+            <span className="muted">{totalSubmissions} records</span>
           </div>
           <div className="header-controls-group">
             <input
@@ -431,9 +435,9 @@ export default function BoothReport() {
             />
 
             {hasActiveFilters && (
-              <button 
-                type="button" 
-                className="btn btn-secondary btn-sm filter-clear-btn" 
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm filter-clear-btn"
                 onClick={clearFilters}
               >
                 Clear
@@ -469,7 +473,7 @@ export default function BoothReport() {
               ) : submissions.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="empty-state">
-                    {filterWard 
+                    {filterWard
                       ? (searchTerm ? 'No booths match the search in this ward.' : 'No booths found in this ward.')
                       : 'Please select a State, LGA, and Ward to view booth reports.'}
                   </td>
@@ -576,7 +580,7 @@ export default function BoothReport() {
                                   <div className="export-dropdown-header">
                                     <span>Export Options</span>
                                   </div>
-                                  <button
+                                  {/* <button
                                     type="button"
                                     className="export-dropdown-item"
                                     onClick={() => {
@@ -589,7 +593,7 @@ export default function BoothReport() {
                                       <span className="export-item-title">Export as CSV</span>
                                       <span className="export-item-desc">Comma-separated values (.csv)</span>
                                     </div>
-                                  </button>
+                                  </button> */}
                                   <button
                                     type="button"
                                     className="export-dropdown-item"
@@ -696,12 +700,12 @@ export default function BoothReport() {
         </div>
       )}
 
-    {/* 2. IN-APP TALLY SHEET & DOCUMENT PREVIEW MODAL */}
+      {/* 2. IN-APP TALLY SHEET & DOCUMENT PREVIEW MODAL */}
       {selectedImage && (
         <div className="modal-overlay" onClick={() => { setSelectedImage(null); setImageZoom(1); }}>
-          <div 
-            className="modal-box" 
-            style={{ maxWidth: '800px', width: '92%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }} 
+          <div
+            className="modal-box"
+            style={{ maxWidth: '800px', width: '92%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
             onClick={e => e.stopPropagation()}
           >
             <div className="modal-header">
@@ -713,21 +717,21 @@ export default function BoothReport() {
             </div>
 
             {/* Dynamically toggle overflow based on zoom level */}
-            <div 
-              className="modal-body" 
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
+            <div
+              className="modal-body"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 backgroundColor: '#0f172a',
                 padding: 16,
                 height: '65vh',
-                overflow: imageZoom > 1 ? 'auto' : 'hidden' 
+                overflow: imageZoom > 1 ? 'auto' : 'hidden'
               }}
             >
-              {selectedImage.url && 
-               !selectedImage.url.includes('via.placeholder.com') && 
-               selectedImage.url !== 'https://via.placeholder.com/600x800.png?text=No+Image' ? (
+              {selectedImage.url &&
+                !selectedImage.url.includes('via.placeholder.com') &&
+                selectedImage.url !== 'https://via.placeholder.com/600x800.png?text=No+Image' ? (
                 isPdf(selectedImage.url) ? (
                   <iframe src={selectedImage.url} title="Tally Sheet PDF Preview" style={{ width: '100%', height: '100%', border: 'none', borderRadius: 6, backgroundColor: '#ffffff' }} />
                 ) : (
@@ -755,25 +759,25 @@ export default function BoothReport() {
 
             <div className="modal-footer" style={{ justifyContent: 'space-between', padding: '10px 16px' }}>
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                {selectedImage.url && 
-                 !selectedImage.url.includes('via.placeholder.com') && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => forceDownload(selectedImage.url, `TallySheet_${selectedImage.booth}`)}
-                      className="btn btn-outline btn-sm"
-                    >
-                      Download File
-                    </button>
+                {selectedImage.url &&
+                  !selectedImage.url.includes('via.placeholder.com') && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => forceDownload(selectedImage.url, `TallySheet_${selectedImage.booth}`)}
+                        className="btn btn-outline btn-sm"
+                      >
+                        Download File
+                      </button>
 
-                    {!isPdf(selectedImage.url) && (
-                      <div className="zoom-controls">
-                        <button type="button" className="btn-zoom" onClick={() => setImageZoom(p => Math.max(p - 0.5, 1))} title="Zoom Out">-</button>
-                        <button type="button" className="btn-zoom" onClick={() => setImageZoom(p => Math.min(p + 0.5, 4))} title="Zoom In">+</button>
-                      </div>
-                    )}
-                  </>
-                )}
+                      {!isPdf(selectedImage.url) && (
+                        <div className="zoom-controls">
+                          <button type="button" className="btn-zoom" onClick={() => setImageZoom(p => Math.max(p - 0.5, 1))} title="Zoom Out">-</button>
+                          <button type="button" className="btn-zoom" onClick={() => setImageZoom(p => Math.min(p + 0.5, 4))} title="Zoom In">+</button>
+                        </div>
+                      )}
+                    </>
+                  )}
               </div>
               <button type="button" className="btn btn-secondary btn-sm" onClick={() => { setSelectedImage(null); setImageZoom(1); }}>
                 Close
@@ -783,12 +787,12 @@ export default function BoothReport() {
         </div>
       )}
 
-{/* FEATURE: 3. IN-APP RECORDED VIDEO PREVIEW MODAL */}
+      {/* FEATURE: 3. IN-APP RECORDED VIDEO PREVIEW MODAL */}
       {selectedVideo && (
         <div className="modal-overlay" onClick={() => setSelectedVideo(null)}>
-          <div 
-            className="modal-box" 
-            style={{ maxWidth: '800px', width: '92%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }} 
+          <div
+            className="modal-box"
+            style={{ maxWidth: '800px', width: '92%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
             onClick={e => e.stopPropagation()}
           >
             <div className="modal-header">
@@ -832,27 +836,27 @@ export default function BoothReport() {
       {/* FEATURE: Side-by-Side Verification Modal */}
       {verifyingReport && (
         <div className="modal-overlay" onClick={() => setVerifyingReport(null)}>
-          <div 
-            className="modal-box" 
-            style={{ maxWidth: '1000px', width: '95%', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }} 
+          <div
+            className="modal-box"
+            style={{ maxWidth: '1000px', width: '95%', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}
             onClick={e => e.stopPropagation()}
           >
             <div className="modal-header">
               <h3>Verify Counts — {verifyingReport.unique_booth_code}</h3>
               <button className="modal-close" onClick={() => setVerifyingReport(null)}>&times;</button>
             </div>
-            
+
             <div className="modal-body" style={{ display: 'flex', gap: '20px', overflow: 'hidden', padding: 0 }}>
-              
+
               {/* LEFT SIDE: Media Preview or Grey Placeholder UI */}
-              <div style={{ 
-                flex: 1, 
-                backgroundColor: verifyingReport.tally_sheet_url ? '#0f172a' : '#f8f9fa', 
+              <div style={{
+                flex: 1,
+                backgroundColor: verifyingReport.tally_sheet_url ? '#0f172a' : '#f8f9fa',
                 borderRight: '1px solid #e2e5f1',
-                display: 'flex', 
+                display: 'flex',
                 flexDirection: 'column',
-                alignItems: 'center', 
-                justifyContent: 'center', 
+                alignItems: 'center',
+                justifyContent: 'center',
                 padding: '24px',
                 minHeight: '400px'
               }}>
@@ -891,7 +895,7 @@ export default function BoothReport() {
               <div style={{ flex: 1, padding: '20px', overflowY: 'auto', maxHeight: '65vh' }}>
                 <form id="verify-form" onSubmit={handleVerifySubmit}>
                   <p className="muted" style={{ marginBottom: 20 }}>Manually verify and enter the final counts for each candidate below.</p>
-                  
+
                   {verifyingReport.votes_breakdown.map((item) => (
                     <div className="form-group" key={item.candidate_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                       <div style={{ flex: 1 }}>
@@ -917,14 +921,14 @@ export default function BoothReport() {
               </div>
 
             </div>
-            
+
             <div className="modal-footer" style={{ justifyContent: 'flex-end' }}>
               <button type="button" className="btn btn-secondary" onClick={() => setVerifyingReport(null)}>Cancel</button>
-              
+
               {/* Updated Button! */}
-              <button 
-                type="button" 
-                className="btn btn-primary" 
+              <button
+                type="button"
+                className="btn btn-primary"
                 disabled={verifying}
                 onClick={handleVerifySubmit}
               >

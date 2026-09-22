@@ -167,6 +167,7 @@ h5 {
   background: #f3f5fa;
   color: var(--text-dark);
 }
+
 .nav-link:hover svg {
   color: var(--primary);
 }
@@ -175,6 +176,7 @@ h5 {
   color: var(--primary);
   font-weight: 600;
 }
+
 .nav-link.active svg {
   color: var(--primary);
 }
@@ -217,6 +219,7 @@ h5 {
   cursor: pointer;
   flex-shrink: 0;
 }
+
 .topbar-toggle:hover {
   background: #f3f5fa;
   color: var(--text-dark);
@@ -233,9 +236,11 @@ h5 {
   width: 100%;
   color: var(--text-muted);
 }
+
 .topbar-search svg {
   flex-shrink: 0;
 }
+
 .topbar-search input {
   border: none;
   background: transparent;
@@ -265,6 +270,7 @@ h5 {
   color: var(--text-muted);
   cursor: pointer;
 }
+
 .icon-btn:hover {
   background: #f3f5fa;
   color: var(--text-dark);
@@ -296,6 +302,7 @@ h5 {
   cursor: pointer;
   color: var(--text-body);
 }
+
 .profile-trigger:hover {
   background: #f3f5fa;
 }
@@ -318,11 +325,13 @@ h5 {
   text-align: left;
   line-height: 1.25;
 }
+
 .profile-name {
   font-size: 13px;
   font-weight: 600;
   color: var(--text-dark);
 }
+
 .profile-role {
   font-size: 11px;
   color: var(--text-muted);
@@ -357,12 +366,15 @@ h5 {
   cursor: pointer;
   text-align: left;
 }
+
 .profile-dropdown button:hover {
   background: #f3f5fa;
 }
+
 .profile-dropdown button.danger {
   color: var(--danger);
 }
+
 .profile-dropdown button.danger:hover {
   background: var(--danger-soft);
 }
@@ -400,6 +412,7 @@ h5 {
   color: var(--text-muted);
   margin-top: 4px;
 }
+
 .breadcrumb .current {
   color: var(--text-dark);
   font-weight: 600;
@@ -427,6 +440,7 @@ h5 {
   font-size: 15px;
   font-weight: 600;
 }
+
 .card-header .muted {
   font-size: 12px;
   color: var(--text-muted);
@@ -486,18 +500,22 @@ h5 {
   place-items: center;
   flex-shrink: 0;
 }
+
 .stat-icon.primary {
   background: var(--primary-soft);
   color: var(--primary);
 }
+
 .stat-icon.success {
   background: var(--success-soft);
   color: var(--success);
 }
+
 .stat-icon.warning {
   background: var(--warning-soft);
   color: var(--warning);
 }
+
 .stat-icon.info {
   background: var(--info-soft);
   color: var(--info);
@@ -541,6 +559,7 @@ table.data-table {
 .data-table tbody tr:last-child td {
   border-bottom: none;
 }
+
 .data-table tbody tr:hover td {
   background: #fafbfe;
 }
@@ -648,6 +667,7 @@ table.data-table {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -701,26 +721,32 @@ table.data-table {
   font-size: 11px;
   font-weight: 600;
 }
+
 .badge-soft-success {
   background: var(--success-soft);
   color: var(--success);
 }
+
 .badge-soft-secondary {
   background: #f1f2f6;
   color: var(--text-muted);
 }
+
 .badge-soft-primary {
   background: var(--primary-soft);
   color: var(--primary);
 }
+
 .badge-soft-info {
   background: var(--info-soft);
   color: var(--info);
 }
+
 .badge-soft-danger {
   background: var(--danger-soft);
   color: var(--danger);
 }
+
 .badge-soft-warning {
   background: var(--warning-soft);
   color: #b8860b;
@@ -732,6 +758,7 @@ table.data-table {
   font-size: 13.5px;
   font-weight: 500;
 }
+
 .alert-danger {
   background: var(--danger-soft);
   color: var(--danger);
@@ -778,9 +805,11 @@ select.form-control {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 .form-control::placeholder {
   color: #adb2bc;
 }
+
 .form-control:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px var(--primary-soft);
@@ -802,6 +831,7 @@ select.form-control {
     background 0.15s ease,
     filter 0.15s ease;
 }
+
 .btn:disabled {
   opacity: 0.65;
   cursor: not-allowed;
@@ -811,6 +841,7 @@ select.form-control {
   background: var(--primary);
   color: #fff;
 }
+
 .btn-primary:hover:not(:disabled) {
   background: #4458c9;
 }
@@ -819,6 +850,7 @@ select.form-control {
   background: var(--danger);
   color: #fff;
 }
+
 .btn-danger:hover:not(:disabled) {
   background: #e14747;
 }
@@ -827,6 +859,7 @@ select.form-control {
   background: #eef0f4;
   color: var(--text-body);
 }
+
 .btn-secondary:hover:not(:disabled) {
   background: #e3e6ec;
 }
@@ -834,6 +867,7 @@ select.form-control {
 .text-primary {
   color: var(--primary);
 }
+
 .text-success {
   color: var(--success);
 }
@@ -847,6 +881,7 @@ select.form-control {
   color: var(--primary);
   border: 1px solid var(--primary);
 }
+
 .btn-outline:hover:not(:disabled) {
   background: var(--primary-soft);
 }
@@ -861,9 +896,11 @@ select.form-control {
   font-size: 12.5px;
   margin-bottom: 10px;
 }
+
 .form-feedback.success {
   color: var(--success);
 }
+
 .form-feedback.error {
   color: var(--danger);
 }
@@ -877,6 +914,7 @@ select.form-control {
   color: var(--text-muted);
   position: relative;
 }
+
 .form-divider::before,
 .form-divider::after {
   content: "";
@@ -886,9 +924,11 @@ select.form-control {
   height: 1px;
   background: var(--border-color);
 }
+
 .form-divider::before {
   left: 0;
 }
+
 .form-divider::after {
   right: 0;
 }
@@ -903,12 +943,14 @@ select.form-control {
   border: 1px solid var(--border-color);
   border-radius: 8px;
 }
+
 .file-preview img {
   width: 32px;
   height: 32px;
   border-radius: 50%;
   object-fit: cover;
 }
+
 .file-preview span {
   font-size: 12px;
   color: var(--text-muted);
@@ -920,6 +962,7 @@ select.form-control {
   gap: 22px;
   align-items: start;
 }
+
 /* Use this modifier instead of an inline style={{gridTemplateColumns}} —
    inline styles beat the @media rule below and stop cards from stacking
    on narrow screens. */
@@ -951,11 +994,13 @@ select.form-control {
   padding: 26px 26px 46px;
   color: #fff;
 }
+
 .auth-banner h2 {
   color: #fff;
   font-size: 19px;
   font-weight: 700;
 }
+
 .auth-banner p {
   color: rgba(255, 255, 255, 0.85);
   font-size: 12.5px;
@@ -1000,9 +1045,11 @@ select.form-control {
   overflow-y: auto;
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
 }
+
 .modal-box.modal-lg {
   max-width: 720px;
 }
+
 .modal-box.modal-xl {
   max-width: 980px;
 }
@@ -1017,6 +1064,7 @@ select.form-control {
   top: 0;
   background: #fff;
 }
+
 .modal-header h3 {
   font-size: 16px;
   font-weight: 700;
@@ -1032,6 +1080,7 @@ select.form-control {
   padding: 4px 6px;
   border-radius: 6px;
 }
+
 .modal-close:hover {
   background: #f3f5fa;
   color: var(--text-dark);
@@ -1055,6 +1104,7 @@ select.form-control {
   margin-bottom: 14px;
   overflow: hidden;
 }
+
 .ward-card:last-child {
   margin-bottom: 0;
 }
@@ -1067,6 +1117,7 @@ select.form-control {
   border-bottom: 1px solid var(--border-color);
   color: var(--text-dark);
 }
+
 .ward-card-header span {
   color: var(--text-muted);
   font-weight: 500;
@@ -1120,6 +1171,7 @@ select.form-control {
   padding: 18px 22px;
   border-bottom: 1px solid var(--border-color);
 }
+
 .card-header h2 {
   font-size: 15px;
   font-weight: 600;
@@ -1172,6 +1224,7 @@ table.data-table {
 .data-table tbody tr:last-child td {
   border-bottom: none;
 }
+
 .data-table tbody tr:hover td {
   background: #fafbfe;
 }
@@ -1210,13 +1263,16 @@ table.data-table {
     border-color 0.15s ease,
     box-shadow 0.15s ease;
 }
+
 .form-control::placeholder {
   color: #adb2bc;
 }
+
 .form-control:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px var(--primary-soft);
 }
+
 .form-control:disabled {
   background: #f6f6f9;
   color: var(--text-muted);
@@ -1240,6 +1296,7 @@ table.data-table {
     background 0.15s ease,
     filter 0.15s ease;
 }
+
 .btn:disabled {
   opacity: 0.65;
   cursor: not-allowed;
@@ -1249,6 +1306,7 @@ table.data-table {
   background: var(--primary);
   color: #fff;
 }
+
 .btn-primary:hover:not(:disabled) {
   background: #4458c9;
 }
@@ -1271,11 +1329,13 @@ table.data-table {
     background 0.15s ease,
     border-color 0.15s ease;
 }
+
 .btn-icon-danger {
   border-color: var(--danger);
   color: var(--danger);
   background: #fff;
 }
+
 .btn-icon-danger:hover {
   background: var(--danger-soft);
 }
@@ -1302,6 +1362,7 @@ table.data-table {
   line-height: 1;
   padding: 0;
 }
+
 .chip-remove:hover {
   opacity: 0.7;
 }
@@ -1350,11 +1411,13 @@ table.data-table {
 
 /* ===== Small screens ===== */
 @media (max-width: 480px) {
+
   .filter-row,
   .sort-row {
     padding-left: 16px;
     padding-right: 16px;
   }
+
   .filter-select,
   .sort-select {
     max-width: 100%;
@@ -1367,6 +1430,7 @@ table.data-table {
 .combobox {
   position: relative;
 }
+
 .combobox.disabled {
   opacity: 0.7;
 }
@@ -1389,6 +1453,7 @@ table.data-table {
   color: var(--text-muted);
   cursor: pointer;
 }
+
 .combobox-toggle:disabled {
   cursor: not-allowed;
 }
@@ -1396,6 +1461,7 @@ table.data-table {
 .combobox-chevron {
   transition: transform 0.15s ease;
 }
+
 .combobox-chevron.open {
   transform: rotate(180deg);
 }
@@ -1428,9 +1494,11 @@ table.data-table {
   color: var(--text-body);
   cursor: pointer;
 }
+
 .combobox-option:hover {
   background: #f3f5fa;
 }
+
 .combobox-option.selected {
   background: var(--primary-soft);
   color: var(--primary);
@@ -1460,6 +1528,7 @@ table.data-table {
 
 /* ===== Responsive ===== */
 @media (max-width: 960px) {
+
   .two-col-grid,
   .two-col-grid--form-table {
     grid-template-columns: 1fr;
@@ -1472,9 +1541,11 @@ table.data-table {
     flex-wrap: wrap;
     gap: 10px;
   }
+
   .card-body {
     padding: 16px;
   }
+
   .data-table thead th,
   .data-table tbody td {
     padding: 11px 14px;
@@ -1497,32 +1568,40 @@ table.data-table {
   .app-wrapper.collapsed .app-sidebar {
     width: var(--sidebar-width-collapsed);
   }
+
   .app-wrapper.collapsed .sidebar-brand-text {
     display: none;
   }
+
   .app-wrapper.collapsed .sidebar-brand {
     justify-content: center;
     padding: 0;
   }
+
   .app-wrapper.collapsed .sidebar-section-label {
     display: none;
   }
+
   .app-wrapper.collapsed .nav-link {
     justify-content: center;
     padding: 10px;
   }
+
   .app-wrapper.collapsed .nav-link span {
     display: none;
   }
+
   .app-wrapper.collapsed .app-topbar {
     left: var(--sidebar-width-collapsed);
   }
+
   .app-wrapper.collapsed .app-main {
     margin-left: var(--sidebar-width-collapsed);
   }
 }
 
 @media (max-width: 960px) {
+
   .two-col-grid,
   .two-col-grid--form-table {
     grid-template-columns: 1fr;
@@ -1539,8 +1618,10 @@ table.data-table {
     transform: translateX(-100%);
     transition: transform 0.25s ease;
     box-shadow: 0 0 24px rgba(15, 23, 42, 0.18);
-    z-index: 1001; /* ✅ Ensure sidebar sits ABOVE topbar (z-index: 100) on mobile */
+    z-index: 1001;
+    /* ✅ Ensure sidebar sits ABOVE topbar (z-index: 100) on mobile */
   }
+
   .app-wrapper.mobile-open .app-sidebar {
     transform: translateX(0);
   }
@@ -1549,8 +1630,10 @@ table.data-table {
     position: fixed;
     inset: 0;
     background: rgba(15, 23, 42, 0.45);
-    z-index: 89; /* below .app-sidebar (90), above page content */
+    z-index: 89;
+    /* below .app-sidebar (90), above page content */
   }
+
   .app-wrapper.mobile-open .sidebar-backdrop {
     display: block;
   }
@@ -1559,6 +1642,7 @@ table.data-table {
   .app-topbar {
     left: 0;
   }
+
   .app-main {
     margin-left: 0;
     width: 100%;
@@ -1568,6 +1652,7 @@ table.data-table {
   .topbar-search {
     display: none;
   }
+
   .page-content {
     padding: 18px 16px 40px;
   }
@@ -1575,6 +1660,7 @@ table.data-table {
   .modal-overlay {
     padding: 14px;
   }
+
   .modal-header,
   .modal-footer,
   .modal-body {
@@ -1587,34 +1673,43 @@ table.data-table {
   .page-content {
     padding: 14px 12px 34px;
   }
+
   .stat-grid {
     grid-template-columns: 1fr;
     gap: 14px;
   }
+
   .stat-card {
     padding: 18px;
   }
+
   .card-header {
     padding: 14px 16px;
     flex-wrap: wrap;
     gap: 10px;
   }
+
   .card-body {
     padding: 16px;
   }
+
   .data-table thead th,
   .data-table tbody td {
     padding: 11px 14px;
   }
+
   .page-title-box h1 {
     font-size: 18px;
   }
+
   .modal-overlay {
     padding: 8px;
   }
+
   .modal-box {
     max-height: 94vh;
   }
+
   .auth-card {
     width: 100%;
   }
@@ -1636,21 +1731,25 @@ table.data-table {
    Keep thead nowrap so tables that are too wide scroll horizontally
    via .table-wrap instead of cramming everything into a tiny viewport. */
 @media (max-width: 780px) {
+
   .data-table thead th,
   .data-table tbody td {
     padding: 10px 10px;
     font-size: 12.5px;
   }
+
   /* Let flex-based cells (e.g. party-cell) shrink properly */
   .party-cell {
     min-width: 0;
     gap: 6px;
     font-size: 12px;
   }
+
   .party-cell .avatar-xs {
     width: 22px;
     height: 22px;
   }
+
   .badge {
     font-size: 10px;
     padding: 3px 7px;
@@ -1658,18 +1757,22 @@ table.data-table {
 }
 
 @media (max-width: 480px) {
+
   .data-table thead th,
   .data-table tbody td {
     padding: 8px 6px;
     font-size: 11.5px;
   }
+
   .data-table thead th {
     font-size: 10px;
   }
+
   .party-cell {
     gap: 4px;
     font-size: 11px;
   }
+
   .party-cell .avatar-xs {
     width: 18px;
     height: 18px;
@@ -1754,8 +1857,10 @@ table.data-table {
   flex-direction: row;
   align-items: center;
   gap: 12px;
-  flex-wrap: nowrap; /* keep side-by-side on desktop */
-  justify-content: flex-end; /* align to the right side */
+  flex-wrap: nowrap;
+  /* keep side-by-side on desktop */
+  justify-content: flex-end;
+  /* align to the right side */
 }
 
 .custom-select-container {
@@ -1768,7 +1873,8 @@ table.data-table {
 }
 
 .filter-select-responsive {
-  width: 160px; /* fixed width to align in a single line next to headers */
+  width: 160px;
+  /* fixed width to align in a single line next to headers */
   min-width: 120px;
   max-width: 100%;
 }
@@ -1799,7 +1905,8 @@ table.data-table {
 /* Responsive Grid for the new Ward View and the charts */
 .ward-analysis-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr; /* 2/3 and 1/3 split */
+  grid-template-columns: 2fr 1fr;
+  /* 2/3 and 1/3 split */
   gap: 20px;
   padding: 20px;
 }
@@ -1808,7 +1915,8 @@ table.data-table {
   border: 1px solid #e2e5f1;
   border-radius: 8px;
   overflow: hidden;
-  min-width: 0; /* allows Recharts charts to shrink correctly */
+  min-width: 0;
+  /* allows Recharts charts to shrink correctly */
 }
 
 .ward-chart-side {
@@ -1816,7 +1924,8 @@ table.data-table {
   border-radius: 8px;
   padding: 15px;
   background: #f8f9fa;
-  min-width: 0; /* allows Recharts charts to shrink correctly */
+  min-width: 0;
+  /* allows Recharts charts to shrink correctly */
 }
 
 .empty-state-placeholder {
@@ -1838,7 +1947,8 @@ table.data-table {
 /* Responsive Grid for the Party Standings View */
 .party-standings-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr; /* 2/3 and 1/3 split */
+  grid-template-columns: 2fr 1fr;
+  /* 2/3 and 1/3 split */
   gap: 20px;
   padding: 20px;
 }
@@ -1872,19 +1982,39 @@ table.data-table {
 }
 
 /* FEATURE: Video upload media elements and layout custom styling */
-.media-actions-cell { display: flex; align-items: center; gap: 8px; }
-.btn-icon { border: none; background: transparent; padding: 0; }
-.video-player-preview { width: 100%; max-height: 65vh; border-radius: 6px; background-color: #000; }
+.media-actions-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-icon {
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+.video-player-preview {
+  width: 100%;
+  max-height: 65vh;
+  border-radius: 6px;
+  background-color: #000;
+}
 
 /* FEATURE: Custom table styling for AdminManagement to prevent horizontal overflow and hide scrollbar */
 .table-wrap-no-scrollbar {
   overflow-x: auto !important;
-  scrollbar-width: none !important; /* Firefox */
-  -ms-overflow-style: none !important; /* IE/Edge */
+  scrollbar-width: none !important;
+  /* Firefox */
+  -ms-overflow-style: none !important;
+  /* IE/Edge */
 }
+
 .table-wrap-no-scrollbar::-webkit-scrollbar {
-  display: none !important; /* Chrome/Safari/Opera */
+  display: none !important;
+  /* Chrome/Safari/Opera */
 }
+
 .admin-management-table th,
 .admin-management-table td {
   padding-left: 12px !important;
@@ -1916,6 +2046,7 @@ table.data-table {
   0% {
     background-position: -200% 0;
   }
+
   100% {
     background-position: 200% 0;
   }
@@ -1945,8 +2076,10 @@ table.data-table {
   justify-content: center;
   background-color: #0f172a;
   padding: 16px;
-  height: 65vh; /* Fixed height to prevent scrollbars */
-  overflow: hidden; /* Removes the scrollbar */
+  height: 65vh;
+  /* Fixed height to prevent scrollbars */
+  overflow: hidden;
+  /* Removes the scrollbar */
 }
 
 .media-preview-image {
@@ -1954,8 +2087,9 @@ table.data-table {
   max-height: 100%;
   object-fit: contain;
   border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-  transition: transform 0.2s ease-in-out; /* Smooth zooming */
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease-in-out;
+  /* Smooth zooming */
 }
 
 .zoom-controls {
@@ -2026,6 +2160,7 @@ table.data-table {
     opacity: 0;
     transform: translateY(-8px) scale(0.98);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -2172,16 +2307,20 @@ table.data-table {
   .modal-overlay {
     padding: 12px;
   }
+
   .modal-box {
     max-height: 92vh;
   }
+
   .search-input-responsive {
     width: 100% !important;
   }
+
   .sort-select-responsive,
   .filter-select-responsive {
     width: 100% !important;
   }
+
   .data-table thead th,
   .data-table tbody td {
     padding: 10px 12px;
@@ -2216,6 +2355,7 @@ table.data-table {
     opacity: 0;
     transform: translateY(-6px) scale(0.98);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -2378,12 +2518,15 @@ table.data-table {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
 
 .profile-modal-body::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  display: none;
+  /* Chrome, Safari, Opera */
   width: 0;
   height: 0;
 }
@@ -2589,12 +2732,15 @@ table.data-table {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none;    /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
 
 .admin-edit-modal-body::-webkit-scrollbar {
-  display: none;            /* Chrome, Safari, Opera */
+  display: none;
+  /* Chrome, Safari, Opera */
   width: 0;
   height: 0;
 }
@@ -2704,7 +2850,7 @@ table.data-table {
 }
 
 /* Toast Item Transitions & Smooth Exit */
-[data-rht-toaster] > div {
+[data-rht-toaster]>div {
   transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
@@ -2718,6 +2864,7 @@ table.data-table {
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
   }
+
   100% {
     opacity: 0;
     transform: translate3d(0, -16px, 0) scale(0.96);
@@ -2810,6 +2957,7 @@ table.data-table {
     opacity: 0;
     transform: translateY(-6px) scale(0.98);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -2851,7 +2999,8 @@ table.data-table {
 }
 
 .password-input-wrapper .form-control {
-  padding-right: 42px; /* Prevents text from colliding with the toggle icon */
+  padding-right: 42px;
+  /* Prevents text from colliding with the toggle icon */
   width: 100%;
 }
 
@@ -2913,11 +3062,24 @@ table.data-table {
 }
 
 @keyframes rotate {
-  100% { transform: rotate(360deg); }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes dash {
-  0% { stroke-dasharray: 1, 150; stroke-dashoffset: 0; }
-  50% { stroke-dasharray: 90, 150; stroke-dashoffset: -35; }
-  100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; }
+  0% {
+    stroke-dasharray: 1, 150;
+    stroke-dashoffset: 0;
+  }
+
+  50% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -35;
+  }
+
+  100% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -124;
+  }
 }

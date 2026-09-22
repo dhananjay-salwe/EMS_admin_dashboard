@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { apiCall } from '../api/client';
 import CustomSelect from '../components/CustomSelect';
 import { toast } from 'react-hot-toast';
-import { exportToCSV, exportToExcel } from '../utils/exportImportUtils';
+// import { exportToCSV, exportToExcel } from '../utils/exportImportUtils';
+import { exportToExcel } from '../utils/exportImportUtils';
 
 const PAGE_SIZE = 6;
 
@@ -99,23 +100,22 @@ const Chip = ({ label, onRemove }) => (
 );
 
 const SORT_OPTIONS = [
-  { value: 'booth_name-asc', label: 'Booth (A–Z)' },
-  { value: 'booth_name-desc', label: 'Booth (Z–A)' },
-  { value: 'state_name-asc', label: 'State (A–Z)' },
-  { value: 'state_name-desc', label: 'State (Z–A)' },
-  { value: 'lga_name-asc', label: 'LGA (A–Z)' },
-  { value: 'lga_name-desc', label: 'LGA (Z–A)' },
   { value: 'ward_name-asc', label: 'Ward (A–Z)' },
   { value: 'ward_name-desc', label: 'Ward (Z–A)' },
+  // { value: 'booth_name-asc', label: 'Booth Name (A–Z)' },
+  // { value: 'booth_name-desc', label: 'Booth Name (Z–A)' },
+  { value: 'lga_name-asc', label: 'LGA (A–Z)' },
+  { value: 'lga_name-desc', label: 'LGA (Z–A)' },
+  { value: 'state_name-asc', label: 'State (A–Z)' },
+  { value: 'state_name-desc', label: 'State (Z–A)' },
 ];
 
 const EXPORT_COLUMNS = [
-  { label: 'S.No', key: (_, index) => index + 1 },
-  { label: 'State', key: 'state_name' },
-  { label: 'LGA', key: 'lga_name' },
+  { label: 'Number', key: 'unique_booth_code' },
+  { label: 'Name', key: 'booth_name' },
   { label: 'Ward', key: 'ward_name' },
-  { label: 'Unique Booth Code', key: 'unique_booth_code' },
-  { label: 'Polling Unit Name', key: 'booth_name' },
+  { label: 'LGA', key: 'lga_name' },
+  { label: 'State', key: 'state_name' },
 ];
 
 export default function LocationManagement() {
@@ -145,7 +145,7 @@ export default function LocationManagement() {
     setIsCreateModalOpen(false);
   };
 
-  const [loading, setLoading] =  useState(true);
+  const [loading, setLoading] = useState(true);
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -158,7 +158,7 @@ export default function LocationManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
-  const [sortKey, setSortKey] = useState('booth_name-asc');
+  const [sortKey, setSortKey] = useState('ward_name-asc');
   const [deletingBooth, setDeletingBooth] = useState(null);
 
   // Close export dropdown when clicking outside
@@ -177,9 +177,9 @@ export default function LocationManagement() {
   }, [exportOpen]);
 
   const fetchLocations = async () => {
-    try{ 
-    const data = await apiCall('/locations/all');
-    if (data.success) setLocations(data.locations);
+    try {
+      const data = await apiCall('/locations/all');
+      if (data.success) setLocations(data.locations);
     } catch (error) {
       console.log(error);
     } finally {
@@ -209,7 +209,7 @@ export default function LocationManagement() {
     }
   };
 
-// 1. Opens the modal and sets the target booth
+  // 1. Opens the modal and sets the target booth
   const handleDelete = (booth) => {
     setDeletingBooth(booth);
   };
@@ -217,7 +217,7 @@ export default function LocationManagement() {
   // 2. Fires when the user clicks "Confirm" inside the modal
   const confirmDelete = async () => {
     if (!deletingBooth) return;
-    
+
     const res = await apiCall(`/locations/booth/${deletingBooth.booth_id}`, { method: 'DELETE' });
     if (res.success) {
       toast.success('Polling unit deleted successfully!');
@@ -266,8 +266,12 @@ export default function LocationManagement() {
 
   const [sortField, sortDir] = sortKey.split('-');
   const sortedBooths = [...filteredBooths].sort((a, b) => {
-    const cmp = (a[sortField] || '').localeCompare(b[sortField] || '');
-    return sortDir === 'desc' ? -cmp : cmp;
+    const primaryCmp = (a[sortField] || '').localeCompare(b[sortField] || '');
+    if (primaryCmp !== 0) {
+      return sortDir === 'desc' ? -primaryCmp : primaryCmp;
+    }
+    // Secondary fallback: unique_booth_code (Number) in ascending order with numeric comparison
+    return (a.unique_booth_code || '').localeCompare(b.unique_booth_code || '', undefined, { numeric: true });
   });
 
   const handleExport = (format) => {
@@ -280,6 +284,7 @@ export default function LocationManagement() {
       const filename = 'polling_units_list';
       const title = 'Registered Polling Units List';
 
+      /*
       if (format === 'csv') {
         exportToCSV({
           data: sortedBooths,
@@ -288,7 +293,9 @@ export default function LocationManagement() {
           title,
         });
         toast.success(`Exported ${sortedBooths.length} polling units as CSV!`);
-      } else if (format === 'excel') {
+      } else
+      */
+      if (format === 'excel') {
         exportToExcel({
           data: sortedBooths,
           columns: EXPORT_COLUMNS,
@@ -313,209 +320,212 @@ export default function LocationManagement() {
     <div>
 
       <div className="card">
-          <div className="card-header responsive-header">
-            <div className="header-title-group">
-              <h2>Registered polling units</h2>
-              <span className="muted">{filteredBooths.length} of {booths.length} total</span>
-            </div>
-            <div className="header-controls-group">
-              <div className="sort-filter-actions">
-                <span className="sort-label-text">
-                  Sort by
-                </span>
-                <CustomSelect
-                  className="sort-select-responsive"
-                  value={sortKey}
-                  options={SORT_OPTIONS}
-                  onChange={e => setSortKey(e.target.value)}
-                />
-                <button
-                  type="button" title="Search" aria-label="Toggle search"
-                  style={iconBtnStyle(searchOpen)}
-                  onClick={() => { setSearchOpen(o => !o); if (filterOpen) setFilterOpen(false); setExportOpen(false); }}
-                >
-                  <SearchIcon />
-                </button>
-                <button
-                  type="button" title="Filter" aria-label="Toggle filter"
-                  style={iconBtnStyle(filterOpen || hasActiveFilters)}
-                  onClick={() => { setFilterOpen(o => !o); if (searchOpen) setSearchOpen(false); setExportOpen(false); }}
-                >
-                  <FilterIcon />
-                </button>
-                <div className="export-menu-container" ref={exportMenuRef}>
-                  <button
-                    type="button"
-                    title="Export List (CSV / Excel)"
-                    aria-label="Export polling units list"
-                    aria-expanded={exportOpen}
-                    style={iconBtnStyle(exportOpen)}
-                    onClick={() => { setExportOpen(o => !o); if (searchOpen) setSearchOpen(false); if (filterOpen) setFilterOpen(false); }}
-                  >
-                    <DownloadIcon />
-                  </button>
-                  {exportOpen && (
-                    <div className="export-dropdown-menu">
-                      <div className="export-dropdown-header">
-                        <span>Export Options</span>
-                        <span className="export-badge">{sortedBooths.length} records</span>
-                      </div>
-                      <button
-                        type="button"
-                        className="export-dropdown-item"
-                        onClick={() => handleExport('csv')}
-                      >
-                        <div className="export-format-badge csv">CSV</div>
-                        <div className="export-item-info">
-                          <span className="export-item-title">Export as CSV</span>
-                          <span className="export-item-desc">Comma-separated values (.csv)</span>
-                        </div>
-                      </button>
-                      <button
-                        type="button"
-                        className="export-dropdown-item"
-                        onClick={() => handleExport('excel')}
-                      >
-                        <div className="export-format-badge excel">XLS</div>
-                        <div className="export-item-info">
-                          <span className="export-item-title">Export as Excel</span>
-                          <span className="export-item-desc">Microsoft Excel formatted (.xls)</span>
-                        </div>
-                      </button>
-                    </div>
-                  )}
-                </div>
+        <div className="card-header responsive-header">
+          <div className="header-title-group">
+            <h2>Polling Units</h2>
+            <span className="muted">{filteredBooths.length} of {booths.length} total</span>
+          </div>
+          <div className="header-controls-group">
+            <div className="sort-filter-actions">
+              <span className="sort-label-text">
+                Sort by
+              </span>
+              <CustomSelect
+                className="sort-select-responsive"
+                value={sortKey}
+                options={SORT_OPTIONS}
+                onChange={e => setSortKey(e.target.value)}
+              />
+              <button
+                type="button" title="Search" aria-label="Toggle search"
+                style={iconBtnStyle(searchOpen)}
+                onClick={() => { setSearchOpen(o => !o); if (filterOpen) setFilterOpen(false); setExportOpen(false); }}
+              >
+                <SearchIcon />
+              </button>
+              <button
+                type="button" title="Filter" aria-label="Toggle filter"
+                style={iconBtnStyle(filterOpen || hasActiveFilters)}
+                onClick={() => { setFilterOpen(o => !o); if (searchOpen) setSearchOpen(false); setExportOpen(false); }}
+              >
+                <FilterIcon />
+              </button>
+              <div className="export-menu-container" ref={exportMenuRef}>
                 <button
                   type="button"
-                  className="btn btn-primary btn-add-entity"
-                  onClick={() => { resetForm(); setIsCreateModalOpen(true); }}
+                  title="Export List (CSV / Excel)"
+                  aria-label="Export polling units list"
+                  aria-expanded={exportOpen}
+                  style={iconBtnStyle(exportOpen)}
+                  onClick={() => { setExportOpen(o => !o); if (searchOpen) setSearchOpen(false); if (filterOpen) setFilterOpen(false); }}
                 >
-                  <PlusIcon />
-                  <span>Add Polling Unit</span>
+                  <DownloadIcon />
                 </button>
+                {exportOpen && (
+                  <div className="export-dropdown-menu">
+                    <div className="export-dropdown-header">
+                      <span>Export Options</span>
+                      <span className="export-badge">{sortedBooths.length} records</span>
+                    </div>
+                    {/* <button
+                      type="button"
+                      className="export-dropdown-item"
+                      onClick={() => handleExport('csv')}
+                    >
+                      <div className="export-format-badge csv">CSV</div>
+                      <div className="export-item-info">
+                        <span className="export-item-title">Export as CSV</span>
+                        <span className="export-item-desc">Comma-separated values (.csv)</span>
+                      </div>
+                    </button> */}
+                    <button
+                      type="button"
+                      className="export-dropdown-item"
+                      onClick={() => handleExport('excel')}
+                    >
+                      <div className="export-format-badge excel">XLS</div>
+                      <div className="export-item-info">
+                        <span className="export-item-title">Export as Excel</span>
+                        <span className="export-item-desc">Microsoft Excel formatted (.xls)</span>
+                      </div>
+                    </button>
+                  </div>
+                )}
               </div>
-            </div>
-          </div>
-
-          {searchOpen && (
-            <div style={{ padding: '12px 20px 0', display: 'flex', justifyContent: 'flex-end' }}>
-              <input
-                type="text" className="form-control search-input-responsive" placeholder="Type to search..."
-                value={searchTerm} onChange={e => setSearchTerm(e.target.value)} autoFocus
-                style={{ maxWidth: '240px' }}
-              />
-            </div>
-          )}
-
-          {filterOpen && (
-            <div className="filter-toolbar" style={{ padding: '12px 16px 0' }}>
-              {filterState && <Chip label={filterState} onRemove={() => { setFilterState(''); setFilterLga(''); setFilterWard(''); }} />}
-              {filterLga && <Chip label={filterLga} onRemove={() => { setFilterLga(''); setFilterWard(''); }} />}
-              {filterWard && <Chip label={filterWard} onRemove={() => setFilterWard('')} />}
-
-              {!filterState && (
-                <CustomSelect
-                  className="filter-select-responsive"
-                  value={filterState}
-                  placeholder="Select State…"
-                  options={stateOptions}
-                  onChange={e => setFilterState(e.target.value)}
-                />
-              )}
-              {filterState && !filterLga && (
-                <CustomSelect
-                  className="filter-select-responsive"
-                  value={filterLga}
-                  placeholder="Select LGA…"
-                  options={lgaOptions}
-                  onChange={e => setFilterLga(e.target.value)}
-                />
-              )}
-              {filterState && filterLga && !filterWard && (
-                <CustomSelect
-                  className="filter-select-responsive"
-                  value={filterWard}
-                  placeholder="Select Ward…"
-                  options={wardOptions}
-                  onChange={e => setFilterWard(e.target.value)}
-                />
-              )}
-              {hasActiveFilters && (
-                <button type="button" className="btn btn-secondary btn-sm filter-clear-btn" onClick={clearFilters}>Clear</button>
-              )}
-            </div>
-          )}
-
-          <div className="table-wrap table-scroll-container">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>State</th>
-                  <th>LGA</th>
-                  <th>Ward</th>
-                  <th>Booth Code &amp; Name</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  // Render 5 skeleton rows while fetching
-                  [...Array(5)].map((_, i) => (
-                    <tr key={`skeleton-${i}`}>
-                      <td><div className="skeleton-box" style={{ width: 80, height: 16 }} /></td>
-                      <td><div className="skeleton-box" style={{ width: 80, height: 16 }} /></td>
-                      <td><div className="skeleton-box" style={{ width: 80, height: 16 }} /></td>
-                      <td><div className="skeleton-box" style={{ width: 180, height: 16 }} /></td>
-                      <td>
-                        <div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6 }} />
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  pageBooths.map(l => (
-                    <tr key={l.booth_id}>
-                      <td>{l.state_name}</td>
-                      <td>{l.lga_name}</td>
-                      <td>{l.ward_name}</td>
-                      <td><strong>{l.unique_booth_code}</strong> — {l.booth_name}</td>
-                      <td>
-                        <button className="btn-icon" style={actionIconStyle('danger')} title="Delete" aria-label="Delete booth" onClick={() => handleDelete(l)}>
-                          <DeleteIcon />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-                {!loading && filteredBooths.length === 0 && booths.length > 0 && (
-                  <tr><td colSpan={5} className="empty-state">No polling units match the selected filters.</td></tr>
-                )}
-                {!loading && booths.length === 0 && (
-                  <tr><td colSpan={5} className="empty-state">No polling units registered yet.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {totalPages > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, padding: '14px 0 4px' }}>
               <button
-                type="button" className="btn btn-outline btn-sm"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                type="button"
+                className="btn btn-primary btn-add-entity"
+                onClick={() => { resetForm(); setIsCreateModalOpen(true); }}
               >
-                Prev
-              </button>
-              <span className="muted">Page {currentPage} of {totalPages}</span>
-              <button
-                type="button" className="btn btn-outline btn-sm"
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              >
-                Next
+                <PlusIcon />
+                <span>Add Polling Unit</span>
               </button>
             </div>
-          )}
+          </div>
         </div>
+
+        {searchOpen && (
+          <div style={{ padding: '12px 20px 0', display: 'flex', justifyContent: 'flex-end' }}>
+            <input
+              type="text" className="form-control search-input-responsive" placeholder="Type to search..."
+              value={searchTerm} onChange={e => setSearchTerm(e.target.value)} autoFocus
+              style={{ maxWidth: '240px' }}
+            />
+          </div>
+        )}
+
+        {filterOpen && (
+          <div className="filter-toolbar" style={{ padding: '12px 16px 0' }}>
+            {filterState && <Chip label={filterState} onRemove={() => { setFilterState(''); setFilterLga(''); setFilterWard(''); }} />}
+            {filterLga && <Chip label={filterLga} onRemove={() => { setFilterLga(''); setFilterWard(''); }} />}
+            {filterWard && <Chip label={filterWard} onRemove={() => setFilterWard('')} />}
+
+            {!filterState && (
+              <CustomSelect
+                className="filter-select-responsive"
+                value={filterState}
+                placeholder="Select State…"
+                options={stateOptions}
+                onChange={e => setFilterState(e.target.value)}
+              />
+            )}
+            {filterState && !filterLga && (
+              <CustomSelect
+                className="filter-select-responsive"
+                value={filterLga}
+                placeholder="Select LGA…"
+                options={lgaOptions}
+                onChange={e => setFilterLga(e.target.value)}
+              />
+            )}
+            {filterState && filterLga && !filterWard && (
+              <CustomSelect
+                className="filter-select-responsive"
+                value={filterWard}
+                placeholder="Select Ward…"
+                options={wardOptions}
+                onChange={e => setFilterWard(e.target.value)}
+              />
+            )}
+            {hasActiveFilters && (
+              <button type="button" className="btn btn-secondary btn-sm filter-clear-btn" onClick={clearFilters}>Clear</button>
+            )}
+          </div>
+        )}
+
+        <div className="table-wrap table-scroll-container">
+<table className="data-table">
+            <thead>
+              <tr>
+                <th>Number</th>
+                <th>Name</th>
+                <th>Ward</th>
+                <th>LGA</th>
+                <th>State</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                // Render 5 skeleton rows while fetching (updated to 6 columns)
+                [...Array(5)].map((_, i) => (
+                  <tr key={`skeleton-${i}`}>
+                    <td><div className="skeleton-box" style={{ width: 60, height: 16 }} /></td>
+                    <td><div className="skeleton-box" style={{ width: 140, height: 16 }} /></td>
+                    <td><div className="skeleton-box" style={{ width: 80, height: 16 }} /></td>
+                    <td><div className="skeleton-box" style={{ width: 80, height: 16 }} /></td>
+                    <td><div className="skeleton-box" style={{ width: 80, height: 16 }} /></td>
+                    <td>
+                      <div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6 }} />
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                pageBooths.map(l => (
+                  <tr key={l.booth_id}>
+                    <td><strong>{l.unique_booth_code}</strong></td>
+                    <td>{l.booth_name}</td>
+                    <td>{l.ward_name}</td>
+                    <td>{l.lga_name}</td>
+                    <td>{l.state_name}</td>
+                    <td>
+                      <button className="btn-icon" style={actionIconStyle('danger')} title="Delete" aria-label="Delete booth" onClick={() => handleDelete(l)}>
+                        <DeleteIcon />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+              {!loading && filteredBooths.length === 0 && booths.length > 0 && (
+                <tr><td colSpan={6} className="empty-state">No polling units match the selected filters.</td></tr>
+              )}
+              {!loading && booths.length === 0 && (
+                <tr><td colSpan={6} className="empty-state">No polling units registered yet.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, padding: '14px 0 4px' }}>
+            <button
+              type="button" className="btn btn-outline btn-sm"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            >
+              Prev
+            </button>
+            <span className="muted">Page {currentPage} of {totalPages}</span>
+            <button
+              type="button" className="btn btn-outline btn-sm"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </div>
       {/* FEATURE: Custom Delete Confirmation Modal */}
       {deletingBooth && (
         <div className="modal-overlay" onClick={() => setDeletingBooth(null)}>
@@ -550,10 +560,10 @@ export default function LocationManagement() {
               <button className="modal-close" onClick={handleCloseModal}>&times;</button>
             </div>
             <form onSubmit={handleSubmit} className="admin-edit-modal-form">
-              <div className="admin-edit-modal-body">
-                {/* 1. SELECT STATE */}
+<div className="admin-edit-modal-body">
+                {/* SELECT STATE */}
                 <div className="form-group admin-modal-form-group">
-                  <label className="form-label">1. Select State</label>
+                  <label className="form-label">Select State</label>
                   <CustomSelect
                     value={formData.state_name}
                     placeholder="-- Choose State --"
@@ -567,9 +577,9 @@ export default function LocationManagement() {
                   />
                 </div>
 
-                {/* 2. SELECT LGA (Filtered by selected State) */}
+                {/* SELECT LGA (Filtered by selected State) */}
                 <div className="form-group admin-modal-form-group">
-                  <label className="form-label">2. Select LGA</label>
+                  <label className="form-label">Select LGA</label>
                   <CustomSelect
                     disabled={!formData.state_name}
                     value={formData.lga_name}
@@ -588,9 +598,9 @@ export default function LocationManagement() {
                   />
                 </div>
 
-                {/* 3. SELECT WARD (Filtered by selected LGA) */}
+                {/* SELECT WARD (Filtered by selected LGA) */}
                 <div className="form-group admin-modal-form-group">
-                  <label className="form-label">3. Select Electoral Ward</label>
+                  <label className="form-label">Select Ward</label>
                   <CustomSelect
                     disabled={!formData.lga_name}
                     value={formData.ward_name}
@@ -608,36 +618,37 @@ export default function LocationManagement() {
                   />
                 </div>
 
-                {/* 4. ENTER POLLING UNIT NAME */}
-                <div className="form-group admin-modal-form-group">
-                  <label className="form-label">4. Polling Unit Name (Booth)</label>
-                  <input
-                    type="text"
-                    required
-                    className="form-control"
-                    placeholder="e.g. National Stadium Unit"
-                    value={formData.booth_name}
-                    onChange={e => setFormData({ ...formData, booth_name: e.target.value })}
-                  />
-                </div>
+                {/* BOOTH CODE & NAME (Side by side) */}
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <div className="form-group admin-modal-form-group" style={{ flex: 1 }}>
+                    <label className="form-label">Number</label>
+                    <input
+                      type="text"
+                      required
+                      className="form-control"
+                      placeholder="e.g. 001"
+                      value={formData.unique_booth_code}
+                      onChange={e => setFormData({ ...formData, unique_booth_code: e.target.value })}
+                    />
+                  </div>
 
-                {/* 5. ENTER BOOTH CODE */}
-                <div className="form-group admin-modal-form-group">
-                  <label className="form-label">5. Unique Booth Code</label>
-                  <input
-                    type="text"
-                    required
-                    className="form-control"
-                    placeholder="e.g. BOOTH-SUR-05"
-                    value={formData.unique_booth_code}
-                    onChange={e => setFormData({ ...formData, unique_booth_code: e.target.value })}
-                  />
+                  <div className="form-group admin-modal-form-group" style={{ flex: 2 }}>
+                    <label className="form-label">Name</label>
+                    <input
+                      type="text"
+                      required
+                      className="form-control"
+                      placeholder="e.g. National Stadium Unit"
+                      value={formData.booth_name}
+                      onChange={e => setFormData({ ...formData, booth_name: e.target.value })}
+                    />
+                  </div>
                 </div>
               </div>
               <div className="admin-edit-modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>Cancel</button>
                 <button type="submit" className="btn btn-primary" disabled={submitting}>
-                  {submitting ? 'Registering Booth…' : 'Register Polling Booth'}
+                  {submitting ? 'Registering Booth…' : 'Save'}
                 </button>
               </div>
             </form>

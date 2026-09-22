@@ -54,7 +54,7 @@ export default function Topbar({ admin, collapsed, mobileOpen, onToggleSidebar, 
 
   // First, determine what name we are actually displaying
   const displayName = admin?.full_name || 'Admin';
-  
+
   // Then, safely grab the first letter of that display name
   const initial = displayName.charAt(0).toUpperCase();
 
@@ -65,7 +65,7 @@ export default function Topbar({ admin, collapsed, mobileOpen, onToggleSidebar, 
     await new Promise(resolve => setTimeout(resolve, 600)); // Smooth UX delay
     onLogout();
   };
-  
+
   return (
     <>
       <header className="app-topbar">
@@ -112,9 +112,9 @@ export default function Topbar({ admin, collapsed, mobileOpen, onToggleSidebar, 
                   <IconUser /> Edit Profile
                 </button>
                 <div className="profile-dropdown-divider" />
-                <button 
-                  type="button" 
-                  className="danger" 
+                <button
+                  type="button"
+                  className="danger"
                   onClick={handleLogoutClick}
                   disabled={isLoggingOut}
                   style={{ display: 'flex', alignItems: 'center', gap: '8px' }}

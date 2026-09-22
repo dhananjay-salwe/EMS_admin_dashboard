@@ -110,9 +110,9 @@ export default function App() {
   if (!admin) {
     return (
       <>
-        <Toaster 
-          position="top-right" 
-          toastOptions={{ duration: 3000 }} 
+        <Toaster
+          position="top-right"
+          toastOptions={{ duration: 3000 }}
         />
         <Login onLoginSuccess={handleLoginSuccess} />
       </>
@@ -121,11 +121,11 @@ export default function App() {
 
   return (
     <div className={`app-wrapper ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
-      <Toaster 
-        position="top-right" 
-        toastOptions={{ duration: 3000 }} 
+      <Toaster
+        position="top-right"
+        toastOptions={{ duration: 3000 }}
       />
-      
+
       <Sidebar
         activeTab={activeTab}
         setActiveTab={handleTabChange}

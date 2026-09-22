@@ -133,20 +133,20 @@ const IconShield = (props) => (
 
 const NAV_ITEMS = [
   { key: 'analytics', label: 'Dashboard', Icon: IconChart },
-  { key: 'audit', label: 'Booth Report', Icon: IconReport },
-  { key: 'ward-reports', label: 'Ward Reports', Icon: IconReport },
-  
-  { key: 'operators', label: 'Booth Officers', Icon: IconUsers },
+  { key: 'audit', label: 'Polling Unit Report', Icon: IconReport },
+  { key: 'ward-reports', label: 'Ward Report', Icon: IconReport },
+
+  { key: 'operators', label: 'Polling Officers', Icon: IconUsers },
 
   { key: 'candidates', label: 'Ballot List', Icon: IconUser },
 
   { key: 'wards', label: 'Ward Management', Icon: IconWard },
-  
-  { key: 'locations', label: 'Booth Management', Icon: IconBooth },
-  
+
+  { key: 'locations', label: 'Polling Units', Icon: IconBooth },
+
   { key: 'parties', label: 'Political Parties', Icon: IconParty },
 
-  { key: 'admins', label: 'User Management', Icon: IconShield },
+  { key: 'admins', label: 'Admin Users', Icon: IconShield },
 ];
 
 export default function Sidebar({ activeTab, setActiveTab, mobileOpen, onCloseMobile }) {
@@ -163,10 +163,10 @@ export default function Sidebar({ activeTab, setActiveTab, mobileOpen, onCloseMo
       <aside className="app-sidebar">
         <div className="sidebar-brand">
           <div className="sidebar-brand-mark">
-            <img 
-              src={logoIcon} 
-              alt="EMS Logo" 
-              style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+            <img
+              src={logoIcon}
+              alt="EMS Logo"
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
             />
           </div>
           <span className="sidebar-brand-text">EMS</span>

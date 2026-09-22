@@ -1,7 +1,9 @@
 import { isTokenValid } from '../utils/authUtils';
 
 // OLD CODE:
-const API_BASE_URL = 'https://ems-backend-55q1.onrender.com/api';
+// const API_BASE_URL = 'https://ems-backend-55q1.onrender.com/api';
+// NEW PRODUCTION API URL:
+const API_BASE_URL = 'https://ems-api.spikedace.com/api';
 
 // FIX: Point to local backend API server on port 5000 for testing
 // const API_BASE_URL = 'http://localhost:5000/api';

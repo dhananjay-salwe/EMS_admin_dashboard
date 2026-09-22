@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { apiCall } from '../api/client';
 import CustomSelect from '../components/CustomSelect';
 import { toast } from 'react-hot-toast';
-import { exportToCSV, exportToExcel } from '../utils/exportImportUtils';
+// import { exportToCSV, exportToExcel } from '../utils/exportImportUtils';
+import { exportToExcel } from '../utils/exportImportUtils';
 
 // --- Icons & Helper Components ---
 const EditIcon = (props) => (
@@ -252,8 +253,8 @@ export default function WardReport() {
         let winnerId = null;
 
         fetchedCandidates.forEach(c => {
-          const voteVal = (c.total_votes !== undefined && c.total_votes !== null && c.total_votes !== 0) 
-            ? c.total_votes 
+          const voteVal = (c.total_votes !== undefined && c.total_votes !== null && c.total_votes !== 0)
+            ? c.total_votes
             : '';
           initialCounts[c.id] = voteVal;
           if (c.is_winner) {
@@ -335,7 +336,7 @@ export default function WardReport() {
     try {
       toast.loading(`Preparing report for ${ward.ward_name}...`, { id: 'ward-export' });
       const res = await apiCall(`/ward-reports/candidates?ward_id=${ward.id}`);
-      
+
       if (!res.success || !res.candidates || res.candidates.length === 0) {
         toast.error('No candidate vote details found for this ward', { id: 'ward-export' });
         return;
@@ -347,8 +348,8 @@ export default function WardReport() {
 
       const auditorName = candidateList[0]?.updated_by_name || ward.updated_by_name || 'Moderator';
       const auditorRole = candidateList[0]?.updated_by_role || ward.updated_by_role || 'Admin';
-      const auditDate = (candidateList[0]?.updated_at || ward.updated_at) 
-        ? new Date(candidateList[0]?.updated_at || ward.updated_at).toLocaleString() 
+      const auditDate = (candidateList[0]?.updated_at || ward.updated_at)
+        ? new Date(candidateList[0]?.updated_at || ward.updated_at).toLocaleString()
         : 'N/A';
 
       const metadataRows = [
@@ -360,22 +361,22 @@ export default function WardReport() {
         { label: 'S.No', key: (_, index) => index + 1 },
         { label: 'Candidate Name', key: 'candidate_name' },
         { label: 'Party', key: (c) => `${c.party_name} (${c.party_code || ''})` },
-        { 
-          label: 'Original Count (Booths Total)', 
-          key: (c) => (c.original_votes !== undefined && c.original_votes !== null ? c.original_votes : 0) 
+        {
+          label: 'Original Count (Booths Total)',
+          key: (c) => (c.original_votes !== undefined && c.original_votes !== null ? c.original_votes : 0)
         },
-        { 
-          label: 'Audited Count (Moderator)', 
-          key: (c) => (c.total_votes !== undefined && c.total_votes !== null ? c.total_votes : 0) 
+        {
+          label: 'Audited Count (Moderator)',
+          key: (c) => (c.total_votes !== undefined && c.total_votes !== null ? c.total_votes : 0)
         },
-        { 
-          label: 'Variance / Difference', 
+        {
+          label: 'Variance / Difference',
           key: (c) => {
             const modVotes = c.total_votes || 0;
             const origVotes = c.original_votes || 0;
             const diff = modVotes - origVotes;
             return diff > 0 ? `+${diff}` : `${diff}`;
-          } 
+          }
         },
         { label: 'Outcome', key: (c) => (c.is_winner ? 'Winner' : '-') }
       ];
@@ -390,7 +391,9 @@ export default function WardReport() {
           metadataRows,
         });
         toast.success(`Exported audit report for ${ward.ward_name} as Excel!`, { id: 'ward-export' });
-      } else {
+      }
+      /*
+      else {
         exportToCSV({
           data: candidateList,
           columns,
@@ -400,6 +403,7 @@ export default function WardReport() {
         });
         toast.success(`Exported audit report for ${ward.ward_name} as CSV!`, { id: 'ward-export' });
       }
+      */
     } catch (err) {
       console.error('Row export error:', err);
       toast.error('Failed to export ward report', { id: 'ward-export' });
@@ -519,6 +523,7 @@ export default function WardReport() {
                                   <div className="export-dropdown-header">
                                     <span>Export Options</span>
                                   </div>
+                                  {/*
                                   <button
                                     type="button"
                                     className="export-dropdown-item"
@@ -533,6 +538,7 @@ export default function WardReport() {
                                       <span className="export-item-desc">Comma-separated values (.csv)</span>
                                     </div>
                                   </button>
+                                  */}
                                   <button
                                     type="button"
                                     className="export-dropdown-item"

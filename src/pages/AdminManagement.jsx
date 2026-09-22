@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { apiCall } from '../api/client';
 import CustomSelect from '../components/CustomSelect';
 import { toast } from 'react-hot-toast';
-import { exportToCSV, exportToExcel } from '../utils/exportImportUtils';
+// import { exportToCSV, exportToExcel } from '../utils/exportImportUtils';
+import { exportToExcel } from '../utils/exportImportUtils';
 
 const EditIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -99,10 +100,10 @@ const iconBtnStyle = (active, disabled = false) => ({
 
 export default function AdminManagement({ currentAdminRole }) {
   const [admins, setAdmins] = useState([]);
-  
+
   // FIX: Updated form data fields to support rich profile schema
   const [formData, setFormData] = useState({ full_name: '', email: '', contact_number: '+234', password: '', role: 'State Headquarter Officer', lga_id: '' });
-  
+
   // FEATURE: New states for LGAs list and current user under edit modal
   const [lgas, setLgas] = useState([]);
   const [editingUser, setEditingUser] = useState(null);
@@ -112,7 +113,7 @@ export default function AdminManagement({ currentAdminRole }) {
     setFormData({ full_name: '', email: '', contact_number: '+234', password: '', role: 'State Headquarter Officer', lga_id: '' });
     setIsCreateModalOpen(false);
   };
-  
+
   // FEATURE: Search, Sort & Filter states replicated from AuditSubmissions.jsx
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: 'full_name', direction: 'asc' });
@@ -143,7 +144,7 @@ export default function AdminManagement({ currentAdminRole }) {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, filterRole, sortConfig]);
-  
+
   const [submitting, setSubmitting] = useState(false);
 
   const [loading, setLoading] = useState(true);
@@ -151,10 +152,10 @@ export default function AdminManagement({ currentAdminRole }) {
   const [deletingUser, setDeletingUser] = useState(null);
 
   const fetchAdmins = async () => {
-    try { 
-    const data = await apiCall('/admins/all');
-    if (data.success) setAdmins(data.admins);
-    } catch (error) { 
+    try {
+      const data = await apiCall('/admins/all');
+      if (data.success) setAdmins(data.admins);
+    } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
@@ -163,10 +164,10 @@ export default function AdminManagement({ currentAdminRole }) {
 
   // FEATURE: Fetch LGAs list from backend API server
   const fetchLgas = async () => {
-    try { 
-    const data = await apiCall('/admins/lga');
-    if (data.success) setLgas(data.lgas);
-    } catch (error) { 
+    try {
+      const data = await apiCall('/admins/lga');
+      if (data.success) setLgas(data.lgas);
+    } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
@@ -180,7 +181,7 @@ export default function AdminManagement({ currentAdminRole }) {
   useEffect(() => {
     const loadAllData = async () => {
       setLoading(true);
-      await Promise.all([fetchAdmins(),fetchLgas()]);
+      await Promise.all([fetchAdmins(), fetchLgas()]);
       setLoading(false);
     };
     loadAllData();
@@ -299,7 +300,7 @@ export default function AdminManagement({ currentAdminRole }) {
     }
   };
 
-// 1. Opens the modal and sets the target user
+  // 1. Opens the modal and sets the target user
   const handleDelete = (user) => {
     setDeletingUser(user);
   };
@@ -307,7 +308,7 @@ export default function AdminManagement({ currentAdminRole }) {
   // 2. Fires when the user clicks "Confirm" inside the modal
   const confirmDelete = async () => {
     if (!deletingUser) return;
-    
+
     const res = await apiCall(`/admins/${deletingUser.id}`, { method: 'DELETE' });
     if (res.success) {
       toast.success('User account deleted successfully!');
@@ -378,6 +379,7 @@ export default function AdminManagement({ currentAdminRole }) {
         ] : [])
       ];
 
+      /*
       if (format === 'csv') {
         exportToCSV({
           data: filteredAndSortedUsers,
@@ -386,7 +388,9 @@ export default function AdminManagement({ currentAdminRole }) {
           title,
         });
         toast.success(`Exported ${filteredAndSortedUsers.length} user records as CSV!`);
-      } else if (format === 'excel') {
+      } else
+      */
+      if (format === 'excel') {
         exportToExcel({
           data: filteredAndSortedUsers,
           columns,
@@ -426,224 +430,224 @@ export default function AdminManagement({ currentAdminRole }) {
 
       {/* FEATURE: Full-width System Users table */}
       <div className="card" style={{ overflow: 'visible' }}>
-          {/* FIX: Render general System Users list table with search input, sort selectors, filter toolbar, and full profile column definitions */}
-          <div className="card-header responsive-header" style={{ overflow: 'visible' }}>
-            <div className="header-title-group">
-              <h2>System Users</h2>
-              <span className="muted">{filteredAndSortedUsers.length} of {admins.length} total</span>
-            </div>
-            <div className="header-controls-group">
-              <input
-                type="text"
-                className="form-control search-input-responsive"
-                placeholder="Type to search..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
+        {/* FIX: Render general System Users list table with search input, sort selectors, filter toolbar, and full profile column definitions */}
+        <div className="card-header responsive-header" style={{ overflow: 'visible' }}>
+          <div className="header-title-group">
+            <h2>Admin Users</h2>
+            <span className="muted">{filteredAndSortedUsers.length} of {admins.length} total</span>
+          </div>
+          <div className="header-controls-group">
+            <input
+              type="text"
+              className="form-control search-input-responsive"
+              placeholder="Type to search..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+            <div className="sort-filter-actions">
+              <span className="sort-label-text">
+                Sort by
+              </span>
+              <CustomSelect
+                className="sort-select-responsive"
+                value={sortConfig.direction}
+                options={SORT_OPTIONS}
+                onChange={e => setSortConfig({ ...sortConfig, direction: e.target.value })}
               />
-              <div className="sort-filter-actions">
-                <span className="sort-label-text">
-                  Sort by
-                </span>
-                <CustomSelect
-                  className="sort-select-responsive"
-                  value={sortConfig.direction}
-                  options={SORT_OPTIONS}
-                  onChange={e => setSortConfig({ ...sortConfig, direction: e.target.value })}
-                />
-                <button
-                  type="button" title="Filter" aria-label="Toggle filter"
-                  style={iconBtnStyle(filterOpen || filterRole)}
-                  onClick={() => setFilterOpen(o => !o)}
-                >
-                  <FilterIcon />
-                </button>
-                <div className="export-menu-container" ref={exportMenuRef}>
-                  <button
-                    type="button"
-                    title={isExportDisabled ? "Select a role from the filter dropdown to export user accounts" : "Export List (CSV / Excel)"}
-                    aria-label="Export user accounts list"
-                    aria-expanded={exportOpen}
-                    disabled={isExportDisabled}
-                    style={iconBtnStyle(exportOpen, isExportDisabled)}
-                    onClick={() => !isExportDisabled && setExportOpen(o => !o)}
-                  >
-                    <DownloadIcon />
-                  </button>
-                  {exportOpen && !isExportDisabled && (
-                    <div className="export-dropdown-menu">
-                      <div className="export-dropdown-header">
-                        <span>Export Options</span>
-                        <span className="export-badge">{filteredAndSortedUsers.length} records</span>
-                      </div>
-                      <button
-                        type="button"
-                        className="export-dropdown-item"
-                        onClick={() => handleExport('csv')}
-                      >
-                        <div className="export-format-badge csv">CSV</div>
-                        <div className="export-item-info">
-                          <span className="export-item-title">Export as CSV</span>
-                          <span className="export-item-desc">Comma-separated values (.csv)</span>
-                        </div>
-                      </button>
-                      <button
-                        type="button"
-                        className="export-dropdown-item"
-                        onClick={() => handleExport('excel')}
-                      >
-                        <div className="export-format-badge excel">XLS</div>
-                        <div className="export-item-info">
-                          <span className="export-item-title">Export as Excel</span>
-                          <span className="export-item-desc">Excel Spreadsheet (.xlsx)</span>
-                        </div>
-                      </button>
-                    </div>
-                  )}
-                </div>
+              <button
+                type="button" title="Filter" aria-label="Toggle filter"
+                style={iconBtnStyle(filterOpen || filterRole)}
+                onClick={() => setFilterOpen(o => !o)}
+              >
+                <FilterIcon />
+              </button>
+              <div className="export-menu-container" ref={exportMenuRef}>
                 <button
                   type="button"
-                  className="btn btn-primary btn-add-user"
-                  onClick={() => setIsCreateModalOpen(true)}
+                  title={isExportDisabled ? "Select a role from the filter dropdown to export user accounts" : "Export List (CSV / Excel)"}
+                  aria-label="Export user accounts list"
+                  aria-expanded={exportOpen}
+                  disabled={isExportDisabled}
+                  style={iconBtnStyle(exportOpen, isExportDisabled)}
+                  onClick={() => !isExportDisabled && setExportOpen(o => !o)}
                 >
-                  <PlusIcon />
-                  <span>Add User</span>
+                  <DownloadIcon />
                 </button>
+                {exportOpen && !isExportDisabled && (
+                  <div className="export-dropdown-menu">
+                    <div className="export-dropdown-header">
+                      <span>Export Options</span>
+                      <span className="export-badge">{filteredAndSortedUsers.length} records</span>
+                    </div>
+                    {/* <button
+                      type="button"
+                      className="export-dropdown-item"
+                      onClick={() => handleExport('csv')}
+                    >
+                      <div className="export-format-badge csv">CSV</div>
+                      <div className="export-item-info">
+                        <span className="export-item-title">Export as CSV</span>
+                        <span className="export-item-desc">Comma-separated values (.csv)</span>
+                      </div>
+                    </button> */}
+                    <button
+                      type="button"
+                      className="export-dropdown-item"
+                      onClick={() => handleExport('excel')}
+                    >
+                      <div className="export-format-badge excel">XLS</div>
+                      <div className="export-item-info">
+                        <span className="export-item-title">Export as Excel</span>
+                        <span className="export-item-desc">Excel Spreadsheet (.xlsx)</span>
+                      </div>
+                    </button>
+                  </div>
+                )}
               </div>
-            </div>
-          </div>
-
-          {filterOpen && (
-            <div className="filter-toolbar" style={{ padding: '12px 16px 12px', display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', overflow: 'visible' }}>
-              {filterRole ? (
-                <Chip label={`Role: ${filterRole}`} onRemove={() => setFilterRole('')} />
-              ) : (
-                <CustomSelect
-                  className="filter-select-responsive"
-                  value={filterRole}
-                  placeholder="Select Role..."
-                  options={[
-                    { value: 'State Headquarter Officer', label: 'State Headquarter Officer' },
-                    { value: 'General Collation Center Administrator', label: 'General Collation Center Administrator' },
-                    { value: 'LGA Officer', label: 'LGA Officer' },
-                    { value: 'SuperAdmin', label: 'SuperAdmin' }
-                  ]}
-                  onChange={e => setFilterRole(e.target.value)}
-                  style={{ width: '220px' }}
-                  dropdownStyle={{
-                    position: 'absolute',
-                    zIndex: 999,
-                    maxHeight: '200px',
-                    overflowY: 'auto'
-                  }}
-                />
-              )}
-            </div>
-          )}
-
-          {/* FIX: Use responsive no-scrollbar wrapper class */}
-          <div className="table-wrap table-wrap-no-scrollbar">
-            {/* FIX: Apply responsive custom padding styles */}
-            <table className="data-table admin-management-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Full Name</th>
-                  <th>Email</th>
-                  <th>Contact</th>
-                  <th>Role</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  // Render 5 skeleton rows while fetching
-                  [...Array(5)].map((_, i) => (
-                    <tr key={`skeleton-${i}`}>
-                      <td><div className="skeleton-box" style={{ width: 20, height: 16 }} /></td>
-                      <td><div className="skeleton-box" style={{ width: 140, height: 16 }} /></td>
-                      <td><div className="skeleton-box" style={{ width: 160, height: 16 }} /></td>
-                      <td><div className="skeleton-box" style={{ width: 100, height: 16 }} /></td>
-                      <td><div className="skeleton-box" style={{ width: 110, height: 20, borderRadius: 12 }} /></td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '6px' }}>
-                          <div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6 }} />
-                          <div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6 }} />
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  pageUsers.map((adm, index) => (
-                    <tr key={adm.id}>
-                      <td>{(currentPage - 1) * PAGE_SIZE + index + 1}</td>
-                      <td>{adm.full_name || '-'}</td>
-                      <td>{adm.email || '-'}</td>
-                      <td>{adm.contact_number || '-'}</td>
-                      <td>
-                        <span className={`badge ${adm.role === 'SuperAdmin' ? 'badge-soft-success' : 'badge-soft-info'}`}>
-                          {adm.role}
-                        </span>
-                      </td>
-                      <td>
-                        {adm.role === 'SuperAdmin' ? (
-                          <span className="muted" style={{ fontSize: 12 }}>Protected</span>
-                        ) : (
-                          <div style={{ display: 'flex', gap: '6px' }}>
-                            <button
-                              className="btn-icon"
-                              style={actionIconStyle('primary')}
-                              title="Edit"
-                              aria-label="Edit user"
-                              onClick={() => setEditingUser(adm)}
-                            >
-                              <EditIcon />
-                            </button>
-                            <button
-                              className="btn-icon"
-                              style={actionIconStyle('danger')}
-                              title="Delete"
-                              aria-label="Delete admin"
-                              onClick={() => handleDelete(adm)}
-                            >
-                              <DeleteIcon />
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-                {!loading && filteredAndSortedUsers.length === 0 && (
-                  <tr><td colSpan={6} className="empty-state">No matching user accounts found.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {totalPages > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, padding: '16px 0 4px' }}>
               <button
                 type="button"
-                className="btn btn-outline btn-sm"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                className="btn btn-primary btn-add-user"
+                onClick={() => setIsCreateModalOpen(true)}
               >
-                Prev
-              </button>
-              <span className="muted">Page {currentPage} of {totalPages}</span>
-              <button
-                type="button"
-                className="btn btn-outline btn-sm"
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              >
-                Next
+                <PlusIcon />
+                <span>Add User</span>
               </button>
             </div>
-          )}
+          </div>
         </div>
 
-{/* FEATURE: Custom Delete Confirmation Modal */}
+        {filterOpen && (
+          <div className="filter-toolbar" style={{ padding: '12px 16px 12px', display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', overflow: 'visible' }}>
+            {filterRole ? (
+              <Chip label={`Role: ${filterRole}`} onRemove={() => setFilterRole('')} />
+            ) : (
+              <CustomSelect
+                className="filter-select-responsive"
+                value={filterRole}
+                placeholder="Select Role..."
+                options={[
+                  { value: 'State Headquarter Officer', label: 'State Headquarter Officer' },
+                  { value: 'General Collation Center Administrator', label: 'General Collation Center Administrator' },
+                  { value: 'LGA Officer', label: 'LGA Officer' },
+                  { value: 'SuperAdmin', label: 'SuperAdmin' }
+                ]}
+                onChange={e => setFilterRole(e.target.value)}
+                style={{ width: '220px' }}
+                dropdownStyle={{
+                  position: 'absolute',
+                  zIndex: 999,
+                  maxHeight: '200px',
+                  overflowY: 'auto'
+                }}
+              />
+            )}
+          </div>
+        )}
+
+        {/* FIX: Use responsive no-scrollbar wrapper class */}
+        <div className="table-wrap table-wrap-no-scrollbar">
+          {/* FIX: Apply responsive custom padding styles */}
+          <table className="data-table admin-management-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Full Name</th>
+                <th>Email</th>
+                <th>Contact</th>
+                <th>Role</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                // Render 5 skeleton rows while fetching
+                [...Array(5)].map((_, i) => (
+                  <tr key={`skeleton-${i}`}>
+                    <td><div className="skeleton-box" style={{ width: 20, height: 16 }} /></td>
+                    <td><div className="skeleton-box" style={{ width: 140, height: 16 }} /></td>
+                    <td><div className="skeleton-box" style={{ width: 160, height: 16 }} /></td>
+                    <td><div className="skeleton-box" style={{ width: 100, height: 16 }} /></td>
+                    <td><div className="skeleton-box" style={{ width: 110, height: 20, borderRadius: 12 }} /></td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6 }} />
+                        <div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6 }} />
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                pageUsers.map((adm, index) => (
+                  <tr key={adm.id}>
+                    <td>{(currentPage - 1) * PAGE_SIZE + index + 1}</td>
+                    <td>{adm.full_name || '-'}</td>
+                    <td>{adm.email || '-'}</td>
+                    <td>{adm.contact_number || '-'}</td>
+                    <td>
+                      <span className={`badge ${adm.role === 'SuperAdmin' ? 'badge-soft-success' : 'badge-soft-info'}`}>
+                        {adm.role}
+                      </span>
+                    </td>
+                    <td>
+                      {adm.role === 'SuperAdmin' ? (
+                        <span className="muted" style={{ fontSize: 12 }}>Protected</span>
+                      ) : (
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button
+                            className="btn-icon"
+                            style={actionIconStyle('primary')}
+                            title="Edit"
+                            aria-label="Edit user"
+                            onClick={() => setEditingUser(adm)}
+                          >
+                            <EditIcon />
+                          </button>
+                          <button
+                            className="btn-icon"
+                            style={actionIconStyle('danger')}
+                            title="Delete"
+                            aria-label="Delete admin"
+                            onClick={() => handleDelete(adm)}
+                          >
+                            <DeleteIcon />
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+              {!loading && filteredAndSortedUsers.length === 0 && (
+                <tr><td colSpan={6} className="empty-state">No matching user accounts found.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, padding: '16px 0 4px' }}>
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            >
+              Prev
+            </button>
+            <span className="muted">Page {currentPage} of {totalPages}</span>
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* FEATURE: Custom Delete Confirmation Modal */}
       {deletingUser && (
         <div className="modal-overlay" onClick={() => setDeletingUser(null)}>
           <div className="modal-box" onClick={e => e.stopPropagation()}>
@@ -665,7 +669,7 @@ export default function AdminManagement({ currentAdminRole }) {
         </div>
       )}
 
-      
+
       {/* FEATURE: Edit User Modal */}
       {editingUser && (
         <div className="modal-overlay" onClick={() => setEditingUser(null)}>
@@ -692,7 +696,7 @@ export default function AdminManagement({ currentAdminRole }) {
                   <input
                     type="email" required className="form-control"
                     value={editingUser.email || ''}
-                    onChange={e => setEditingUser({ ...editingUser, email: e.target.value})}
+                    onChange={e => setEditingUser({ ...editingUser, email: e.target.value })}
                   />
                 </div>
                 <div className="form-group admin-modal-form-group">
@@ -747,7 +751,7 @@ export default function AdminManagement({ currentAdminRole }) {
                     onChange={e => setEditingUser({ ...editingUser, role: e.target.value })}
                   />
                 </div>
-                
+
                 {/* FIX: Add relative positioning with high z-index stacking context to Edit Modal LGA dropdown wrapper to prevent clipping */}
                 {editingUser.role === 'LGA Officer' && (
                   <div className="form-group admin-modal-lga-group">
@@ -777,7 +781,7 @@ export default function AdminManagement({ currentAdminRole }) {
                       type="text"
                       required
                       value={editingUser.lga_id || ''}
-                      onChange={() => {}}
+                      onChange={() => { }}
                       className="admin-hidden-input"
                     />
                   </div>
@@ -785,7 +789,7 @@ export default function AdminManagement({ currentAdminRole }) {
               </div>
               <div className="admin-edit-modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setEditingUser(null)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Save Changes</button>
+                <button type="submit" className="btn btn-primary">Update</button>
               </div>
             </form>
           </div>
@@ -903,7 +907,7 @@ export default function AdminManagement({ currentAdminRole }) {
                       type="text"
                       required
                       value={formData.lga_id || ''}
-                      onChange={() => {}}
+                      onChange={() => { }}
                       className="admin-hidden-input"
                     />
                   </div>
@@ -912,7 +916,7 @@ export default function AdminManagement({ currentAdminRole }) {
               <div className="admin-edit-modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={handleCloseCreateModal}>Cancel</button>
                 <button type="submit" className="btn btn-primary" disabled={submitting}>
-                  {submitting ? 'Creating…' : 'Create Admin'}
+                  {submitting ? 'Creating…' : 'Save'}
                 </button>
               </div>
             </form>
