@@ -79,7 +79,7 @@ const DownloadIcon = () => (
   </svg>
 );
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 10;
 
 const iconBtnStyle = (active, disabled = false) => ({
   display: 'inline-flex',

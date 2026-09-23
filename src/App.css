@@ -3083,3 +3083,25 @@ table.data-table {
     stroke-dashoffset: -124;
   }
 }
+
+/* ================= WARD & LOCATION MANAGEMENT EDIT MODAL & TABLE STYLES ================= */
+.table-actions-cell {
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.table-actions-cell .btn-icon {
+  transition: all 0.15s ease-in-out;
+}
+
+.table-actions-cell .btn-icon:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.location-edit-modal-box,
+.ward-edit-modal-box {
+  max-width: 520px;
+}

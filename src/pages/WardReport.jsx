@@ -77,7 +77,7 @@ const Chip = ({ label, onRemove }) => (
   </span>
 );
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 10;
 
 const SORT_OPTIONS = [
   { value: 'asc', label: 'Ward (A–Z)' },

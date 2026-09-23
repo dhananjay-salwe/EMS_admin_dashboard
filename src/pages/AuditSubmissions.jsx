@@ -78,7 +78,7 @@ const iconBtnStyle = (active, disabled = false) => ({
   boxSizing: 'border-box',
 });
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 10;
 
 export default function BoothReport() {
   const [submissions, setSubmissions] = useState([]);

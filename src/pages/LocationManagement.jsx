@@ -5,7 +5,7 @@ import { toast } from 'react-hot-toast';
 // import { exportToCSV, exportToExcel } from '../utils/exportImportUtils';
 import { exportToExcel } from '../utils/exportImportUtils';
 
-const PAGE_SIZE = 6;
+const PAGE_SIZE = 10;
 
 const SearchIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -128,9 +128,11 @@ export default function LocationManagement() {
     unique_booth_code: ''
   });
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   const resetForm = () => {
+    setEditingId(null);
     setFormData({
       state_name: '',
       lga_name: '',
@@ -143,6 +145,18 @@ export default function LocationManagement() {
   const handleCloseModal = () => {
     resetForm();
     setIsCreateModalOpen(false);
+  };
+
+  const handleEdit = (booth) => {
+    setEditingId(booth.booth_id);
+    setFormData({
+      state_name: booth.state_name || '',
+      lga_name: booth.lga_name || '',
+      ward_name: booth.ward_name || '',
+      booth_name: booth.booth_name || '',
+      unique_booth_code: booth.unique_booth_code || ''
+    });
+    setIsCreateModalOpen(true);
   };
 
   const [loading, setLoading] = useState(true);
@@ -196,16 +210,27 @@ export default function LocationManagement() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    const res = await apiCall('/locations/add', { method: 'POST', body: JSON.stringify(formData) });
+    let res;
+    if (editingId) {
+      res = await apiCall(`/locations/booth/${editingId}`, {
+        method: 'PUT',
+        body: JSON.stringify(formData)
+      });
+    } else {
+      res = await apiCall('/locations/add', {
+        method: 'POST',
+        body: JSON.stringify(formData)
+      });
+    }
     setSubmitting(false);
 
     if (res.success) {
-      toast.success('Polling unit registered successfully!');
+      toast.success(editingId ? 'Polling unit updated successfully!' : 'Polling unit registered successfully!');
       resetForm();
       setIsCreateModalOpen(false);
       fetchLocations();
     } else {
-      toast.error(res.message || 'Failed to register polling unit.');
+      toast.error(res.message || 'Failed to save polling unit.');
     }
   };
 
@@ -488,7 +513,16 @@ export default function LocationManagement() {
                     <td>{l.ward_name}</td>
                     <td>{l.lga_name}</td>
                     <td>{l.state_name}</td>
-                    <td>
+                    <td className="table-actions-cell">
+                      <button
+                        className="btn-icon"
+                        style={{ ...actionIconStyle('primary'), marginRight: 8 }}
+                        title="Edit"
+                        aria-label="Edit booth"
+                        onClick={() => handleEdit(l)}
+                      >
+                        <EditIcon />
+                      </button>
                       <button className="btn-icon" style={actionIconStyle('danger')} title="Delete" aria-label="Delete booth" onClick={() => handleDelete(l)}>
                         <DeleteIcon />
                       </button>
@@ -554,8 +588,8 @@ export default function LocationManagement() {
           <div className="admin-edit-modal-box" onClick={e => e.stopPropagation()}>
             <div className="admin-edit-modal-header">
               <div>
-                <h3 className="admin-edit-modal-title">Add Geographic Polling Unit</h3>
-                <p className="admin-edit-modal-subtitle">Register a new polling booth under state, LGA, and ward</p>
+                <h3 className="admin-edit-modal-title">{editingId ? 'Edit Polling Unit' : 'Add Geographic Polling Unit'}</h3>
+                <p className="admin-edit-modal-subtitle">{editingId ? 'Update polling unit details, number, and name' : 'Register a new polling booth under state, LGA, and ward'}</p>
               </div>
               <button className="modal-close" onClick={handleCloseModal}>&times;</button>
             </div>
@@ -648,7 +682,7 @@ export default function LocationManagement() {
               <div className="admin-edit-modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>Cancel</button>
                 <button type="submit" className="btn btn-primary" disabled={submitting}>
-                  {submitting ? 'Registering Booth…' : 'Save'}
+                  {submitting ? 'Saving…' : editingId ? 'Update' : 'Save'}
                 </button>
               </div>
             </form>

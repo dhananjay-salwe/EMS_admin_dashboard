@@ -5,7 +5,7 @@ import { toast } from 'react-hot-toast';
 // import { exportToCSV, exportToExcel } from '../utils/exportImportUtils';
 import { exportToExcel } from '../utils/exportImportUtils';
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 10;
 
 const IconChevron = (props) => (
   <svg width="10" height="6" viewBox="0 0 10 6" fill="none" {...props}>
@@ -104,6 +104,13 @@ const DownloadIcon = () => (
   </svg>
 );
 
+const EditIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+  </svg>
+);
+
 const DeleteIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="3 6 5 6 21 6" />
@@ -187,15 +194,27 @@ export default function WardManagement() {
   const [locations, setLocations] = useState([]);
   const [formData, setFormData] = useState({ state_name: '', lga_name: '', ward_name: '' });
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   const resetForm = () => {
+    setEditingId(null);
     setFormData({ state_name: '', lga_name: '', ward_name: '' });
   };
 
   const handleCloseModal = () => {
     resetForm();
     setIsCreateModalOpen(false);
+  };
+
+  const handleEdit = (w) => {
+    setEditingId(w.ward_id);
+    setFormData({
+      state_name: w.state_name || '',
+      lga_name: w.lga_name || '',
+      ward_name: w.ward_name || ''
+    });
+    setIsCreateModalOpen(true);
   };
 
   const [loading, setLoading] = useState(true);
@@ -339,16 +358,21 @@ export default function WardManagement() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    const res = await apiCall('/locations/ward/add', { method: 'POST', body: JSON.stringify(formData) });
+    let res;
+    if (editingId) {
+      res = await apiCall(`/locations/ward/${editingId}`, { method: 'PUT', body: JSON.stringify(formData) });
+    } else {
+      res = await apiCall('/locations/ward/add', { method: 'POST', body: JSON.stringify(formData) });
+    }
     setSubmitting(false);
 
     if (res.success) {
-      toast.success('Electoral ward created successfully!');
+      toast.success(editingId ? 'Electoral ward updated successfully!' : 'Electoral ward created successfully!');
       resetForm();
       setIsCreateModalOpen(false);
       fetchLocations();
     } else {
-      toast.error(res.message || 'Failed to create electoral ward.');
+      toast.error(res.message || 'Failed to save electoral ward.');
     }
   };
 
@@ -545,9 +569,20 @@ export default function WardManagement() {
                     <td>{w.state_name}</td>
                     <td>{w.lga_name}</td>
                     <td><strong>{w.ward_name}</strong></td>
-                    <td>
+                    <td className="table-actions-cell">
                       <button
                         type="button"
+                        className="btn-icon"
+                        style={{ ...actionIconStyle('primary'), marginRight: 8 }}
+                        title="Edit"
+                        aria-label="Edit ward"
+                        onClick={() => handleEdit(w)}
+                      >
+                        <EditIcon />
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-icon"
                         style={actionIconStyle('danger')}
                         title="Delete"
                         aria-label="Delete ward"
@@ -620,8 +655,8 @@ export default function WardManagement() {
           <div className="admin-edit-modal-box" onClick={e => e.stopPropagation()}>
             <div className="admin-edit-modal-header">
               <div>
-                <h3 className="admin-edit-modal-title">Create Electoral Ward</h3>
-                <p className="admin-edit-modal-subtitle">Define a new electoral ward under a state and LGA</p>
+                <h3 className="admin-edit-modal-title">{editingId ? 'Edit Electoral Ward' : 'Create Electoral Ward'}</h3>
+                <p className="admin-edit-modal-subtitle">{editingId ? 'Update electoral ward details under state and LGA' : 'Define a new electoral ward under a state and LGA'}</p>
               </div>
               <button className="modal-close" onClick={handleCloseModal}>&times;</button>
             </div>
@@ -665,7 +700,7 @@ export default function WardManagement() {
               <div className="admin-edit-modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>Cancel</button>
                 <button type="submit" className="btn btn-primary" disabled={submitting}>
-                  {submitting ? 'Saving Ward…' : 'Save'}
+                  {submitting ? 'Saving…' : editingId ? 'Update' : 'Save'}
                 </button>
               </div>
             </form>

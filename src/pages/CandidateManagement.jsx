@@ -5,7 +5,7 @@ import { toast } from 'react-hot-toast';
 // import { exportToCSV, exportToExcel } from '../utils/exportImportUtils';
 import { exportToExcel } from '../utils/exportImportUtils';
 
-const PAGE_SIZE = 6;
+const PAGE_SIZE = 10;
 
 const SearchIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
