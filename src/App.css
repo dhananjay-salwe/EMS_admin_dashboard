@@ -1856,11 +1856,10 @@ table.data-table {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 12px;
-  flex-wrap: nowrap;
-  /* keep side-by-side on desktop */
+  gap: 10px;
+  flex-wrap: wrap;
   justify-content: flex-end;
-  /* align to the right side */
+  max-width: 100%;
 }
 
 .custom-select-container {
@@ -1873,10 +1872,23 @@ table.data-table {
 }
 
 .filter-select-responsive {
-  width: 160px;
-  /* fixed width to align in a single line next to headers */
-  min-width: 120px;
+  flex: 1 1 150px;
+  min-width: 130px;
   max-width: 100%;
+  width: auto;
+}
+
+@media (max-width: 960px) {
+  .responsive-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .filter-toolbar {
+    width: 100%;
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width: 640px) {
@@ -1893,6 +1905,7 @@ table.data-table {
     width: 100% !important;
     min-width: 0 !important;
     max-width: 100% !important;
+    flex: 1 1 100% !important;
   }
 
   .filter-clear-btn {
@@ -1900,6 +1913,7 @@ table.data-table {
     margin-top: 4px;
   }
 }
+
 
 
 /* Responsive Grid for the new Ward View and the charts */
@@ -2254,8 +2268,9 @@ table.data-table {
 }
 
 .filter-select-responsive {
-  width: 180px;
+  flex: 1 1 150px;
   min-width: 130px;
+  max-width: 100%;
 }
 
 /* Data Table Specifics */

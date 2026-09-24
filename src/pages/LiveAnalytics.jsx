@@ -519,7 +519,7 @@ export default function LiveAnalytics() {
           </div>
 
           {/* Main Page LGA Dropdown with Clear Button */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="filter-toolbar">
             <CustomSelect
               className="filter-select-responsive"
               placeholder="All LGAs"
@@ -534,18 +534,10 @@ export default function LiveAnalytics() {
             {partyLgaFilter && (
               <button
                 type="button"
-                className="btn btn-secondary btn-sm"
+                className="btn btn-secondary btn-sm filter-clear-btn"
                 onClick={() => {
                   setPartyLgaFilter('');
                   setPartyCurrentPage(1);
-                }}
-                style={{
-                  whiteSpace: 'nowrap',
-                  height: '38px',
-                  padding: '0 12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  fontWeight: '600'
                 }}
               >
                 Clear
