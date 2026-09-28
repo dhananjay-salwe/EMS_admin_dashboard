@@ -113,6 +113,7 @@ const SORT_OPTIONS = [
 const EXPORT_COLUMNS = [
   { label: 'Number', key: 'unique_booth_code' },
   { label: 'Name', key: 'booth_name' },
+  { label: 'Registered Voters', key: 'registered_voters' },
   { label: 'Ward', key: 'ward_name' },
   { label: 'LGA', key: 'lga_name' },
   { label: 'State', key: 'state_name' },
@@ -125,7 +126,8 @@ export default function LocationManagement() {
     lga_name: '',
     ward_name: '',
     booth_name: '',
-    unique_booth_code: ''
+    unique_booth_code: '',
+    registered_voters: ''
   });
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -138,7 +140,8 @@ export default function LocationManagement() {
       lga_name: '',
       ward_name: '',
       booth_name: '',
-      unique_booth_code: ''
+      unique_booth_code: '',
+      registered_voters: ''
     });
   };
 
@@ -154,7 +157,8 @@ export default function LocationManagement() {
       lga_name: booth.lga_name || '',
       ward_name: booth.ward_name || '',
       booth_name: booth.booth_name || '',
-      unique_booth_code: booth.unique_booth_code || ''
+      unique_booth_code: booth.unique_booth_code || '',
+      registered_voters: booth.registered_voters || ''
     });
     setIsCreateModalOpen(true);
   };
@@ -484,6 +488,7 @@ export default function LocationManagement() {
               <tr>
                 <th>Number</th>
                 <th>Name</th>
+                <th>Voters</th>
                 <th>Ward</th>
                 <th>LGA</th>
                 <th>State</th>
@@ -497,6 +502,7 @@ export default function LocationManagement() {
                   <tr key={`skeleton-${i}`}>
                     <td><div className="skeleton-box" style={{ width: 60, height: 16 }} /></td>
                     <td><div className="skeleton-box" style={{ width: 140, height: 16 }} /></td>
+                    <td><div className="skeleton-box" style={{ width: 60, height: 16 }} /></td>
                     <td><div className="skeleton-box" style={{ width: 80, height: 16 }} /></td>
                     <td><div className="skeleton-box" style={{ width: 80, height: 16 }} /></td>
                     <td><div className="skeleton-box" style={{ width: 80, height: 16 }} /></td>
@@ -510,6 +516,7 @@ export default function LocationManagement() {
                   <tr key={l.booth_id}>
                     <td><strong>{l.unique_booth_code}</strong></td>
                     <td>{l.booth_name}</td>
+                    <td>{l.registered_voters || 0}</td>
                     <td>{l.ward_name}</td>
                     <td>{l.lga_name}</td>
                     <td>{l.state_name}</td>
@@ -531,10 +538,10 @@ export default function LocationManagement() {
                 ))
               )}
               {!loading && filteredBooths.length === 0 && booths.length > 0 && (
-                <tr><td colSpan={6} className="empty-state">No polling units match the selected filters.</td></tr>
+                <tr><td colSpan={7} className="empty-state">No polling units match the selected filters.</td></tr>
               )}
               {!loading && booths.length === 0 && (
-                <tr><td colSpan={6} className="empty-state">No polling units registered yet.</td></tr>
+                <tr><td colSpan={7} className="empty-state">No polling units registered yet.</td></tr>
               )}
             </tbody>
           </table>
@@ -677,6 +684,22 @@ export default function LocationManagement() {
                       onChange={e => setFormData({ ...formData, booth_name: e.target.value })}
                     />
                   </div>
+                </div>
+                {/* REGISTERED VOTERS (New Row) */}
+                <div className="form-group admin-modal-form-group">
+                  <label className="form-label">Registered Voters</label>
+                  <input
+                    type="number"
+                    min="1"
+                    className="form-control"
+                    placeholder="e.g. 500"
+                    value={formData.registered_voters}
+                    onChange={e => {
+                      // Prevent a single '0' from being entered
+                      const val = e.target.value === '0' ? '' : e.target.value;
+                      setFormData({ ...formData, registered_voters: val });
+                    }}
+                  />
                 </div>
               </div>
               <div className="admin-edit-modal-footer">

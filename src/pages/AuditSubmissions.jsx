@@ -842,7 +842,12 @@ export default function BoothReport() {
             onClick={e => e.stopPropagation()}
           >
             <div className="modal-header">
-              <h3>Verify Counts — {verifyingReport.unique_booth_code}</h3>
+              <div>
+                <h3>Verify Counts — {verifyingReport.unique_booth_code}</h3>
+                <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>
+                  Registered Voters: <strong>{verifyingReport.registered_voters || 0}</strong>
+                </div>
+              </div>
               <button className="modal-close" onClick={() => setVerifyingReport(null)}>&times;</button>
             </div>
 
