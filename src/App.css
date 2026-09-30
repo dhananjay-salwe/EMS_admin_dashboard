@@ -1790,7 +1790,7 @@ table.data-table {
 
 .header-title-group {
   min-width: 0;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
 }
 
 .header-controls-group {
@@ -1799,6 +1799,7 @@ table.data-table {
   gap: 8px;
   flex-wrap: wrap;
   width: auto;
+  flex: 0 1 auto;
 }
 
 .sort-filter-actions {
@@ -1815,40 +1816,10 @@ table.data-table {
 }
 
 .search-input-responsive {
-  width: 240px;
-}
-
-@media (max-width: 640px) {
-  .responsive-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 14px;
-  }
-
-  .header-controls-group {
-    width: 100%;
-    justify-content: flex-start;
-  }
-
-  .search-input-responsive {
-    width: 100% !important;
-    min-width: 0 !important;
-  }
-
-  .sort-filter-actions {
-    width: 100%;
-    flex-wrap: wrap;
-  }
-
-  .sort-select-responsive {
-    flex: 1;
-    min-width: 0;
-    max-width: 100% !important;
-  }
-
-  .sort-label-text {
-    font-size: 11px;
-  }
+  width: 180px;
+  min-width: 130px;
+  max-width: 220px;
+  flex: 0 1 180px;
 }
 
 /* 3. Filter Drawer & Toolbar Layout Rules */
@@ -1872,17 +1843,42 @@ table.data-table {
 }
 
 .filter-select-responsive {
-  flex: 1 1 150px;
-  min-width: 130px;
-  max-width: 100%;
-  width: auto;
+  flex: 0 1 145px;
+  min-width: 120px;
+  max-width: 175px;
+  width: 145px;
 }
 
-@media (max-width: 960px) {
+.filter-clear-btn {
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 1180px) {
   .responsive-header {
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
+  }
+
+  .header-controls-group {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  .header-controls-group .search-input-responsive {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 100% !important;
+  }
+
+  .header-controls-group .filter-select-responsive {
+    flex: 1 1 0 !important;
+    min-width: 100px !important;
+    max-width: 100% !important;
+    width: auto !important;
   }
 
   .filter-toolbar {
@@ -1892,6 +1888,39 @@ table.data-table {
 }
 
 @media (max-width: 640px) {
+  .responsive-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .header-controls-group {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .search-input-responsive {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .sort-filter-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .sort-select-responsive {
+    flex: 1;
+    min-width: 0;
+    max-width: 100% !important;
+  }
+
+  .sort-label-text {
+    font-size: 11px;
+  }
+
   .filter-toolbar {
     flex-direction: column;
     align-items: stretch;
@@ -1900,6 +1929,7 @@ table.data-table {
     width: 100%;
   }
 
+  .header-controls-group .filter-select-responsive,
   .filter-select-responsive,
   .filter-select-full-mobile {
     width: 100% !important;
@@ -1909,7 +1939,7 @@ table.data-table {
   }
 
   .filter-clear-btn {
-    width: 100%;
+    width: 100% !important;
     margin-top: 4px;
   }
 }
@@ -2260,7 +2290,10 @@ table.data-table {
 
 /* Responsive Search Input & Filters */
 .search-input-responsive {
-  width: 240px;
+  width: 180px;
+  min-width: 130px;
+  max-width: 220px;
+  flex: 0 1 180px;
 }
 
 .sort-select-responsive {
@@ -2268,9 +2301,10 @@ table.data-table {
 }
 
 .filter-select-responsive {
-  flex: 1 1 150px;
-  min-width: 130px;
-  max-width: 100%;
+  flex: 0 1 145px;
+  min-width: 120px;
+  max-width: 175px;
+  width: 145px;
 }
 
 /* Data Table Specifics */
