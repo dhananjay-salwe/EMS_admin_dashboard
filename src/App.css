@@ -3154,3 +3154,75 @@ table.data-table {
 .ward-edit-modal-box {
   max-width: 520px;
 }
+
+/* ================= OPERATOR MANAGEMENT CASCADING DROPDOWNS & FORM ROWS ================= */
+.form-row {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+  position: relative;
+}
+
+.form-row > * {
+  flex: 1;
+  min-width: 0;
+}
+
+.form-row:first-of-type {
+  z-index: 4;
+}
+
+.form-row:last-of-type {
+  z-index: 3;
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+
+.operator-edit-modal-box {
+  max-width: 560px;
+}
+
+.operator-modal-cascading-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.operator-cascading-field {
+  position: relative;
+  width: 100%;
+  margin: 0;
+}
+
+.operator-cascading-field .custom-select-container {
+  width: 100%;
+}
+
+.operator-cascading-field .custom-select-dropdown {
+  z-index: 1050 !important;
+}
+
+/* Ensure searchable booth dropdown is stacked cleanly with high z-index */
+.admin-modal-lga-group .combobox-panel {
+  z-index: 1060 !important;
+}
+
+.combobox.disabled .combobox-input {
+  background-color: #f8f9fa !important;
+  color: #6c757d !important;
+  cursor: not-allowed !important;
+  border-color: #e2e5f1 !important;
+}
+
+/* Responsive tweaks for mobile viewports */
+@media (max-width: 576px) {
+  .operator-modal-cascading-group {
+    gap: 14px;
+  }
+}

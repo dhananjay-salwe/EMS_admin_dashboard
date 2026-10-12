@@ -78,6 +78,31 @@ const iconBtnStyle = (active, disabled = false) => ({
   boxSizing: 'border-box',
 });
 
+const MediaSpinner = ({ label = 'Loading media...' }) => (
+  <div style={{
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    color: '#94a3b8',
+    padding: '40px 20px',
+    userSelect: 'none'
+  }}>
+    <div
+      style={{
+        width: 36,
+        height: 36,
+        border: '3px solid rgba(255, 255, 255, 0.15)',
+        borderTopColor: '#38bdf8',
+        borderRadius: '50%',
+        animation: 'rotate 0.8s linear infinite'
+      }}
+    />
+    <span style={{ fontSize: 13, fontWeight: 500, letterSpacing: '0.2px' }}>{label}</span>
+  </div>
+);
+
 // Safely extract tally sheet photo URLs (supports JSON array string of URLs or legacy single URL string)
 const parseTallySheetUrls = (rawUrl, fallbackUrl2 = null) => {
   if (!rawUrl) {
@@ -136,6 +161,22 @@ export default function BoothReport() {
   const [verifiedCounts, setVerifiedCounts] = useState({});
   const [verifying, setVerifying] = useState(false);
   const [verifyPreviewTab, setVerifyPreviewTab] = useState(1);
+
+  // Media loading states for smooth non-blocking UI
+  const [imageModalLoading, setImageModalLoading] = useState(false);
+  const [verifyImageLoading, setVerifyImageLoading] = useState(false);
+
+  useEffect(() => {
+    if (selectedImage?.url) {
+      setImageModalLoading(true);
+    }
+  }, [selectedImage?.url]);
+
+  useEffect(() => {
+    if (verifyingReport) {
+      setVerifyImageLoading(true);
+    }
+  }, [verifyingReport, verifyPreviewTab]);
 
   // Row export dropdown state
   const [openRowExportId, setOpenRowExportId] = useState(null);
@@ -485,7 +526,7 @@ export default function BoothReport() {
                 <th>Booth Officer</th>
                 <th>Booth Code &amp; Name</th>
                 <th>Time Submitted</th>
-                <th>Reports</th>
+                {/* <th>Reports</th> */}
                 <th>Media Attachments</th>
                 <th>Moderator Count</th>
               </tr>
@@ -497,14 +538,14 @@ export default function BoothReport() {
                     <td><div className="skeleton-box" style={{ width: '60%', height: 16 }} /></td>
                     <td><div className="skeleton-box" style={{ width: '50%', height: 16 }} /></td>
                     <td><div className="skeleton-box" style={{ width: '40%', height: 16 }} /></td>
-                    <td><div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6 }} /></td>
+                    {/* <td><div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6 }} /></td> */}
                     <td><div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6 }} /></td>
                     <td><div className="skeleton-box" style={{ width: 32, height: 32, borderRadius: 6 }} /></td>
                   </tr>
                 ))
               ) : submissions.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="empty-state">
+                  <td colSpan={5 /* 6 */} className="empty-state">
                     {filterWard
                       ? (searchTerm ? 'No booths match the search in this ward.' : 'No booths found in this ward.')
                       : 'Please select a State, LGA, and Ward to view booth reports.'}
@@ -525,7 +566,7 @@ export default function BoothReport() {
                         <span className="muted" style={{ fontSize: 12 }}></span>
                       )}
                     </td>
-                    <td>
+                    {/* <td>
                       {sub.id && sub.created_at ? (
                         <button
                           type="button"
@@ -540,7 +581,7 @@ export default function BoothReport() {
                       ) : (
                         <span className="muted" style={{ fontSize: 12 }}></span>
                       )}
-                    </td>
+                    </td> */}
                     <td>
                       {(() => {
                         const { photo1, photo2 } = parseTallySheetUrls(sub.tally_sheet_url, sub.tally_sheet_url_2);
@@ -787,19 +828,26 @@ export default function BoothReport() {
                 isPdf(selectedImage.url) ? (
                   <iframe src={selectedImage.url} title="Tally Sheet PDF Preview" style={{ width: '100%', height: '100%', border: 'none', borderRadius: 6, backgroundColor: '#ffffff' }} />
                 ) : (
-                  <img
-                    src={selectedImage.url}
-                    alt="Uploaded Tally Sheet"
-                    style={{
-                      maxWidth: imageZoom === 1 ? '100%' : 'none',
-                      maxHeight: imageZoom === 1 ? '100%' : 'none',
-                      height: imageZoom > 1 ? `${imageZoom * 100}%` : 'auto',
-                      objectFit: 'contain',
-                      borderRadius: 6,
-                      boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
-                      transition: 'height 0.15s ease-in-out'
-                    }}
-                  />
+                  <>
+                    {imageModalLoading && <MediaSpinner label="Loading full photo..." />}
+                    <img
+                      src={selectedImage.url}
+                      alt="Uploaded Tally Sheet"
+                      loading="lazy"
+                      onLoad={() => setImageModalLoading(false)}
+                      onError={() => setImageModalLoading(false)}
+                      style={{
+                        maxWidth: imageZoom === 1 ? '100%' : 'none',
+                        maxHeight: imageZoom === 1 ? '100%' : 'none',
+                        height: imageZoom > 1 ? `${imageZoom * 100}%` : 'auto',
+                        objectFit: 'contain',
+                        borderRadius: 6,
+                        boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+                        transition: 'height 0.15s ease-in-out',
+                        display: imageModalLoading ? 'none' : 'block'
+                      }}
+                    />
+                  </>
                 )
               ) : (
                 <div style={{ padding: '40px 20px', color: '#94a3b8', textAlign: 'center' }}>
@@ -857,7 +905,12 @@ export default function BoothReport() {
 
             <div className="modal-body media-preview-container">
               {selectedVideo.url ? (
-                <video controls src={selectedVideo.url} style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: 6 }} />
+                <video
+                  controls
+                  preload="metadata"
+                  src={selectedVideo.url}
+                  style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: 6 }}
+                />
               ) : (
                 <div style={{ padding: '40px 20px', color: '#94a3b8', textAlign: 'center' }}>
                   <p style={{ fontSize: 15, fontWeight: 600, margin: '0 0 6px' }}>No video uploaded</p>
@@ -976,7 +1029,23 @@ export default function BoothReport() {
                         isPdf(activeUrl) ? (
                           <iframe src={activeUrl} title="Tally Sheet" style={{ width: '100%', height: '60vh', border: 'none', borderRadius: 6 }} />
                         ) : (
-                          <img src={activeUrl} alt="Tally Sheet" style={{ maxWidth: '100%', maxHeight: '60vh', objectFit: 'contain', borderRadius: 6 }} />
+                          <>
+                            {verifyImageLoading && <MediaSpinner label="Loading photo preview..." />}
+                            <img
+                              src={activeUrl}
+                              alt="Tally Sheet"
+                              loading="lazy"
+                              onLoad={() => setVerifyImageLoading(false)}
+                              onError={() => setVerifyImageLoading(false)}
+                              style={{
+                                maxWidth: '100%',
+                                maxHeight: '60vh',
+                                objectFit: 'contain',
+                                borderRadius: 6,
+                                display: verifyImageLoading ? 'none' : 'block'
+                              }}
+                            />
+                          </>
                         )
                       ) : (
                         <div style={{ textAlign: 'center', color: '#64748b' }}>

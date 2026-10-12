@@ -4,6 +4,7 @@ import CustomSelect from '../components/CustomSelect';
 import { toast } from 'react-hot-toast';
 // import { exportToCSV, exportToExcel } from '../utils/exportImportUtils';
 import { exportToExcel } from '../utils/exportImportUtils';
+import { generateRandomPassword } from '../utils/passwordUtils';
 
 const EditIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -43,6 +44,20 @@ const actionIconStyle = (variant) => ({
 });
 
 // FEATURE: Replicated search, sort, and filter helpers from AuditSubmissions.jsx
+const EyeIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+
+const EyeOffIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+    <line x1="1" y1="1" x2="23" y2="23" />
+  </svg>
+);
+
 const FilterIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
@@ -108,9 +123,12 @@ export default function AdminManagement({ currentAdminRole }) {
   const [lgas, setLgas] = useState([]);
   const [editingUser, setEditingUser] = useState(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
+  const [showEditPassword, setShowEditPassword] = useState(false);
 
   const handleCloseCreateModal = () => {
     setFormData({ full_name: '', email: '', contact_number: '+234', password: '', role: 'State Headquarter Officer', lga_id: '' });
+    setShowCreatePassword(false);
     setIsCreateModalOpen(false);
   };
 
@@ -187,37 +205,49 @@ export default function AdminManagement({ currentAdminRole }) {
     loadAllData();
   }, []);
 
-  // FEATURE: Auto-generate password from first name and last 3 digits of phone number
+  // Auto-generate secure 6-character password (uppercase, lowercase, digit)
   const generatePassword = () => {
-    const firstName = formData.full_name.trim().split(' ')[0] || '';
-    const cleanContact = formData.contact_number.replace(/\D/g, '');
-    const last3Digits = cleanContact.slice(-3);
+    const newPassword = generateRandomPassword();
     setFormData(prev => ({
       ...prev,
-      password: `${firstName}${last3Digits}`
+      password: newPassword
     }));
+    setShowCreatePassword(true);
   };
 
-  // FEATURE: Auto-generate password in edit user modal from first name and last 3 digits of contact
+  // Auto-generate secure 6-character password in edit user modal
   const generateEditPassword = () => {
     if (!editingUser) return;
-    const firstName = (editingUser.full_name || '').trim().split(' ')[0] || '';
-    const cleanContact = (editingUser.contact_number || '').replace(/\D/g, '');
-    const last3Digits = cleanContact.slice(-3);
+    const newPassword = generateRandomPassword();
     setEditingUser(prev => ({
       ...prev,
-      password: `${firstName}${last3Digits}`
+      password: newPassword
     }));
+    setShowEditPassword(true);
   };
 
   // FIX: Added validation block for email format, phone length, and conditional LGA selection
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const cleanEmail = (formData.email || '').trim();
+    const cleanPassword = (formData.password || '').trim();
+    const cleanFullName = (formData.full_name || '').trim();
+
+    if (!cleanFullName) {
+      toast.error('Full Name is required.');
+      return;
+    }
+
     // Verify email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
+    if (!emailRegex.test(cleanEmail)) {
       toast.error('Please enter a valid email address.');
+      return;
+    }
+
+    if (!cleanPassword) {
+      toast.error('Password is required.');
       return;
     }
 
@@ -238,12 +268,19 @@ export default function AdminManagement({ currentAdminRole }) {
     }
 
     setSubmitting(true);
-    const res = await apiCall('/admins/add', { method: 'POST', body: JSON.stringify(formData) });
+    const payload = {
+      ...formData,
+      full_name: cleanFullName,
+      email: cleanEmail,
+      password: cleanPassword,
+    };
+    const res = await apiCall('/admins/add', { method: 'POST', body: JSON.stringify(payload) });
     setSubmitting(false);
 
     if (res.success) {
       toast.success('User account created successfully!');
       setFormData({ full_name: '', email: '', contact_number: '+234', password: '', role: 'State Headquarter Officer', lga_id: '' });
+      setShowCreatePassword(false);
       setIsCreateModalOpen(false);
       fetchAdmins();
     } else {
@@ -256,9 +293,18 @@ export default function AdminManagement({ currentAdminRole }) {
     e.preventDefault();
     if (!editingUser) return;
 
+    const cleanEmail = (editingUser.email || '').trim();
+    const cleanPassword = (editingUser.password || '').trim();
+    const cleanFullName = (editingUser.full_name || '').trim();
+
+    if (!cleanFullName) {
+      toast.error('Full Name is required.');
+      return;
+    }
+
     // Verify email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(editingUser.email)) {
+    if (!emailRegex.test(cleanEmail)) {
       toast.error('Please enter a valid email address.');
       return;
     }
@@ -279,21 +325,24 @@ export default function AdminManagement({ currentAdminRole }) {
       return;
     }
 
+    setSubmitting(true);
     const res = await apiCall(`/admins/${editingUser.id}`, {
       method: 'PUT',
       body: JSON.stringify({
-        full_name: editingUser.full_name,
-        email: editingUser.email,
+        full_name: cleanFullName,
+        email: cleanEmail,
         contact_number: editingUser.contact_number,
         role: editingUser.role,
         lga_id: editingUser.lga_id,
-        password: editingUser.password || ''
+        password: cleanPassword
       })
     });
+    setSubmitting(false);
 
     if (res.success) {
       toast.success('User details updated successfully!');
       setEditingUser(null);
+      setShowEditPassword(false);
       fetchAdmins();
     } else {
       toast.error(res.message || 'Failed to update user.');
@@ -598,7 +647,7 @@ export default function AdminManagement({ currentAdminRole }) {
                             style={actionIconStyle('primary')}
                             title="Edit"
                             aria-label="Edit user"
-                            onClick={() => setEditingUser(adm)}
+                            onClick={() => { setEditingUser(adm); setShowEditPassword(false); }}
                           >
                             <EditIcon />
                           </button>
@@ -672,14 +721,14 @@ export default function AdminManagement({ currentAdminRole }) {
 
       {/* FEATURE: Edit User Modal */}
       {editingUser && (
-        <div className="modal-overlay" onClick={() => setEditingUser(null)}>
+        <div className="modal-overlay" onClick={() => { setEditingUser(null); setShowEditPassword(false); }}>
           <div className="admin-edit-modal-box" onClick={e => e.stopPropagation()}>
             <div className="admin-edit-modal-header">
               <div>
                 <h3 className="admin-edit-modal-title">Edit User Details</h3>
                 <p className="admin-edit-modal-subtitle">Update administrator credentials and assigned role</p>
               </div>
-              <button className="modal-close" onClick={() => setEditingUser(null)}>&times;</button>
+              <button className="modal-close" onClick={() => { setEditingUser(null); setShowEditPassword(false); }}>&times;</button>
             </div>
             <form onSubmit={handleEditSubmit} className="admin-edit-modal-form">
               <div className="admin-edit-modal-body">
@@ -689,6 +738,7 @@ export default function AdminManagement({ currentAdminRole }) {
                     type="text" required className="form-control"
                     value={editingUser.full_name || ''}
                     onChange={e => setEditingUser({ ...editingUser, full_name: e.target.value })}
+                    onBlur={e => setEditingUser(prev => ({ ...prev, full_name: (prev?.full_name || '').trim() }))}
                   />
                 </div>
                 <div className="form-group admin-modal-form-group">
@@ -697,6 +747,7 @@ export default function AdminManagement({ currentAdminRole }) {
                     type="email" required className="form-control"
                     value={editingUser.email || ''}
                     onChange={e => setEditingUser({ ...editingUser, email: e.target.value })}
+                    onBlur={e => setEditingUser(prev => ({ ...prev, email: (prev?.email || '').trim() }))}
                   />
                 </div>
                 <div className="form-group admin-modal-form-group">
@@ -723,13 +774,26 @@ export default function AdminManagement({ currentAdminRole }) {
                 <div className="form-group admin-modal-form-group">
                   <label className="form-label">Password</label>
                   <div className="admin-password-group">
-                    <input
-                      type="text"
-                      className="form-control admin-password-input"
-                      placeholder="Enter new password"
-                      value={editingUser.password || ''}
-                      onChange={e => setEditingUser({ ...editingUser, password: e.target.value })}
-                    />
+                    <div className="password-input-wrapper" style={{ flex: 1 }}>
+                      <input
+                        type={showEditPassword ? "text" : "password"}
+                        className="form-control admin-password-input"
+                        placeholder="Enter new password"
+                        value={editingUser.password || ''}
+                        onChange={e => setEditingUser({ ...editingUser, password: e.target.value })}
+                        onBlur={e => setEditingUser(prev => ({ ...prev, password: (prev?.password || '').trim() }))}
+                      />
+                      <button
+                        type="button"
+                        className={`password-toggle-btn ${showEditPassword ? 'active' : ''}`}
+                        onClick={() => setShowEditPassword(!showEditPassword)}
+                        tabIndex="-1"
+                        title={showEditPassword ? "Hide password" : "Show password"}
+                        aria-label={showEditPassword ? "Hide password" : "Show password"}
+                      >
+                        {showEditPassword ? <EyeOffIcon /> : <EyeIcon />}
+                      </button>
+                    </div>
                     <button
                       type="button"
                       className="btn btn-secondary admin-btn-generate"
@@ -788,7 +852,7 @@ export default function AdminManagement({ currentAdminRole }) {
                 )}
               </div>
               <div className="admin-edit-modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setEditingUser(null)}>Cancel</button>
+                <button type="button" className="btn btn-secondary" onClick={() => { setEditingUser(null); setShowEditPassword(false); }}>Cancel</button>
                 <button type="submit" className="btn btn-primary">Update</button>
               </div>
             </form>
@@ -828,6 +892,7 @@ export default function AdminManagement({ currentAdminRole }) {
                     type="text" required className="form-control"
                     value={formData.full_name}
                     onChange={e => setFormData({ ...formData, full_name: e.target.value })}
+                    onBlur={e => setFormData(prev => ({ ...prev, full_name: (prev?.full_name || '').trim() }))}
                   />
                 </div>
 
@@ -837,6 +902,7 @@ export default function AdminManagement({ currentAdminRole }) {
                     type="email" required className="form-control"
                     value={formData.email}
                     onChange={e => setFormData({ ...formData, email: e.target.value })}
+                    onBlur={e => setFormData(prev => ({ ...prev, email: (prev?.email || '').trim() }))}
                   />
                 </div>
 
@@ -863,11 +929,27 @@ export default function AdminManagement({ currentAdminRole }) {
                 <div className="form-group admin-modal-form-group">
                   <label className="form-label">Password</label>
                   <div className="admin-password-group">
-                    <input
-                      type="text" required className="form-control admin-password-input"
-                      value={formData.password}
-                      onChange={e => setFormData({ ...formData, password: e.target.value })}
-                    />
+                    <div className="password-input-wrapper" style={{ flex: 1 }}>
+                      <input
+                        type={showCreatePassword ? "text" : "password"}
+                        required
+                        className="form-control admin-password-input"
+                        placeholder="Enter password"
+                        value={formData.password}
+                        onChange={e => setFormData({ ...formData, password: e.target.value })}
+                        onBlur={e => setFormData(prev => ({ ...prev, password: (prev?.password || '').trim() }))}
+                      />
+                      <button
+                        type="button"
+                        className={`password-toggle-btn ${showCreatePassword ? 'active' : ''}`}
+                        onClick={() => setShowCreatePassword(!showCreatePassword)}
+                        tabIndex="-1"
+                        title={showCreatePassword ? "Hide password" : "Show password"}
+                        aria-label={showCreatePassword ? "Hide password" : "Show password"}
+                      >
+                        {showCreatePassword ? <EyeOffIcon /> : <EyeIcon />}
+                      </button>
+                    </div>
                     <button
                       type="button"
                       className="btn btn-secondary admin-btn-generate"

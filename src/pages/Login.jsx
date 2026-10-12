@@ -24,7 +24,10 @@ export default function Login({ onLoginSuccess }) {
     setSubmitting(true);
     const data = await apiCall('/auth/admin/login', {
       method: 'POST',
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({
+        username: username?.trim(),
+        password: password?.trim()
+      })
     });
     setSubmitting(false);
 
